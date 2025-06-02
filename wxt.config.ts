@@ -24,10 +24,10 @@ export default defineConfig({
 		commands: {
 			_execute_action: {
 				suggested_key: {
-					default: "Ctrl+Shift+Space",
-					mac: "Command+Shift+Space",
+					default: "Ctrl+Shift+S",
+					mac: "Command+Shift+S",
 				},
-				description: "打开搜索窗口",
+				description: "默认打开收藏夹历史记录搜索器",
 			},
 		},
 

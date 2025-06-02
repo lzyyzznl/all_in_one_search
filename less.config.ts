@@ -1,4 +1,25 @@
-module.exports = {
+import type { LessOptions } from "less";
+
+interface LessGlobalVars {
+	[key: string]: string;
+}
+
+interface LessModifyVars {
+	[key: string]: string;
+}
+
+interface LessConfig {
+	lessOptions: {
+		javascriptEnabled?: boolean;
+		math?: "always" | "strict" | "parens-division" | "parens" | "strict-legacy";
+		globalVars?: LessGlobalVars;
+		modifyVars?: LessModifyVars;
+		compress?: boolean;
+		sourceMap?: boolean;
+	};
+}
+
+const config: LessConfig = {
 	// Less 编译选项
 	lessOptions: {
 		// 启用JavaScript计算
@@ -32,3 +53,5 @@ module.exports = {
 		sourceMap: process.env.NODE_ENV !== "production",
 	},
 };
+
+export default config;

@@ -6,17 +6,17 @@
     <title>浏览器收藏夹历史记录搜索器 - 新标签页</title>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app" class="newtab-container" style="height:100vh;width:100%"></div>
     <script type="module">
       import "./styles/popup.less";
       import { createApp } from "vue";
-      import NewTabApp from "../components/NewTabApp.vue";
+      import PopupApp from "../components/PopupApp.vue";
 
       // 创建Vue应用实例
-      const app = createApp(NewTabApp);
+      const app = createApp(PopupApp);
 
       // 挂载到DOM
       app.mount("#app");
     </script>
   </body>
-</html> 
+</html>

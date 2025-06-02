@@ -118,8 +118,9 @@
       <div class="welcome-tips">
         <div>💡 支持模糊搜索</div>
         <div>💡 结果按域名分组显示</div>
-        <div>💡 单击直接打开链接</div>
+        <div>💡 单击直接打开链接</div> 
         <div>💡 历史记录可添加到书签</div>
+        <div>💡 默认快速搜索窗口快捷键:Ctrl+Shift+Space</div>
       </div>
     </div>
 
@@ -179,7 +180,7 @@
 
 <script setup lang="ts">
 /// <reference types="chrome" />
-import { ref, reactive, computed, onMounted, nextTick, watch } from 'vue';
+import { ref, reactive, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { searchBookmarksAndHistory, openUrl, getFaviconUrl } from '../utils/search';
 import type { 
   GroupedSearchResults, 
@@ -384,6 +385,42 @@ const loadBookmarkFolders = async () => {
   }
 };
 
+// 快捷键配置
+const shortcutConfig = reactive({
+  up: 'ArrowUp',
+  down: 'ArrowDown',
+  open: 'Enter',
+  close: 'Escape'
+});
+
+// 加载快捷键配置
+const loadShortcutConfig = async () => {
+  const result = await chrome.storage.local.get('shortcutConfig');
+  if (result.shortcutConfig) {
+    Object.assign(shortcutConfig, result.shortcutConfig);
+  }
+};
+
+// 加载搜索设置
+const loadSearchSettings = async () => {
+  try {
+    const result = await chrome.storage.local.get(['searchSettings']);
+    if (result.searchSettings) {
+      // 应用搜索设置到当前的搜索选项
+      if (result.searchSettings.defaultMaxResults) {
+        searchOptions.maxResults = Number(result.searchSettings.defaultMaxResults);
+      }
+      if (result.searchSettings.defaultSortBy) {
+        searchOptions.sortBy = result.searchSettings.defaultSortBy;
+      }
+      
+      console.log('已加载搜索设置:', result.searchSettings);
+    }
+  } catch (error) {
+    console.error('加载搜索设置失败:', error);
+  }
+};
+
 // 键盘导航
 const handleKeyDown = (event: KeyboardEvent) => {
   if (!hasResults.value) return;
@@ -397,38 +434,68 @@ const handleKeyDown = (event: KeyboardEvent) => {
     allItems.findIndex(item => item.id === selectedItem.value) : -1;
   
   switch (event.key) {
-    case 'ArrowDown':
+    case shortcutConfig.down:
       event.preventDefault();
       const nextIndex = currentIndex < allItems.length - 1 ? currentIndex + 1 : 0;
       selectedItem.value = allItems[nextIndex].id;
-      // 滚动到可见区域
       document.querySelector(`[data-id="${allItems[nextIndex].id}"]`)?.scrollIntoView({
         block: 'nearest'
       });
       break;
-    case 'ArrowUp':
+    case shortcutConfig.up:
       event.preventDefault();
       const prevIndex = currentIndex > 0 ? currentIndex - 1 : allItems.length - 1;
       selectedItem.value = allItems[prevIndex].id;
-      // 滚动到可见区域
       document.querySelector(`[data-id="${allItems[prevIndex].id}"]`)?.scrollIntoView({
         block: 'nearest'
       });
       break;
-    case 'Enter':
+    case shortcutConfig.open:
       if (selectedItem.value) {
         const item = findItemById(selectedItem.value);
         if (item) openItem(item);
       }
       break;
-    case 'Escape':
+    case shortcutConfig.close:
       window.close();
       break;
   }
 };
 
+// 监听storage变化
+const handleStorageChange = (changes: Record<string, chrome.storage.StorageChange>) => {
+  if (changes.shortcutConfig) {
+    Object.assign(shortcutConfig, changes.shortcutConfig.newValue);
+  }
+  
+  // 监听搜索设置变化
+  if (changes.searchSettings) {
+    const newSettings = changes.searchSettings.newValue;
+    if (newSettings) {
+      if (newSettings.defaultMaxResults) {
+        searchOptions.maxResults = Number(newSettings.defaultMaxResults);
+      }
+      if (newSettings.defaultSortBy) {
+        searchOptions.sortBy = newSettings.defaultSortBy;
+      }
+      console.log('搜索设置已更新:', newSettings);
+      
+      // 如果有搜索查询，重新搜索以应用新设置
+      if (searchQuery.value.trim()) {
+        handleSearch();
+      }
+    }
+  }
+};
+
 // 组件挂载
 onMounted(async () => {
+  // 加载快捷键配置
+  await loadShortcutConfig();
+  
+  // 加载搜索设置
+  await loadSearchSettings();
+  
   // 聚焦搜索框
   await nextTick();
   searchInput.value?.focus();
@@ -436,8 +503,17 @@ onMounted(async () => {
   // 绑定键盘事件
   document.addEventListener('keydown', handleKeyDown);
   
+  // 监听storage变化
+  chrome.storage.onChanged.addListener(handleStorageChange);
+  
   // 加载书签文件夹
   await loadBookmarkFolders();
+});
+
+// 组件卸载
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleKeyDown);
+  chrome.storage.onChanged.removeListener(handleStorageChange);
 });
 
 // 在新标签页打开搜索界面
