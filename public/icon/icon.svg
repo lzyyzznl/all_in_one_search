@@ -1,0 +1,61 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景圆形 - 深色渐变 -->
+  <defs>
+    <radialGradient id="bgGradient" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#2D3748;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1A202C;stop-opacity:1" />
+    </radialGradient>
+    <linearGradient id="searchGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667EEA;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764BA2;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="bookmarkGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#F093FB;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F5576C;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="historyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4FACFE;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00F2FE;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- 主背景 -->
+  <circle cx="64" cy="64" r="60" fill="url(#bgGradient)" stroke="#4A5568" stroke-width="2"/>
+  
+  <!-- 搜索放大镜主体 -->
+  <circle cx="50" cy="50" r="18" fill="none" stroke="url(#searchGradient)" stroke-width="4"/>
+  
+  <!-- 搜索放大镜柄 -->
+  <line x1="64" y1="64" x2="74" y2="74" stroke="url(#searchGradient)" stroke-width="4" stroke-linecap="round"/>
+  
+  <!-- 收藏夹星形图标 -->
+  <path d="M84 25 L87 34 L96 34 L89 40 L92 49 L84 43 L76 49 L79 40 L72 34 L81 34 Z" 
+        fill="url(#bookmarkGradient)" opacity="0.9"/>
+  
+  <!-- 历史记录时钟 -->
+  <circle cx="95" cy="85" r="12" fill="none" stroke="url(#historyGradient)" stroke-width="2.5"/>
+  <line x1="95" y1="85" x2="95" y2="78" stroke="url(#historyGradient)" stroke-width="2" stroke-linecap="round"/>
+  <line x1="95" y1="85" x2="100" y2="85" stroke="url(#historyGradient)" stroke-width="2" stroke-linecap="round"/>
+  
+  <!-- 搜索结果列表线条 -->
+  <g opacity="0.6">
+    <rect x="25" y="75" width="25" height="2" rx="1" fill="#E2E8F0"/>
+    <rect x="25" y="80" width="35" height="2" rx="1" fill="#E2E8F0"/>
+    <rect x="25" y="85" width="20" height="2" rx="1" fill="#E2E8F0"/>
+    <rect x="25" y="90" width="30" height="2" rx="1" fill="#E2E8F0"/>
+  </g>
+  
+  <!-- 快捷键标识 -->
+  <g opacity="0.7">
+    <rect x="25" y="100" width="8" height="8" rx="2" fill="#4A5568" stroke="#718096" stroke-width="1"/>
+    <text x="29" y="106" font-family="Arial, sans-serif" font-size="6" fill="#E2E8F0" text-anchor="middle">S</text>
+    
+    <rect x="35" y="100" width="8" height="8" rx="2" fill="#4A5568" stroke="#718096" stroke-width="1"/>
+    <text x="39" y="106" font-family="Arial, sans-serif" font-size="6" fill="#E2E8F0" text-anchor="middle">H</text>
+  </g>
+  
+  <!-- 光效点缀 -->
+  <circle cx="40" cy="35" r="1.5" fill="#F7FAFC" opacity="0.8"/>
+  <circle cx="75" cy="45" r="1" fill="#F7FAFC" opacity="0.6"/>
+  <circle cx="55" cy="95" r="1.2" fill="#F7FAFC" opacity="0.7"/>
+</svg> 

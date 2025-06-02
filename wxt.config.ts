@@ -42,15 +42,13 @@ export default defineConfig({
 			// newtab: "newtab.html" // 可选：覆盖新标签页
 		},
 
-		// 图标配置 - 开发时暂时注释，需要实际的PNG图标文件
-		/*
+		// 图标配置
 		icons: {
 			16: "icon/16.png",
 			32: "icon/32.png",
 			48: "icon/48.png",
 			128: "icon/128.png",
 		},
-		*/
 	},
 
 	// 开发配置
