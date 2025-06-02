@@ -120,14 +120,15 @@
         <div>💡 结果按域名分组显示</div>
         <div>💡 单击直接打开链接</div> 
         <div>💡 历史记录可添加到书签</div>
-        <div>💡 默认快速搜索窗口快捷键:Ctrl+Shift+Space</div>
+        <div v-if="mainShortcut">💡 默认快速搜索窗口快捷键: {{ mainShortcut }}</div>
+        <div v-else>💡 默认快速搜索窗口快捷键: Ctrl+Shift+S</div>
       </div>
     </div>
 
     <!-- 快捷键提示 -->
     <div class="shortcuts">
-      <span>Enter 打开</span>
-      <span>↑↓ 选择</span>
+      <span>{{ navigationKeys.open }} 打开</span>
+      <span>{{ navigationKeys.up }}{{ navigationKeys.down }} 选择</span>
       <span>Esc 关闭</span>
     </div>
   </div>
@@ -181,6 +182,7 @@
 <script setup lang="ts">
 /// <reference types="chrome" />
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
+import { getShortcut, formatShortcut, getNavigationKeys, shortcutKeyMap } from '../utils/shortcuts.ts';
 import { searchBookmarksAndHistory, openUrl, getFaviconUrl } from '../utils/search';
 import type { 
   GroupedSearchResults, 
@@ -196,6 +198,18 @@ const searchStats = ref<SearchStats | null>(null);
 const isLoading = ref(false);
 const selectedItem = ref<string | null>(null);
 const searchInput = ref<HTMLInputElement>();
+
+// 快捷键显示
+const mainShortcut = ref('');
+const navigationKeys = ref(getNavigationKeys());
+
+// 键盘导航配置（从设置中加载）
+const navigationConfig = reactive({
+  up: 'ArrowUp',
+  down: 'ArrowDown',
+  open: 'Enter',
+  close: 'Escape'
+});
 
 // 书签对话框状态
 const bookmarkDialog = reactive({
@@ -385,19 +399,21 @@ const loadBookmarkFolders = async () => {
   }
 };
 
-// 快捷键配置
-const shortcutConfig = reactive({
-  up: 'ArrowUp',
-  down: 'ArrowDown',
-  open: 'Enter',
-  close: 'Escape'
-});
-
 // 加载快捷键配置
 const loadShortcutConfig = async () => {
-  const result = await chrome.storage.local.get('shortcutConfig');
-  if (result.shortcutConfig) {
-    Object.assign(shortcutConfig, result.shortcutConfig);
+  try {
+    // 加载主快捷键
+    const shortcut = await getShortcut('_execute_action');
+    mainShortcut.value = formatShortcut(shortcut);
+    
+    // 可选：加载备用快捷键
+    const altShortcut = await getShortcut('open-search-alt');
+    if (altShortcut && !mainShortcut.value) {
+      mainShortcut.value = formatShortcut(altShortcut);
+    }
+  } catch (error) {
+    console.error('加载快捷键配置失败:', error);
+    mainShortcut.value = 'Ctrl+Shift+S'; // 默认值
   }
 };
 
@@ -421,6 +437,19 @@ const loadSearchSettings = async () => {
   }
 };
 
+// 加载导航设置
+const loadNavigationSettings = async () => {
+  try {
+    const result = await chrome.storage.local.get(['navigationSettings']);
+    if (result.navigationSettings) {
+      Object.assign(navigationConfig, result.navigationSettings);
+      console.log('已加载导航设置:', result.navigationSettings);
+    }
+  } catch (error) {
+    console.error('加载导航设置失败:', error);
+  }
+};
+
 // 键盘导航
 const handleKeyDown = (event: KeyboardEvent) => {
   if (!hasResults.value) return;
@@ -433,8 +462,8 @@ const handleKeyDown = (event: KeyboardEvent) => {
   const currentIndex = selectedItem.value ? 
     allItems.findIndex(item => item.id === selectedItem.value) : -1;
   
-  switch (event.key) {
-    case shortcutConfig.down:
+  switch (event.code) {
+    case navigationConfig.down:
       event.preventDefault();
       const nextIndex = currentIndex < allItems.length - 1 ? currentIndex + 1 : 0;
       selectedItem.value = allItems[nextIndex].id;
@@ -442,7 +471,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
         block: 'nearest'
       });
       break;
-    case shortcutConfig.up:
+    case navigationConfig.up:
       event.preventDefault();
       const prevIndex = currentIndex > 0 ? currentIndex - 1 : allItems.length - 1;
       selectedItem.value = allItems[prevIndex].id;
@@ -450,13 +479,13 @@ const handleKeyDown = (event: KeyboardEvent) => {
         block: 'nearest'
       });
       break;
-    case shortcutConfig.open:
+    case navigationConfig.open:
       if (selectedItem.value) {
         const item = findItemById(selectedItem.value);
         if (item) openItem(item);
       }
       break;
-    case shortcutConfig.close:
+    case navigationConfig.close:
       window.close();
       break;
   }
@@ -464,10 +493,6 @@ const handleKeyDown = (event: KeyboardEvent) => {
 
 // 监听storage变化
 const handleStorageChange = (changes: Record<string, chrome.storage.StorageChange>) => {
-  if (changes.shortcutConfig) {
-    Object.assign(shortcutConfig, changes.shortcutConfig.newValue);
-  }
-  
   // 监听搜索设置变化
   if (changes.searchSettings) {
     const newSettings = changes.searchSettings.newValue;
@@ -486,6 +511,15 @@ const handleStorageChange = (changes: Record<string, chrome.storage.StorageChang
       }
     }
   }
+  
+  // 监听导航设置变化
+  if (changes.navigationSettings) {
+    const newSettings = changes.navigationSettings.newValue;
+    if (newSettings) {
+      Object.assign(navigationConfig, newSettings);
+      console.log('导航设置已更新:', newSettings);
+    }
+  }
 };
 
 // 组件挂载
@@ -495,6 +529,9 @@ onMounted(async () => {
   
   // 加载搜索设置
   await loadSearchSettings();
+  
+  // 加载导航设置
+  await loadNavigationSettings();
   
   // 聚焦搜索框
   await nextTick();

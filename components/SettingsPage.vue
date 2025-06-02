@@ -55,17 +55,6 @@
         
         <div class="setting-item">
           <label class="setting-label">
-            <input 
-              type="checkbox" 
-              v-model="searchSettings.autoFocus"
-              @change="saveSearchSettings"
-            />
-            启动时自动聚焦搜索框
-          </label>
-        </div>
-        
-        <div class="setting-item">
-          <label class="setting-label">
             默认搜索结果数量
           </label>
           <select v-model.number="searchSettings.defaultMaxResults" @change="saveSearchSettings">
@@ -85,6 +74,70 @@
             <option value="recent">最近访问</option>
             <option value="frequency">访问频率</option>
           </select>
+        </div>
+      </div>
+
+      <!-- 键盘导航设置 -->
+      <div class="setting-section">
+        <h2>⌨️ 键盘导航设置</h2>
+        <p class="section-desc">自定义搜索结果中的键盘导航快捷键</p>
+        
+        <div class="navigation-keys-grid">
+          <div class="key-setting-item">
+            <label class="key-label">
+              <span class="key-icon">⬆️</span>
+              <span>向上选择</span>
+            </label>
+            <select v-model="navigationSettings.up" @change="saveNavigationSettings">
+              <option value="ArrowUp">↑ (方向键上)</option>
+              <option value="KeyK">K</option>
+              <option value="KeyW">W</option>
+            </select>
+          </div>
+          
+          <div class="key-setting-item">
+            <label class="key-label">
+              <span class="key-icon">⬇️</span>
+              <span>向下选择</span>
+            </label>
+            <select v-model="navigationSettings.down" @change="saveNavigationSettings">
+              <option value="ArrowDown">↓ (方向键下)</option>
+              <option value="KeyJ">J</option>
+              <option value="KeyS">S</option>
+            </select>
+          </div>
+          
+          <div class="key-setting-item">
+            <label class="key-label">
+              <span class="key-icon">✅</span>
+              <span>打开选中项</span>
+            </label>
+            <select v-model="navigationSettings.open" @change="saveNavigationSettings">
+              <option value="Enter">Enter (回车键)</option>
+              <option value="Space">Space (空格键)</option>
+              <option value="KeyO">O</option>
+            </select>
+          </div>
+          
+          <div class="key-setting-item">
+            <label class="key-label">
+              <span class="key-icon">❌</span>
+              <span>关闭窗口</span>
+            </label>
+            <select v-model="navigationSettings.close" @change="saveNavigationSettings">
+              <option value="Escape">Esc (退出键)</option>
+              <option value="KeyQ">Q</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="navigation-help">
+          <h4>📝 提示：</h4>
+          <ul>
+            <li>这些快捷键只在搜索结果页面中生效</li>
+            <li>修改后即时生效，无需重启扩展</li>
+            <li>建议选择不与浏览器默认快捷键冲突的按键</li>
+          </ul>
         </div>
       </div>
 
@@ -111,6 +164,9 @@
         </div>
       </div>
     </div>
+    <div class="settings-footer">
+      <p>作者: lizeyu 如有问题请联系: <a href="mailto:coderlzy@qq.com">632795136@qq.com</a></p>
+    </div>
   </div>
 </template>
 
@@ -131,9 +187,16 @@ const shortcuts = ref([
 
 // 搜索设置
 const searchSettings = reactive({
-  autoFocus: true,
   defaultMaxResults: 50,
   defaultSortBy: 'relevance'
+});
+
+// 键盘导航设置
+const navigationSettings = reactive({
+  up: 'ArrowUp',
+  down: 'ArrowDown',
+  open: 'Enter',
+  close: 'Escape'
 });
 
 // 格式化快捷键显示
@@ -184,6 +247,18 @@ const loadSearchSettings = async () => {
   }
 };
 
+// 加载键盘导航设置
+const loadNavigationSettings = async () => {
+  try {
+    const result = await chrome.storage.local.get(['navigationSettings']);
+    if (result.navigationSettings) {
+      Object.assign(navigationSettings, result.navigationSettings);
+    }
+  } catch (error) {
+    console.error('加载键盘导航设置失败:', error);
+  }
+};
+
 // 显示保存成功消息
 const showSaveSuccessMessage = () => {
   showSaveSuccess.value = true;
@@ -206,10 +281,25 @@ const saveSearchSettings = async () => {
   }
 };
 
+// 保存键盘导航设置
+const saveNavigationSettings = async () => {
+  try {
+    await chrome.storage.local.set({ navigationSettings: navigationSettings });
+    console.log('键盘导航设置已保存:', navigationSettings);
+    
+    // 显示保存成功提示
+    showSaveSuccessMessage();
+  } catch (error) {
+    console.error('保存键盘导航设置失败:', error);
+    alert('保存设置失败，请重试');
+  }
+};
+
 // 组件挂载时加载设置
 onMounted(async () => {
   await loadShortcuts();
   await loadSearchSettings();
+  await loadNavigationSettings();
 });
 </script>
 
@@ -433,6 +523,71 @@ onMounted(async () => {
         margin-bottom: 4px;
         color: #666;
       }
+    }
+  }
+}
+
+.navigation-keys-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.key-setting-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.key-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 8px;
+  
+  .key-icon {
+    font-size: 1.5rem;
+    margin-bottom: 4px;
+  }
+}
+
+.navigation-help {
+  padding: 16px;
+  background: #e3f2fd;
+  border-radius: 8px;
+  border-left: 4px solid #2196f3;
+  
+  h4 {
+    margin: 0 0 12px 0;
+    color: #1565c0;
+  }
+  
+  ul {
+    margin: 0 0 16px 0;
+    padding-left: 20px;
+    
+    li {
+      margin-bottom: 4px;
+      color: #333;
+    }
+  }
+}
+
+.settings-footer {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e9ecef;
+  color: #666;
+  font-size: 0.875rem;
+  text-align: center;
+  
+  a {
+    color: #2196f3;
+    text-decoration: none;
+    
+    &:hover {
+      text-decoration: underline;
     }
   }
 }
