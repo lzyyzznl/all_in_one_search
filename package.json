@@ -1,0 +1,40 @@
+{
+	"name": "my_browser_explorer",
+	"version": "1.0.0",
+	"description": "浏览器插件 - 收藏夹和历史记录模糊查询",
+	"main": "index.js",
+	"scripts": {
+		"dev": "wxt",
+		"dev:firefox": "wxt -b firefox",
+		"build": "wxt build",
+		"build:firefox": "wxt build -b firefox",
+		"zip": "wxt zip",
+		"zip:firefox": "wxt zip -b firefox",
+		"postinstall": "wxt prepare",
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"keywords": [
+		"browser-extension",
+		"bookmarks",
+		"history",
+		"search",
+		"vue",
+		"typescript"
+	],
+	"author": "",
+	"license": "MIT",
+	"packageManager": "pnpm@10.11.0",
+	"dependencies": {
+		"vue": "3.5.16"
+	},
+	"devDependencies": {
+		"@types/chrome": "^0.0.326",
+		"@types/less": "^3.0.8",
+		"@types/node": "22.15.29",
+		"@wxt-dev/module-vue": "1.0.2",
+		"less": "^4.3.0",
+		"typescript": "5.8.3",
+		"vite": "6.3.5",
+		"wxt": "0.20.6"
+	}
+}

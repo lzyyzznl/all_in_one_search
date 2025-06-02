@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>浏览器收藏夹历史记录搜索器</title>
+  </head>
+  <body>
+    <div id="app"></div> 
+    <div class="settings-link">
+      <a href="settings.html" target="_blank" class="settings-btn">⚙️ 设置</a>
+    </div>
+    
+    <script type="module">
+      import "./styles/popup.less";
+      import { createApp } from "vue";
+      import PopupApp from "../components/PopupApp.vue";
+
+      // 创建Vue应用实例
+      const app = createApp(PopupApp);
+
+      // 挂载到DOM
+      app.mount("#app");
+    </script>
+  </body>
+</html>

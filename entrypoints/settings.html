@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>设置 - 浏览器收藏夹历史记录搜索器</title>
+  <link rel="stylesheet" href="/styles/popup.less">
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module">
+    import { createApp } from "vue";
+    import SettingsPage from "../components/SettingsPage.vue";
+
+    const app = createApp(SettingsPage);
+    app.mount("#app");
+  </script>
+</body>
+</html>

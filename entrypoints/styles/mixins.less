@@ -1,0 +1,292 @@
+// ===========================================
+// 混合函数 - Mixins
+// ===========================================
+
+// 布局相关
+// -------------------------------------------
+
+// Flexbox 布局
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flex-start {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.flex-end {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.flex-around {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.flex-column-center {
+  .flex-column;
+  align-items: center;
+  justify-content: center;
+}
+
+// 绝对定位居中
+.absolute-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+// 文本相关
+// -------------------------------------------
+
+// 文本省略
+.text-ellipsis {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// 多行文本省略
+.text-ellipsis-multiline(@lines: 2) {
+  display: -webkit-box;
+  -webkit-line-clamp: @lines;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-all;
+}
+
+// 文本选择禁用
+.user-select-none {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+// 背景和渐变
+// -------------------------------------------
+
+// 主要渐变背景
+.gradient-background {
+  background: linear-gradient(135deg, @primary-color 0%, @secondary-color 100%);
+}
+
+// 自定义渐变
+.gradient(@start-color, @end-color, @direction: to right) {
+  background: linear-gradient(@direction, @start-color 0%, @end-color 100%);
+}
+
+// 半透明遮罩
+.overlay(@opacity: 0.5) {
+  background: rgba(0, 0, 0, @opacity);
+}
+
+// 动画相关
+// -------------------------------------------
+
+// 淡入上移动画
+.fade-in-up {
+  animation: fadeInUp @animation-duration-fast ease-out;
+}
+
+// 淡入动画
+.fade-in {
+  animation: fadeIn @animation-duration-base ease-out;
+}
+
+// 旋转动画
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+// 脉冲动画
+.pulse {
+  animation: pulse 2s infinite;
+}
+
+// 过渡效果
+.transition(@property: all, @duration: @transition-base, @timing: ease) {
+  transition: @property @duration @timing;
+}
+
+// 阴影相关
+// -------------------------------------------
+
+// 悬浮阴影
+.hover-shadow {
+  transition: box-shadow @transition-base;
+  
+  &:hover {
+    box-shadow: @box-shadow-heavy;
+  }
+}
+
+// 卡片阴影
+.card-shadow {
+  box-shadow: @box-shadow-light;
+  
+  &:hover {
+    box-shadow: @box-shadow-base;
+  }
+}
+
+// 内嵌阴影
+.inset-shadow {
+  box-shadow: @box-shadow-inset;
+}
+
+// 响应式相关
+// -------------------------------------------
+
+// 媒体查询混合
+.responsive(@screen-size) when (@screen-size = xs) {
+  @media (max-width: @screen-xs-max) {
+    @content();
+  }
+}
+
+.responsive(@screen-size) when (@screen-size = sm) {
+  @media (max-width: @screen-sm-max) {
+    @content();
+  }
+}
+
+.responsive(@screen-size) when (@screen-size = md) {
+  @media (max-width: @screen-md-max) {
+    @content();
+  }
+}
+
+.responsive(@screen-size) when (@screen-size = lg) {
+  @media (max-width: @screen-lg-max) {
+    @content();
+  }
+}
+
+// 滚动条样式
+// -------------------------------------------
+
+.custom-scrollbar(@width: 6px, @track-color: #f1f1f1, @thumb-color: #c1c1c1) {
+  &::-webkit-scrollbar {
+    width: @width;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: @track-color;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: @thumb-color;
+    border-radius: @border-radius-tiny;
+
+    &:hover {
+      background: darken(@thumb-color, 10%);
+    }
+  }
+}
+
+// 表单相关
+// -------------------------------------------
+
+// 输入框样式
+.input-style {
+  padding: @padding-small + 4px @padding-base;
+  border: 1px solid @border-color;
+  border-radius: @border-radius-small;
+  font-size: @font-size-base;
+  outline: none;
+  .transition(border-color);
+
+  &:focus {
+    border-color: @primary-color;
+    box-shadow: 0 0 0 2px fade(@primary-color, 20%);
+  }
+
+  &::placeholder {
+    color: @text-light;
+  }
+
+  &:disabled {
+    background: @background-light;
+    color: @text-disabled;
+    cursor: not-allowed;
+  }
+}
+
+// 按钮样式
+.button-style(@bg-color: @primary-color, @text-color: @white) {
+  padding: @padding-small @padding-base;
+  background: @bg-color;
+  color: @text-color;
+  border: none;
+  border-radius: @border-radius-small;
+  cursor: pointer;
+  font-size: @font-size-base;
+  .transition(all);
+
+  &:hover {
+    background: darken(@bg-color, 8%);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    background: @text-disabled;
+    cursor: not-allowed;
+    transform: none;
+  }
+}
+
+// 工具类
+// -------------------------------------------
+
+// 清除浮动
+.clearfix {
+  &::after {
+    content: "";
+    display: table;
+    clear: both;
+  }
+}
+
+// 隐藏元素但保持可访问性
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// 强制硬件加速
+.hardware-acceleration {
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+} 
