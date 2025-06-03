@@ -37,11 +37,6 @@ export default defineConfig({
 			default_popup: "popup.html",
 		},
 
-		// 新标签页可选页面
-		chrome_url_overrides: {
-			// newtab: "newtab.html" // 可选：覆盖新标签页
-		},
-
 		// 图标配置
 		icons: {
 			16: "icon/16.png",
