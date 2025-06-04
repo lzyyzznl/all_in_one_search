@@ -25,6 +25,8 @@
 	"license": "MIT",
 	"packageManager": "pnpm@10.11.0",
 	"dependencies": {
+		"@element-plus/icons-vue": "^2.3.1",
+		"element-plus": "^2.9.11",
 		"vue": "3.5.16"
 	},
 	"devDependencies": {

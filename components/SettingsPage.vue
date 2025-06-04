@@ -1,177 +1,233 @@
 <template>
-  <div class="settings-container">
-    <header class="settings-header">
-      <h1>🔧 插件设置</h1>
-      <p>配置浏览器收藏夹历史记录搜索器的各项设置</p>
-    </header>
+  <div class="element-settings-container">
+    <!-- 页面头部 -->
+    <div class="settings-header">
+      <h1 class="header-title">🔧 插件设置</h1>
+      <p class="header-subtitle">配置浏览器收藏夹历史记录搜索器的各项设置</p>
+    </div>
     
     <!-- 成功提示 -->
-    <div v-if="showSaveSuccess" class="save-success-message">
-      ✅ 设置已保存成功！
-    </div>
+    <el-alert
+      v-if="showSaveSuccess"
+      title="设置已保存成功！"
+      type="success"
+      effect="dark"
+      :closable="false"
+      class="save-success-message"
+    />
     
     <div class="settings-content">
       <!-- 快捷键设置 -->
-      <div class="setting-section">
-        <h2>⌨️ 快捷键设置</h2>
-        <p class="section-desc">当前插件的快捷键配置，您可以在浏览器扩展管理页面中修改这些快捷键。</p>
-        
-        <div class="shortcut-list">
-          <div class="shortcut-item" v-for="shortcut in shortcuts" :key="shortcut.name">
-            <div class="shortcut-info">
-              <strong>{{ shortcut.description }}</strong>
-              <div class="shortcut-key">
-                <kbd v-for="key in shortcut.shortcut.split('+')" :key="key">
-                  {{ formatKey(key) }}
-                </kbd>
-              </div>
-            </div>
-            <div class="shortcut-status">
-              <span :class="['status-badge', shortcut.shortcut ? 'active' : 'inactive']">
-                {{ shortcut.shortcut || '未设置' }}
-              </span>
-            </div>
+      <el-card class="setting-section">
+        <template #header>
+          <div class="card-header">
+            <el-icon class="header-icon"><Tools /></el-icon>
+            <h2 class="header-title">快捷键设置</h2>
           </div>
-        </div>
+        </template>
+        
+        <p class="section-description">当前插件的快捷键配置，您可以在浏览器扩展管理页面中修改这些快捷键。</p>
+        
+        <el-table :data="shortcuts" stripe style="width: 100%">
+          <el-table-column prop="description" label="功能" width="180" />
+          <el-table-column label="快捷键">
+            <template #default="{ row }">
+              <el-space :size="4" wrap>
+                <el-tag 
+                  v-for="key in row.shortcut.split('+')" 
+                  :key="key"
+                  type="info"
+                  effect="plain"
+                  size="small"
+                >
+                  {{ formatKey(key) }}
+                </el-tag>
+              </el-space>
+            </template>
+          </el-table-column>
+        </el-table>
         
         <div class="shortcut-help">
-          <h3>📖 如何修改快捷键：</h3>
-          <ol>
+          <h3 class="help-title">📖 如何修改快捷键：</h3>
+          <ol class="help-steps">
             <li>在Chrome中访问 <code>chrome://extensions/shortcuts</code></li>
             <li>找到"浏览器收藏夹历史记录搜索器"</li>
             <li>点击快捷键输入框，按下您想要的快捷键组合</li>
             <li>点击确定保存</li>
           </ol>
-          <button class="open-shortcuts-btn" @click="openShortcutsPage">
-            🚀 打开快捷键设置页面
-          </button>
+          <el-button type="primary" @click="openShortcutsPage">
+            <el-icon><Setting /></el-icon>
+            打开快捷键设置页面
+          </el-button>
         </div>
-      </div>
+      </el-card>
 
       <!-- 搜索设置 -->
-      <div class="setting-section">
-        <h2>🔍 搜索设置</h2>
-        <p class="section-desc">自定义搜索行为和显示选项</p>
+      <el-card class="setting-section">
+        <template #header>
+          <div class="card-header">
+            <el-icon class="header-icon"><Search /></el-icon>
+            <h2 class="header-title">搜索设置</h2>
+          </div>
+        </template>
         
-        <div class="setting-item">
-          <label class="setting-label">
-            默认搜索结果数量
-          </label>
-          <select v-model.number="searchSettings.defaultMaxResults" @change="saveSearchSettings">
-            <option :value="25">25条</option>
-            <option :value="50">50条</option>
-            <option :value="100">100条</option>
-            <option :value="200">200条</option>
-          </select>
-        </div>
+        <p class="section-description">自定义搜索行为和显示选项</p>
         
-        <div class="setting-item">
-          <label class="setting-label">
-            默认排序方式
-          </label>
-          <select v-model="searchSettings.defaultSortBy" @change="saveSearchSettings">
-            <option value="relevance">相关性</option>
-            <option value="recent">最近访问</option>
-            <option value="frequency">访问频率</option>
-          </select>
-        </div>
-      </div>
+        <el-form 
+          :model="searchSettings" 
+          label-width="160px"
+          label-position="top"
+        >
+          <el-form-item label="默认搜索结果数量" prop="defaultMaxResults">
+            <el-select 
+              v-model="searchSettings.defaultMaxResults" 
+              @change="saveSearchSettings"
+              style="width: 100%"
+            >
+              <el-option label="25条" :value="25" />
+              <el-option label="50条" :value="50" />
+              <el-option label="100条" :value="100" />
+              <el-option label="200条" :value="200" />
+            </el-select>
+          </el-form-item>
+          
+          <el-form-item label="默认排序方式" prop="defaultSortBy">
+            <el-select 
+              v-model="searchSettings.defaultSortBy" 
+              @change="saveSearchSettings"
+              style="width: 100%"
+            >
+              <el-option label="相关性" value="relevance" />
+              <el-option label="最近访问" value="recent" />
+              <el-option label="访问频率" value="frequency" />
+            </el-select>
+          </el-form-item>
+        </el-form>
+      </el-card>
 
       <!-- 键盘导航设置 -->
-      <div class="setting-section">
-        <h2>⌨️ 键盘导航设置</h2>
-        <p class="section-desc">自定义搜索结果中的键盘导航快捷键</p>
+      <el-card class="setting-section">
+        <template #header>
+          <div class="card-header">
+            <el-icon class="header-icon"><Tools /></el-icon>
+            <h2 class="header-title">键盘导航设置</h2>
+          </div>
+        </template>
+        
+        <p class="section-description">自定义搜索结果中的键盘导航快捷键</p>
         
         <div class="navigation-keys-grid">
-          <div class="key-setting-item">
-            <label class="key-label">
-              <span class="key-icon">⬆️</span>
-              <span>向上选择</span>
-            </label>
-            <select v-model="navigationSettings.up" @change="saveNavigationSettings">
-              <option value="ArrowUp">↑ (方向键上)</option>
-              <option value="KeyK">K</option>
-              <option value="KeyW">W</option>
-            </select>
-          </div>
+          <el-card class="key-setting-item" :body-style="{ padding: '16px', textAlign: 'center' }">
+            <div class="key-label">
+              <el-icon class="key-icon" size="24"><ArrowUp /></el-icon>
+              <div class="key-text">向上选择</div>
+            </div>
+            <el-select v-model="navigationSettings.up" @change="saveNavigationSettings">
+              <el-option label="↑ (方向键上)" value="ArrowUp" />
+              <el-option label="K" value="KeyK" />
+              <el-option label="W" value="KeyW" />
+            </el-select>
+          </el-card>
           
-          <div class="key-setting-item">
-            <label class="key-label">
-              <span class="key-icon">⬇️</span>
-              <span>向下选择</span>
-            </label>
-            <select v-model="navigationSettings.down" @change="saveNavigationSettings">
-              <option value="ArrowDown">↓ (方向键下)</option>
-              <option value="KeyJ">J</option>
-              <option value="KeyS">S</option>
-            </select>
-          </div>
+          <el-card class="key-setting-item" :body-style="{ padding: '16px', textAlign: 'center' }">
+            <div class="key-label">
+              <el-icon class="key-icon" size="24"><ArrowDown /></el-icon>
+              <div class="key-text">向下选择</div>
+            </div>
+            <el-select v-model="navigationSettings.down" @change="saveNavigationSettings">
+              <el-option label="↓ (方向键下)" value="ArrowDown" />
+              <el-option label="J" value="KeyJ" />
+              <el-option label="S" value="KeyS" />
+            </el-select>
+          </el-card>
           
-          <div class="key-setting-item">
-            <label class="key-label">
-              <span class="key-icon">✅</span>
-              <span>打开选中项</span>
-            </label>
-            <select v-model="navigationSettings.open" @change="saveNavigationSettings">
-              <option value="Enter">Enter (回车键)</option>
-              <option value="Space">Space (空格键)</option>
-              <option value="KeyO">O</option>
-            </select>
-          </div>
+          <el-card class="key-setting-item" :body-style="{ padding: '16px', textAlign: 'center' }">
+            <div class="key-label">
+              <el-icon class="key-icon" size="24"><Check /></el-icon>
+              <div class="key-text">打开选中项</div>
+            </div>
+            <el-select v-model="navigationSettings.open" @change="saveNavigationSettings">
+              <el-option label="Enter (回车键)" value="Enter" />
+              <el-option label="Space (空格键)" value="Space" />
+              <el-option label="O" value="KeyO" />
+            </el-select>
+          </el-card>
           
-          <div class="key-setting-item">
-            <label class="key-label">
-              <span class="key-icon">❌</span>
-              <span>关闭窗口</span>
-            </label>
-            <select v-model="navigationSettings.close" @change="saveNavigationSettings">
-              <option value="Escape">Esc (退出键)</option>
-              <option value="KeyQ">Q</option>
-            </select>
-          </div>
+          <el-card class="key-setting-item" :body-style="{ padding: '16px', textAlign: 'center' }">
+            <div class="key-label">
+              <el-icon class="key-icon" size="24"><Close /></el-icon>
+              <div class="key-text">关闭窗口</div>
+            </div>
+            <el-select v-model="navigationSettings.close" @change="saveNavigationSettings">
+              <el-option label="Esc (退出键)" value="Escape" />
+              <el-option label="Q" value="KeyQ" />
+            </el-select>
+          </el-card>
         </div>
         
-        <div class="navigation-help">
-          <h4>📝 提示：</h4>
+        <el-alert 
+          title="📝 提示："
+          type="info"
+          :closable="false"
+          class="navigation-help"
+        >
           <ul>
             <li>这些快捷键只在搜索结果页面中生效</li>
             <li>修改后即时生效，无需重启扩展</li>
             <li>建议选择不与浏览器默认快捷键冲突的按键</li>
           </ul>
-        </div>
-      </div>
+        </el-alert>
+      </el-card>
 
       <!-- 关于 -->
-      <div class="setting-section">
-        <h2>ℹ️ 关于插件</h2>
+      <el-card class="setting-section">
+        <template #header>
+          <div class="card-header">
+            <el-icon class="header-icon"><InfoFilled /></el-icon>
+            <h2 class="header-title">关于插件</h2>
+          </div>
+        </template>
+        
         <div class="about-info">
-          <div class="info-item">
-            <strong>版本：</strong> 1.0.0
-          </div>
-          <div class="info-item">
-            <strong>开发框架：</strong> WXT + Vue 3 + TypeScript
-          </div>
-          <div class="info-item">
-            <strong>功能特性：</strong>
-            <ul>
-              <li>🔍 模糊搜索收藏夹和历史记录</li>
-              <li>📁 按域名智能分组显示</li>
-              <li>⚡ 实时搜索，响应迅速</li>
-              <li>⭐ 历史记录一键收藏</li>
-              <li>🆕 新标签页完整搜索界面</li>
-            </ul>
-          </div>
+          <el-descriptions :column="1" border>
+            <el-descriptions-item label="版本">1.0.0</el-descriptions-item>
+            <el-descriptions-item label="开发框架">WXT + Vue 3 + TypeScript + Element Plus</el-descriptions-item>
+            <el-descriptions-item label="功能特性">
+              <ul>
+                <li>🔍 模糊搜索收藏夹和历史记录</li>
+                <li>📁 按域名智能分组显示</li>
+                <li>⚡ 实时搜索，响应迅速</li>
+                <li>⭐ 历史记录一键收藏</li>
+                <li>🆕 新标签页完整搜索界面</li>
+                <li>🎨 Element Plus 现代化UI</li>
+              </ul>
+            </el-descriptions-item>
+          </el-descriptions>
         </div>
-      </div>
+      </el-card>
     </div>
+    
     <div class="settings-footer">
-      <p>作者: lizeyu 如有问题请联系: <a href="mailto:coderlzy@qq.com">632795136@qq.com</a></p>
+      <div class="footer-content">
+        作者: lizeyu 如有问题请联系: 
+        <a href="mailto:632795136@qq.com" class="footer-link">632795136@qq.com</a>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
+import {
+  ArrowDown,
+  ArrowUp,
+  Check, Close,
+  InfoFilled,
+  Search,
+  Setting,
+  Tools
+} from '@element-plus/icons-vue';
+import { ElMessage } from 'element-plus';
+import { onMounted, reactive, ref } from 'vue';
 
 // 显示保存成功消息
 const showSaveSuccess = ref(false);
@@ -277,7 +333,7 @@ const saveSearchSettings = async () => {
     showSaveSuccessMessage();
   } catch (error) {
     console.error('保存搜索设置失败:', error);
-    alert('保存设置失败，请重试');
+    ElMessage.error('保存设置失败，请重试');
   }
 };
 
@@ -291,7 +347,7 @@ const saveNavigationSettings = async () => {
     showSaveSuccessMessage();
   } catch (error) {
     console.error('保存键盘导航设置失败:', error);
-    alert('保存设置失败，请重试');
+    ElMessage.error('保存设置失败，请重试');
   }
 };
 
@@ -304,291 +360,5 @@ onMounted(async () => {
 </script>
 
 <style lang="less" scoped>
-.settings-container {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
-  background: #f8f9fa;
-  min-height: 100vh;
-}
-
-.settings-header {
-  text-align: center;
-  margin-bottom: 30px;
-  padding: 20px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-  
-  h1 {
-    color: #333;
-    margin: 0 0 8px 0;
-    font-size: 2rem;
-  }
-  
-  p {
-    color: #666;
-    margin: 0;
-    font-size: 1.1rem;
-  }
-}
-
-.save-success-message {
-  background: #d4edda;
-  color: #155724;
-  padding: 12px 16px;
-  border-radius: 8px;
-  border: 1px solid #c3e6cb;
-  margin-bottom: 20px;
-  text-align: center;
-  font-weight: 500;
-  animation: slideIn 0.3s ease-out;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.settings-content {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.setting-section {
-  background: white;
-  padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-  
-  h2 {
-    color: #333;
-    margin: 0 0 8px 0;
-    font-size: 1.5rem;
-  }
-  
-  .section-desc {
-    color: #666;
-    margin: 0 0 20px 0;
-    font-size: 0.95rem;
-  }
-}
-
-.shortcut-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 24px;
-}
-
-.shortcut-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  border: 1px solid #e9ecef;
-}
-
-.shortcut-info {
-  strong {
-    display: block;
-    color: #333;
-    margin-bottom: 4px;
-  }
-}
-
-.shortcut-key {
-  display: flex;
-  gap: 2px;
-  
-  kbd {
-    background: #333;
-    color: white;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    font-family: monospace;
-  }
-}
-
-.status-badge {
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  
-  &.active {
-    background: #d4edda;
-    color: #155724;
-  }
-  
-  &.inactive {
-    background: #f8d7da;
-    color: #721c24;
-  }
-}
-
-.shortcut-help {
-  padding: 16px;
-  background: #e3f2fd;
-  border-radius: 8px;
-  border-left: 4px solid #2196f3;
-  
-  h3 {
-    margin: 0 0 12px 0;
-    color: #1565c0;
-  }
-  
-  ol {
-    margin: 0 0 16px 0;
-    padding-left: 20px;
-    
-    li {
-      margin-bottom: 4px;
-      color: #333;
-    }
-  }
-  
-  code {
-    background: rgba(0,0,0,0.1);
-    padding: 2px 4px;
-    border-radius: 3px;
-    font-family: monospace;
-  }
-}
-
-.open-shortcuts-btn {
-  background: #2196f3;
-  color: white;
-  border: none;
-  padding: 10px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background 0.2s;
-  
-  &:hover {
-    background: #1976d2;
-  }
-}
-
-.setting-item {
-  margin-bottom: 16px;
-  
-  .setting-label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-weight: 500;
-    color: #333;
-    cursor: pointer;
-    
-    input[type="checkbox"] {
-      margin: 0;
-    }
-  }
-  
-  select {
-    width: 100%;
-    padding: 8px 12px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    background: white;
-    margin-top: 4px;
-  }
-}
-
-.about-info {
-  .info-item {
-    margin-bottom: 12px;
-    
-    strong {
-      color: #333;
-    }
-    
-    ul {
-      margin: 8px 0 0 0;
-      padding-left: 20px;
-      
-      li {
-        margin-bottom: 4px;
-        color: #666;
-      }
-    }
-  }
-}
-
-.navigation-keys-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  margin-bottom: 24px;
-}
-
-.key-setting-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.key-label {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 8px;
-  
-  .key-icon {
-    font-size: 1.5rem;
-    margin-bottom: 4px;
-  }
-}
-
-.navigation-help {
-  padding: 16px;
-  background: #e3f2fd;
-  border-radius: 8px;
-  border-left: 4px solid #2196f3;
-  
-  h4 {
-    margin: 0 0 12px 0;
-    color: #1565c0;
-  }
-  
-  ul {
-    margin: 0 0 16px 0;
-    padding-left: 20px;
-    
-    li {
-      margin-bottom: 4px;
-      color: #333;
-    }
-  }
-}
-
-.settings-footer {
-  margin-top: 2rem;
-  padding-top: 1rem;
-  border-top: 1px solid #e9ecef;
-  color: #666;
-  font-size: 0.875rem;
-  text-align: center;
-  
-  a {
-    color: #2196f3;
-    text-decoration: none;
-    
-    &:hover {
-      text-decoration: underline;
-    }
-  }
-}
+@import '../entrypoints/styles/element-settings.less';
 </style>

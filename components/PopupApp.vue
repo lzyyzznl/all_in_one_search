@@ -1,195 +1,341 @@
 <template>
-  <div class="popup-container">
+  <div class="element-popup-container" :class="{ 'newtab-mode': isNewTabMode }">
     <!-- 搜索头部 -->
-    <div class="search-header">
-      <div class="search-box">
-        <input
+    <el-card class="search-header-card" :body-style="{ padding: '16px' }">
+      <!-- 搜索输入框 -->
+      <div class="search-input-container" style="display: flex; gap: 8px; align-items: center">
+        <el-input
           v-model="searchQuery"
-          type="text"
-          placeholder="搜索收藏夹和历史记录..."
-          class="search-input"
-          autocomplete="off"
-          @input="handleSearch"
-          @keydown.enter="handleSearch"
+          placeholder="搜索收藏夹、历史记录和下载文件..."
+          size="large"
+          clearable
+          @input="handleSearchInput"
+          @keydown.enter="handleSearchNow"
           ref="searchInput"
+          style="flex: 1"
+        >
+          <template #prefix>
+            <el-icon><Search /></el-icon>
+          </template>
+        </el-input>
+        <el-button 
+          size="large" 
+          :icon="Setting" 
+          circle
+          @click="openSettings"
+          title="打开设置"
         />
       </div>
       
-      <!-- 搜索选项 -->
-      <div class="search-options">
-        <label class="option-item">
-          <input v-model="searchOptions.includeBookmarks" type="checkbox" />
-          <span>书签</span>
-        </label>
-        <label class="option-item">
-          <input v-model="searchOptions.includeHistory" type="checkbox" />
-          <span>历史记录</span>
-        </label>
-        <span class="sort-label">排序规则：</span>
-        <select v-model="searchOptions.sortBy" class="sort-select">
-          <option value="relevance">相关性</option>
-          <option value="recent">最近访问</option>
-          <option value="frequency">访问频率</option>
-        </select>
-        <button 
-          class="open-new-tab-btn"
-          @click="openInNewTab"
-          title="在新标签页打开"
+      <!-- 搜索历史气泡 -->
+      <div v-if="searchHistory.length > 0 && !searchQuery" class="search-history">
+        <el-tag
+          v-for="item in searchHistory" 
+          :key="item.timestamp"
+          type="info"
+          effect="plain"
+          size="small"
+          class="history-tag"
+          @click="selectHistoryItem(item.query)"
         >
-          ↗ 新标签页打开此窗口
-        </button>
+          {{ item.query }}
+        </el-tag>
       </div>
-    </div>
+      
+      <!-- 搜索选项 - 水平对齐 -->
+      <div class="search-options">
+        <el-row :gutter="4" align="middle" class="controls-row" justify="space-between">
+          <!-- 数据源多选 -->
+          <el-col :span="10" class="filter-control">
+            <div class="control-item">
+              <span class="control-label">搜索项:</span>
+              <el-select
+                v-model="selectedDataSources"
+                multiple
+                collapse-tags
+                collapse-tags-tooltip
+                size="small"
+                class="control-select"
+                @change="updateSearchOptions"
+              >
+                <el-option label="书签" value="bookmarks" />
+                <el-option label="历史记录" value="history" />
+                <el-option label="下载文件" value="downloads" />
+              </el-select>
+            </div>
+          </el-col>
+          <!-- 时间筛选 -->
+          <el-col :span="10" class="filter-control">
+            <div class="control-item">
+              <span class="control-label">时间:</span>
+              <el-select 
+                v-model="searchOptions.timeFilter" 
+                size="small" 
+                class="control-select"
+              >
+                <el-option label="全部时间" value="all" />
+                <el-option label="今天" value="today" />
+                <el-option label="本周" value="week" />
+                <el-option label="本月" value="month" />
+              </el-select>
+            </div>
+          </el-col>
+          
+          <!-- 排序选择 -->
+          <el-col :span="10" class="filter-control">
+            <div class="control-item">
+              <span class="control-label">排序:</span>
+              <el-select 
+                v-model="searchOptions.sortBy" 
+                size="small" 
+                class="control-select"
+              >
+                <el-option label="相关性" value="relevance" />
+                <el-option label="最近访问" value="recent" />
+                <el-option label="访问频率" value="frequency" />
+              </el-select>
+            </div>
+          </el-col>
+        </el-row>
+      </div>
+    </el-card>
 
     <!-- 搜索统计 -->
     <div v-if="searchStats" class="search-stats">
-      <span>找到 {{ searchStats.totalResults }} 个结果</span>
-      <span v-if="searchStats.bookmarkCount > 0">（书签 {{ searchStats.bookmarkCount }}）</span>
-      <span v-if="searchStats.historyCount > 0">（历史 {{ searchStats.historyCount }}）</span>
-      <span>{{ searchStats.uniqueDomains }} 个域名</span>
-      <span class="search-time">{{ searchStats.searchTime }}ms</span>
+      <el-space :size="8" wrap>
+        <el-tag size="small" type="info" effect="plain">
+          找到 {{ searchStats.totalResults }} 个结果
+        </el-tag>
+        <el-tag v-if="searchStats.bookmarkCount > 0" size="small" type="success" effect="plain">
+          书签 {{ searchStats.bookmarkCount }}
+        </el-tag>
+        <el-tag v-if="searchStats.historyCount > 0" size="small" type="warning" effect="plain">
+          历史 {{ searchStats.historyCount }}
+        </el-tag>
+        <el-tag v-if="searchStats.downloadCount > 0" size="small" type="info" effect="plain">
+          下载 {{ searchStats.downloadCount }}
+        </el-tag>
+        <el-tag size="small" effect="plain">
+          {{ searchStats.uniqueDomains }} 个域名
+        </el-tag>
+        <el-tag size="small" effect="plain">
+          {{ searchStats.searchTime }}ms
+        </el-tag>
+      </el-space>
     </div>
 
     <!-- 加载状态 -->
-    <div v-if="isLoading" class="loading">
-      <div class="loading-spinner">⏳</div>
-      <span>搜索中...</span>
+    <div v-if="isLoading" v-loading="true" class="loading-container">
+      <el-empty description="搜索中..." :image-size="60" />
     </div>
 
     <!-- 搜索结果 -->
     <div v-else-if="hasResults" class="results-container">
-      <div
+      <el-card
         v-for="(group, domain) in searchResults"
         :key="domain"
-        class="domain-group"
+        class="domain-group-card"
+        :body-style="{ padding: '12px' }"
+        shadow="hover"
       >
-        <div class="domain-header">
-          <img :src="getFaviconUrl(String(domain))" :alt="String(domain)" class="domain-favicon" />
-          <span class="domain-name">{{ domain }}</span>
-          <span class="domain-count">({{ group.totalCount }})</span>
-        </div>
+        <template #header>
+          <div class="domain-header">
+            <img :src="getFaviconUrl(String(domain))" :alt="String(domain)" class="domain-favicon" />
+            <span class="domain-name">{{ domain }}</span>
+            <el-tag size="small" type="primary" effect="plain">{{ group.totalCount }}</el-tag>
+          </div>
+        </template>
         
         <div class="result-items">
-          <div
+          <el-card
             v-for="item in group.items"
             :key="item.id"
-            class="result-item"
+            class="result-item-card"
             :class="{ 'selected': selectedItem === item.id }"
+            :data-id="item.id"
+            :body-style="{ padding: '12px' }"
+            shadow="hover"
             @click="selectAndOpenItem(item)"
           >
-            <div class="item-icon">
-              {{ item.type === 'bookmark' ? '🔖' : '🕒' }}
-            </div>
-            <div class="item-content">
-              <div class="item-title" :title="item.title">{{ item.title }}</div>
-              <div class="item-url" :title="item.url">{{ item.url }}</div>
-              <div class="item-meta">
-                <span v-if="item.folderName" class="folder-name">📁 {{ item.folderName }}</span>
-                <span v-if="item.visitCount" class="visit-count">{{ item.visitCount }} 次访问</span>
-                <span v-if="item.lastVisited" class="last-visited">
-                  {{ formatDate(item.lastVisited) }}
-                </span>
+            <div class="result-item-content">
+              <div class="item-icon">
+                {{ getItemIcon(item.type) }}
+              </div>
+              <div class="item-content">
+                <div class="item-title" :title="item.title">{{ item.title }}</div>
+                <div class="item-url" :title="item.url">{{ item.url }}</div>
+                <div class="item-meta">
+                  <el-tag v-if="item.folderName" size="small" type="warning" effect="plain">
+                    📁 {{ item.folderName }}
+                  </el-tag>
+                  <el-tag v-if="item.visitCount && item.type !== 'download'" size="small" type="info" effect="plain">
+                    {{ item.visitCount }} 次访问
+                  </el-tag>
+                  <el-tag v-if="item.fileSize && item.type === 'download'" size="small" type="success" effect="plain">
+                    {{ formatFileSize(item.fileSize) }}
+                  </el-tag>
+                  <span v-if="item.lastVisited" class="last-visited">
+                    {{ formatDate(item.lastVisited) }}
+                  </span>
+                  <el-tag v-if="item.type === 'download' && !item.exists" size="small" type="danger" effect="dark">
+                    ⚠️ 文件不存在
+                  </el-tag>
+                </div>
+              </div>
+              <div class="item-actions">
+                <el-button 
+                  v-if="item.type === 'history'"
+                  size="small"
+                  type="primary"
+                  :icon="Star"
+                  @click.stop="showBookmarkDialog(item)"
+                >
+                  收藏
+                </el-button>
+                <el-button 
+                  v-if="item.type === 'download'"
+                  size="small"
+                  type="success"
+                  :icon="FolderOpened"
+                  @click.stop="showDownloadFile(item.id)"
+                >
+                  显示文件
+                </el-button>
               </div>
             </div>
-            <div class="item-actions">
-              <button 
-                v-if="item.type === 'history'"
-                @click.stop="showBookmarkDialog(item)"
-                class="bookmark-btn"
-                title="添加到书签"
-              >
-                ⭐ 添加到收藏夹
-              </button>
-            </div>
-          </div>
+          </el-card>
         </div>
-      </div>
+      </el-card>
     </div>
 
     <!-- 空状态 -->
     <div v-else-if="searchQuery && !isLoading" class="empty-state">
-      <div class="empty-icon">🔍</div>
-      <div class="empty-message">未找到匹配的结果</div>
-      <div class="empty-suggestion">尝试不同的关键词或调整搜索选项</div>
+      <el-empty description="未找到匹配的结果" :image-size="80">
+        <template #description>
+          <p>未找到匹配的结果</p>
+          <p>尝试不同的关键词或调整搜索选项</p>
+        </template>
+      </el-empty>
     </div>
 
     <!-- 初始状态 -->
     <div v-else class="initial-state">
-      <div class="welcome-tips">
-        <div>💡 支持模糊搜索</div>
-        <div>💡 结果按域名分组显示</div>
-        <div>💡 单击直接打开链接</div> 
-        <div>💡 历史记录可添加到书签</div>
-        <div v-if="mainShortcut">💡 默认快速搜索窗口快捷键: {{ mainShortcut }}</div>
-        <div v-else>💡 默认快速搜索窗口快捷键: Ctrl+Shift+S</div>
-      </div>
+      <el-card class="welcome-card" :body-style="{ padding: '32px', textAlign: 'center' }">
+        <div class="welcome-tips">
+          <div class="tip-item">
+            <el-icon class="tip-icon"><MagicStick /></el-icon>
+            <span>支持模糊搜索</span>
+          </div>
+          <div class="tip-item">
+            <el-icon class="tip-icon"><Collection /></el-icon>
+            <span>结果按域名分组显示</span>
+          </div>
+          <div class="tip-item">
+            <el-icon class="tip-icon"><Mouse /></el-icon>
+            <span>单击直接打开链接</span>
+          </div>
+          <div class="tip-item">
+            <el-icon class="tip-icon"><Star /></el-icon>
+            <span>历史记录可添加到书签</span>
+          </div>
+          <div class="tip-item">
+            <el-icon class="tip-icon"><Download /></el-icon>
+            <span>支持搜索下载文件</span>
+          </div>
+          <div v-if="mainShortcut" class="tip-item">
+            <el-icon class="tip-icon"><Tools /></el-icon>
+            <span>快捷键: {{ mainShortcut }}</span>
+          </div>
+        </div>
+      </el-card>
     </div>
 
     <!-- 快捷键提示 -->
     <div class="shortcuts">
-      <span>{{ navigationKeys.open }} 打开</span>
-      <span>{{ navigationKeys.up }}{{ navigationKeys.down }} 选择</span>
-      <span>Esc 关闭</span>
+      <el-tag size="small" effect="plain">{{ navigationKeys.open }} 打开</el-tag>
+      <el-tag size="small" effect="plain">{{ navigationKeys.up }}{{ navigationKeys.down }} 选择</el-tag>
+      <el-tag size="small" effect="plain">Esc 关闭</el-tag>
     </div>
   </div>
 
-  <!-- 书签对话框 -->
-  <div v-if="bookmarkDialog.show" class="bookmark-dialog-overlay" @click="closeBookmarkDialog">
-    <div class="bookmark-dialog" @click.stop>
-      <h3>添加到书签</h3>
-      <div class="bookmark-form">
-        <div class="form-group">
-          <label for="bookmark-title">标题：</label>
-          <input 
-            id="bookmark-title"
-            v-model="bookmarkDialog.title" 
-            type="text" 
-            class="form-input"
+    <!-- 书签对话框 -->
+    <el-dialog
+      v-model="bookmarkDialog.show"
+      title="添加到书签"
+      width="500px"
+      :before-close="closeBookmarkDialog"
+    >
+      <el-form 
+        :model="bookmarkDialog" 
+        label-width="80px"
+        :rules="bookmarkRules"
+        ref="bookmarkForm"
+      >
+        <el-form-item label="标题" prop="title">
+          <el-input v-model="bookmarkDialog.title" />
+        </el-form-item>
+        <el-form-item label="URL">
+          <el-input v-model="bookmarkDialog.url" readonly />
+        </el-form-item>
+        <el-form-item label="文件夹">
+          <el-tree-select
+            v-model="bookmarkDialog.parentId"
+            :data="bookmarkFoldersTree"
+            :props="{ label: 'title', value: 'id', children: 'children' }"
+            filterable
+            placeholder="请选择文件夹"
+            style="width: 100%"
+            check-strictly
+            clearable
           />
-        </div>
-        <div class="form-group">
-          <label for="bookmark-url">URL：</label>
-          <input 
-            id="bookmark-url"
-            v-model="bookmarkDialog.url" 
-            type="text" 
-            class="form-input"
-            readonly
-          />
-        </div>
-        <div class="form-group">
-          <label for="bookmark-folder">文件夹：</label>
-          <select id="bookmark-folder" v-model="bookmarkDialog.parentId" class="form-select">
-            <option value="">请选择文件夹</option>
-            <option 
-              v-for="folder in bookmarkFolders" 
-              :key="folder.id" 
-              :value="folder.id"
-            >
-              {{ folder.title }}
-            </option>
-          </select>
-        </div>
-      </div>
-      <div class="dialog-actions">
-        <button @click="closeBookmarkDialog" class="btn btn-cancel">取消</button>
-        <button @click="saveBookmark" class="btn btn-primary">保存</button>
-      </div>
-    </div>
-  </div>
+        </el-form-item>
+      </el-form>
+      
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="closeBookmarkDialog">取消</el-button>
+          <el-button type="primary" @click="validateAndSaveBookmark">保存</el-button>
+        </span>
+      </template>
+    </el-dialog>
 </template>
 
 <script setup lang="ts">
 /// <reference types="chrome" />
-import { ref, reactive, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
-import { getShortcut, formatShortcut, getNavigationKeys, shortcutKeyMap } from '../utils/shortcuts.ts';
-import { searchBookmarksAndHistory, openUrl, getFaviconUrl } from '../utils/search';
-import type { 
-  GroupedSearchResults, 
-  SearchOptions, 
-  SearchStats, 
-  SearchResultItem 
+import {
+  Collection,
+  Download,
+  FolderOpened,
+  MagicStick,
+  Mouse,
+  Search, Star,
+  Tools,
+  TopRight,
+  Setting
+} from '@element-plus/icons-vue';
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
+import {
+  formatFileSize,
+  getFaviconUrl,
+  openDownloadFile,
+  openUrl,
+  searchBookmarksAndHistory,
+  SearchHistoryManager,
+  showDownloadFile as showDownloadFileInExplorer
+} from '../utils/search';
+import { formatShortcut, getNavigationKeys, getShortcut } from '../utils/shortcuts.ts';
+import type {
+  GroupedSearchResults,
+  SearchHistoryItem,
+  SearchOptions,
+  SearchResultItem,
+  SearchStats
 } from '../utils/types';
+
+// 检测是否为新标签页模式
+const isNewTabMode = computed(() => {
+  return window.location.pathname.includes('newtab.html');
+});
 
 // 响应式数据
 const searchQuery = ref('');
@@ -198,6 +344,14 @@ const searchStats = ref<SearchStats | null>(null);
 const isLoading = ref(false);
 const selectedItem = ref<string | null>(null);
 const searchInput = ref<HTMLInputElement>();
+const searchHistory = ref<SearchHistoryItem[]>([]);
+
+// 防抖相关
+const searchTimeout = ref<number | null>(null);
+const DEBOUNCE_DELAY = 300; 
+
+// 选中的数据源 - 默认全选
+const selectedDataSources = ref<string[]>(['bookmarks', 'history', 'downloads']);
 
 // 快捷键显示
 const mainShortcut = ref('');
@@ -220,22 +374,112 @@ const bookmarkDialog = reactive({
   item: null as SearchResultItem | null
 });
 
+// 书签表单验证规则
+const bookmarkRules = reactive({
+  title: [
+    { required: true, message: '请输入书签标题', trigger: 'blur' },
+    { min: 1, max: 100, message: '长度在1到100个字符', trigger: 'blur' }
+  ]
+});
+
+// 书签表单引用
+const bookmarkForm = ref();
+
 // 书签文件夹列表
 const bookmarkFolders = ref<{id: string, title: string}[]>([]);
+
+// 书签文件夹树形结构
+const bookmarkFoldersTree = ref<any[]>([]);
+
+// 验证并保存书签
+const validateAndSaveBookmark = async () => {
+  try {
+    await bookmarkForm.value.validate();
+    await saveBookmark();
+  } catch (error) {
+    console.error('表单验证失败:', error);
+  }
+};
 
 // 搜索选项
 const searchOptions = reactive<SearchOptions>({
   query: '',
   includeBookmarks: true,
   includeHistory: true,
+  includeDownloads: true,
   maxResults: 50,
-  sortBy: 'relevance'
+  sortBy: 'relevance',
+  timeFilter: 'all'
 });
 
 // 计算属性
 const hasResults = computed(() => {
   return Object.keys(searchResults.value).length > 0;
 });
+
+// 获取项目图标
+const getItemIcon = (type: string): string => {
+  switch (type) {
+    case 'bookmark': return '🔖';
+    case 'history': return '🕒';
+    case 'download': return '📥';
+    default: return '📄';
+  }
+};
+
+// 获取选中数据源的显示文本
+const getSelectedText = (): string => {
+  const labels: Record<string, string> = {
+    'bookmarks': '书签',
+    'history': '历史记录',
+    'downloads': '下载文件'
+  };
+  return selectedDataSources.value.map(key => labels[key]).join('、');
+};
+
+// 更新搜索选项
+const updateSearchOptions = () => {
+  searchOptions.includeBookmarks = selectedDataSources.value.includes('bookmarks');
+  searchOptions.includeHistory = selectedDataSources.value.includes('history');
+  searchOptions.includeDownloads = selectedDataSources.value.includes('downloads');
+  
+  // 如果当前有搜索查询，重新搜索
+  if (searchQuery.value.trim()) {
+    handleSearchNow();
+  }
+};
+
+// 处理输入事件（带防抖）
+const handleSearchInput = () => {
+  // 清除之前的定时器
+  if (searchTimeout.value !== null) {
+    window.clearTimeout(searchTimeout.value);
+    searchTimeout.value = null;
+  }
+  
+  // 如果输入为空，立即清空结果
+  if (!searchQuery.value.trim()) {
+    searchResults.value = {};
+    searchStats.value = null;
+    return;
+  }
+  
+  // 设置新的防抖定时器
+  searchTimeout.value = window.setTimeout(() => {
+    handleSearch();
+  }, DEBOUNCE_DELAY);
+};
+
+// 立即搜索（回车或手动触发）
+const handleSearchNow = () => {
+  // 清除防抖定时器
+  if (searchTimeout.value !== null) {
+    window.clearTimeout(searchTimeout.value);
+    searchTimeout.value = null;
+  }
+  
+  handleSearch();
+};
 
 // 搜索处理函数
 const handleSearch = async () => {
@@ -256,6 +500,10 @@ const handleSearch = async () => {
     const { results, stats } = await searchBookmarksAndHistory(options);
     searchResults.value = results;
     searchStats.value = stats;
+    
+    // 保存搜索历史
+    await SearchHistoryManager.saveSearchHistory(searchQuery.value.trim());
+    await loadSearchHistory();
   } catch (error) {
     console.error('搜索失败:', error);
   } finally {
@@ -263,10 +511,25 @@ const handleSearch = async () => {
   }
 };
 
-// 监听搜索选项变化
-watch(searchOptions, () => {
+// 选择历史记录项
+const selectHistoryItem = (query: string) => {
+  searchQuery.value = query;
+  handleSearchNow();
+};
+
+// 加载搜索历史
+const loadSearchHistory = async () => {
+  try {
+    searchHistory.value = await SearchHistoryManager.getSearchHistory();
+  } catch (error) {
+    console.error('加载搜索历史失败:', error);
+  }
+};
+
+// 监听搜索选项变化（除了数据源选择，因为那个有单独的处理）
+watch(() => [searchOptions.timeFilter, searchOptions.sortBy], () => {
   if (searchQuery.value.trim()) {
-    handleSearch();
+    handleSearchNow();
   }
 }, { deep: true });
 
@@ -287,15 +550,24 @@ const handleEnter = () => {
 };
 
 // 选择并打开项目（单击）
-const selectAndOpenItem = (item: SearchResultItem) => {
+const selectAndOpenItem = async (item: SearchResultItem) => {
   selectedItem.value = item.id;
-  openItem(item);
+  await openItem(item);
 };
 
 // 打开项目
 const openItem = async (item: SearchResultItem) => {
-  await openUrl(item.url);
-  window.close(); // 关闭弹窗
+  if (item.type === 'download') {
+    await openDownloadFile(item.id);
+  } else {
+    await openUrl(item.url);
+    window.close(); // 关闭弹窗
+  }
+};
+
+// 显示下载文件
+const showDownloadFile = async (downloadId: string) => {
+  await showDownloadFileInExplorer(downloadId);
 };
 
 // 根据ID查找项目
@@ -376,17 +648,28 @@ const loadBookmarkFolders = async () => {
   try {
     const bookmarks = await chrome.bookmarks.getTree();
     const folders: {id: string, title: string}[] = [];
+    const foldersTree: any[] = [];
     
-    const traverseBookmarks = (nodes: chrome.bookmarks.BookmarkTreeNode[], depth = 0) => {
+    const traverseBookmarks = (nodes: chrome.bookmarks.BookmarkTreeNode[], depth = 0, parentArray: any[] = foldersTree) => {
       for (const node of nodes) {
         if (!node.url) { // 文件夹
           const prefix = '  '.repeat(depth);
+          // 为平铺结构添加
           folders.push({
             id: node.id,
             title: `${prefix}${node.title || '未命名文件夹'}`
           });
+          
+          // 为树形结构添加
+          const treeNode = {
+            id: node.id,
+            title: node.title || '未命名文件夹',
+            children: []
+          };
+          parentArray.push(treeNode);
+          
           if (node.children) {
-            traverseBookmarks(node.children, depth + 1);
+            traverseBookmarks(node.children, depth + 1, treeNode.children);
           }
         }
       }
@@ -394,6 +677,7 @@ const loadBookmarkFolders = async () => {
     
     traverseBookmarks(bookmarks);
     bookmarkFolders.value = folders;
+    bookmarkFoldersTree.value = foldersTree;
   } catch (error) {
     console.error('获取书签文件夹失败:', error);
   }
@@ -507,7 +791,7 @@ const handleStorageChange = (changes: Record<string, chrome.storage.StorageChang
       
       // 如果有搜索查询，重新搜索以应用新设置
       if (searchQuery.value.trim()) {
-        handleSearch();
+        handleSearchNow();
       }
     }
   }
@@ -533,6 +817,9 @@ onMounted(async () => {
   // 加载导航设置
   await loadNavigationSettings();
   
+  // 加载搜索历史
+  await loadSearchHistory();
+  
   // 聚焦搜索框
   await nextTick();
   searchInput.value?.focus();
@@ -549,9 +836,21 @@ onMounted(async () => {
 
 // 组件卸载
 onUnmounted(() => {
+  // 清理防抖定时器
+  if (searchTimeout.value !== null) {
+    window.clearTimeout(searchTimeout.value);
+  }
+  
   document.removeEventListener('keydown', handleKeyDown);
   chrome.storage.onChanged.removeListener(handleStorageChange);
 });
+
+// 打开设置页面
+const openSettings = () => {
+  chrome.tabs.create({
+    url: chrome.runtime.getURL('settings.html')
+  });
+};
 
 // 在新标签页打开搜索界面
 const openInNewTab = () => {
@@ -559,7 +858,9 @@ const openInNewTab = () => {
   params.set('q', searchQuery.value);
   params.set('bookmarks', searchOptions.includeBookmarks.toString());
   params.set('history', searchOptions.includeHistory.toString());
+  params.set('downloads', searchOptions.includeDownloads.toString());
   params.set('sort', searchOptions.sortBy);
+  params.set('time', searchOptions.timeFilter);
   
   chrome.tabs.create({
     url: chrome.runtime.getURL(`newtab.html?${params.toString()}`)
@@ -569,101 +870,11 @@ const openInNewTab = () => {
 // 导出函数供模板使用
 defineExpose({
   getFaviconUrl,
+  formatFileSize,
   openInNewTab
 });
 </script>
 
 <style lang="less" scoped>
-@import '../entrypoints/styles/popup.less';
-
-// 仅保留对话框相关样式
-.bookmark-dialog-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0,0,0,0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.bookmark-dialog {
-  background: white;
-  border-radius: 8px;
-  padding: 20px;
-  width: 90%;
-  max-width: 400px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-  
-  h3 {
-    margin: 0 0 16px 0;
-    color: #333;
-    font-size: 16px;
-  }
-}
-
-.bookmark-form {
-  margin-bottom: 16px;
-  
-  .form-group {
-    margin-bottom: 12px;
-    
-    label {
-      display: block;
-      margin-bottom: 4px;
-      font-weight: 500;
-      color: #333;
-      font-size: 12px;
-    }
-  }
-}
-
-.form-input, .form-select {
-  width: 100%;
-  padding: 6px 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 12px;
-  
-  &:focus {
-    outline: none;
-    border-color: #667eea;
-  }
-}
-
-.dialog-actions {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-  
-  .btn {
-    padding: 6px 12px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
-    transition: all 0.2s ease;
-    
-    &-cancel {
-      background: #6c757d;
-      color: white;
-      
-      &:hover {
-        background: #5a6268;
-      }
-    }
-    
-    &-primary {
-      background: #667eea;
-      color: white;
-      
-      &:hover {
-        background: #5a67d8;
-      }
-    }
-  }
-}
+@import '../entrypoints/styles/element-popup.less';
 </style>

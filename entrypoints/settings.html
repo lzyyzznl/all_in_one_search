@@ -4,16 +4,22 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>浏览器收藏夹历史记录搜索器 - 设置</title>
-  <link rel="stylesheet" href="/styles/popup.less">
 </head>
 <body>
   <div id="app"></div>
   <script type="module">
-    import "./styles/popup.less";
+    import "./styles/element-settings.less";
     import { createApp } from "vue";
     import SettingsPage from "../components/SettingsPage.vue";
+    import { setupElementPlus } from "../utils/element-plus.ts";
 
+    // 创建Vue应用实例
     const app = createApp(SettingsPage);
+    
+    // 设置Element Plus
+    setupElementPlus(app);
+    
+    // 挂载到DOM
     app.mount("#app");
   </script>
 </body>

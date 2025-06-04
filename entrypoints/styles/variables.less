@@ -1,23 +1,40 @@
-// Dark主题颜色
-@bg-color: #1e1e2e;
-@card-color: #2a2a3a;
-@text-color: #e0e0e0;
-@primary-color: #7aa2f7;
-@secondary-color: #9ece6a;
-@border-color: #3b3b4d;
-@hover-color: #3b3b4d;
+// 蓝白色系主题颜色
+@bg-color: #f8fafc;
+@card-color: #ffffff;
+@text-color: #334155;
+@primary-color: #1e293b;
+@secondary-color: #06b6d4;
+@border-color: #e2e8f0;
+@hover-color: #f1f5f9;
 
-// 字体
-@font-family: 'Segoe UI', 'PingFang SC', -apple-system, sans-serif;
+// Element Plus 状态颜色
+@success-color: #10b981;
+@warning-color: #f59e0b;
+@danger-color: #ef4444;
+@info-color: #6b7280;
+
+// 统一字体系统
+@font-family: 'Inter', 'Segoe UI', 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
 @font-size-base: 14px;
+@font-size-xs: 12px;
+@font-size-sm: 13px;
+@font-size-lg: 16px;
+@font-size-xl: 18px;
+@font-size-xxl: 20px;
+@font-weight-normal: 400;
+@font-weight-medium: 500;
+@font-weight-semibold: 600;
+@font-weight-bold: 700;
 
 // 圆角
 @border-radius: 8px;
 @border-radius-sm: 4px;
+@border-radius-lg: 12px;
+@border-radius-xl: 16px;
 
-// 阴影
-@box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-@box-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.1);
+// 阴影 - 调整为蓝白色系
+@box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08);
+@box-shadow-sm: 0 2px 8px rgba(59, 130, 246, 0.05);
 
 // 动画与过渡
 @animation-duration-fast: 0.1s;
@@ -29,10 +46,10 @@
 @transition-color: color 0.2s @animation-ease-in-out;
 
 // 阴影扩展
-@box-shadow-heavy: 0 8px 24px rgba(0, 0, 0, 0.25);
-@box-shadow-light: 0 2px 6px rgba(0, 0, 0, 0.1);
-@box-shadow-base: 0 4px 12px rgba(0, 0, 0, 0.15);
-@box-shadow-inset: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+@box-shadow-heavy: 0 8px 24px rgba(59, 130, 246, 0.12);
+@box-shadow-light: 0 2px 6px rgba(59, 130, 246, 0.06);
+@box-shadow-base: 0 4px 12px rgba(59, 130, 246, 0.08);
+@box-shadow-inset: inset 0 1px 3px rgba(59, 130, 246, 0.1);
 
 // 圆角扩展
 @border-radius-tiny: 2px;
@@ -41,9 +58,27 @@
 // 间距
 @padding-small: 8px;
 @padding-base: 16px;
+@padding-large: 24px;
+@margin-small: 8px;
+@margin-base: 16px;
+@margin-large: 24px;
 
-// 颜色扩展
+// 颜色扩展 - 蓝白色系
 @white: #ffffff;
-@text-light: #b0b0b0;
-@text-disabled: #666666;
-@background-light: #3a3a4a;
+@black: #000000;
+@text-light: #64748b;
+@text-disabled: #94a3b8;
+@background-light: #f1f5f9;
+@accent-blue: #dbeafe;
+@accent-blue-dark: #bfdbfe;
+
+// Element Plus 尺寸
+@component-size-large: 40px;
+@component-size-default: 32px;
+@component-size-small: 24px;
+
+// Z-index 层级
+@z-index-base: 1000;
+@z-index-popup: 2000;
+@z-index-modal: 3000;
+@z-index-notification: 4000;

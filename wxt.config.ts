@@ -14,6 +14,8 @@ export default defineConfig({
 		permissions: [
 			"bookmarks",
 			"history",
+			"downloads",
+			"downloads.open",
 			"activeTab",
 			"storage",
 			"tabs",
@@ -65,6 +67,9 @@ export default defineConfig({
 			alias: {
 				"@": "/src",
 			},
+		},
+		optimizeDeps: {
+			include: ["element-plus", "@element-plus/icons-vue"],
 		},
 	}),
 });

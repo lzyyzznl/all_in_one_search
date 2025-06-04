@@ -1,12 +1,13 @@
-import { browser } from "wxt/browser";
 import type { Browser } from "wxt/browser";
+import { browser } from "wxt/browser";
 import type {
-	BookmarkItem,
-	HistoryItem,
-	SearchResultItem,
 	GroupedSearchResults,
 	SearchOptions,
+	SearchResultItem,
 	SearchStats,
+	DownloadItem,
+	SearchHistoryItem,
+	TimeFilter,
 } from "./types";
 
 /**
@@ -30,6 +31,26 @@ export function extractPath(url: string): string {
 		return urlObj.pathname + urlObj.search;
 	} catch {
 		return "";
+	}
+}
+
+/**
+ * 获取时间筛选的起始时间戳
+ */
+export function getTimeFilterStart(timeFilter: TimeFilter): number {
+	const now = new Date();
+	const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+	switch (timeFilter) {
+		case "today":
+			return today.getTime();
+		case "week":
+			const weekAgo = new Date(today);
+			weekAgo.setDate(today.getDate() - 7);
+			return weekAgo.getTime();
+		case "all":
+		default:
+			return 0;
 	}
 }
 
@@ -77,8 +98,15 @@ export function calculateRelevanceScore(
 	// 域名匹配
 	if (item.domain.toLowerCase().includes(queryLower)) score += 40;
 
-	// 书签优先级稍高
-	if (item.type === "bookmark") score += 10;
+	// 文件名匹配（下载记录）
+	if (item.filename && item.filename.toLowerCase().includes(queryLower)) {
+		score += 70;
+	}
+
+	// 类型优先级
+	if (item.type === "bookmark") score += 15;
+	else if (item.type === "download") score += 10;
+	else if (item.type === "history") score += 5;
 
 	// 访问频率加分
 	if (item.visitCount) {
@@ -135,13 +163,16 @@ export async function getAllBookmarks(): Promise<SearchResultItem[]> {
  * 获取历史记录
  */
 export async function getHistory(
-	maxResults: number = 1000
+	maxResults: number = 1000,
+	timeFilter: TimeFilter = "all"
 ): Promise<SearchResultItem[]> {
 	try {
+		const startTime = getTimeFilterStart(timeFilter);
+
 		const historyItems = await browser.history.search({
 			text: "",
 			maxResults,
-			startTime: 0,
+			startTime,
 		});
 
 		return historyItems
@@ -163,7 +194,55 @@ export async function getHistory(
 }
 
 /**
- * 搜索书签和历史记录
+ * 获取下载记录
+ */
+export async function getDownloads(
+	maxResults: number = 1000,
+	timeFilter: TimeFilter = "all"
+): Promise<SearchResultItem[]> {
+	try {
+		const startTime = getTimeFilterStart(timeFilter);
+		const startTimeISO =
+			startTime > 0 ? new Date(startTime).toISOString() : undefined;
+
+		const downloadItems = await browser.downloads.search({
+			limit: maxResults,
+			startedAfter: startTimeISO,
+			orderBy: ["-startTime"],
+		});
+
+		return downloadItems
+			.filter((item) => item.filename && item.url)
+			.map((item: any) => ({
+				id: item.id.toString(),
+				title: getFileNameFromPath(item.filename),
+				url: item.url,
+				type: "download" as const,
+				domain: extractDomain(item.url),
+				path: item.filename,
+				filename: getFileNameFromPath(item.filename),
+				lastVisited: new Date(item.startTime).getTime(),
+				fileSize: item.fileSize || 0,
+				startTime: item.startTime,
+				exists: item.exists,
+			}));
+	} catch (error) {
+		console.error("获取下载记录失败:", error);
+		return [];
+	}
+}
+
+/**
+ * 从文件路径中提取文件名
+ */
+function getFileNameFromPath(filePath: string): string {
+	if (!filePath) return "未知文件";
+	const fileName = filePath.split(/[/\\]/).pop() || "未知文件";
+	return fileName;
+}
+
+/**
+ * 搜索书签、历史记录和下载记录
  */
 export async function searchBookmarksAndHistory(
 	options: SearchOptions
@@ -175,13 +254,24 @@ export async function searchBookmarksAndHistory(
 	// 获取书签
 	if (options.includeBookmarks) {
 		const bookmarks = await getAllBookmarks();
-		allItems = allItems.concat(bookmarks);
+		// 时间筛选书签
+		const filteredBookmarks = filterItemsByTime(bookmarks, options.timeFilter);
+		allItems = allItems.concat(filteredBookmarks);
 	}
 
 	// 获取历史记录
 	if (options.includeHistory) {
-		const history = await getHistory(options.maxResults);
+		const history = await getHistory(options.maxResults, options.timeFilter);
 		allItems = allItems.concat(history);
+	}
+
+	// 获取下载记录
+	if (options.includeDownloads) {
+		const downloads = await getDownloads(
+			options.maxResults,
+			options.timeFilter
+		);
+		allItems = allItems.concat(downloads);
 	}
 
 	// 过滤和搜索
@@ -189,7 +279,8 @@ export async function searchBookmarksAndHistory(
 		(item) =>
 			fuzzyMatch(item.title, options.query) ||
 			fuzzyMatch(item.url, options.query) ||
-			fuzzyMatch(item.domain, options.query)
+			fuzzyMatch(item.domain, options.query) ||
+			(item.filename && fuzzyMatch(item.filename, options.query))
 	);
 
 	// 计算相关性分数并排序
@@ -208,43 +299,67 @@ export async function searchBookmarksAndHistory(
 				default:
 					return (b as any).relevanceScore - (a as any).relevanceScore;
 			}
-		});
-
-	// 限制结果数量
-	filteredItems = filteredItems.slice(0, options.maxResults);
+		})
+		.slice(0, options.maxResults);
 
 	// 按域名分组
-	const grouped: GroupedSearchResults = {};
+	const groupedResults: GroupedSearchResults = {};
+	let bookmarkCount = 0;
+	let historyCount = 0;
+	let downloadCount = 0;
 
-	for (const item of filteredItems) {
-		if (!grouped[item.domain]) {
-			grouped[item.domain] = {
-				domain: item.domain,
+	filteredItems.forEach((item) => {
+		const domain = item.domain;
+		if (!groupedResults[domain]) {
+			groupedResults[domain] = {
+				domain,
 				items: [],
 				totalCount: 0,
 			};
 		}
-		grouped[item.domain].items.push(item);
-		grouped[item.domain].totalCount++;
-	}
+		groupedResults[domain].items.push(item);
+		groupedResults[domain].totalCount++;
 
-	// 计算统计信息
-	const bookmarkCount = filteredItems.filter(
-		(item) => item.type === "bookmark"
-	).length;
-	const historyCount = filteredItems.filter(
-		(item) => item.type === "history"
-	).length;
+		// 统计各类型数量
+		switch (item.type) {
+			case "bookmark":
+				bookmarkCount++;
+				break;
+			case "history":
+				historyCount++;
+				break;
+			case "download":
+				downloadCount++;
+				break;
+		}
+	});
 
 	const stats: SearchStats = {
 		totalResults: filteredItems.length,
 		bookmarkCount,
 		historyCount,
-		uniqueDomains: Object.keys(grouped).length,
+		downloadCount,
+		uniqueDomains: Object.keys(groupedResults).length,
 		searchTime: Date.now() - startTime,
 	};
 
-	return { results: grouped, stats };
+	return { results: groupedResults, stats };
+}
+
+/**
+ * 根据时间筛选项目
+ */
+function filterItemsByTime(
+	items: SearchResultItem[],
+	timeFilter: TimeFilter
+): SearchResultItem[] {
+	if (timeFilter === "all") return items;
+
+	const startTime = getTimeFilterStart(timeFilter);
+	return items.filter((item) => {
+		const itemTime = item.lastVisited || 0;
+		return itemTime >= startTime;
+	});
 }
 
 /**
@@ -266,8 +381,101 @@ export async function openUrl(
 }
 
 /**
- * 获取网站图标
+ * 打开下载文件
+ */
+export async function openDownloadFile(downloadId: string): Promise<void> {
+	try {
+		await browser.downloads.open(parseInt(downloadId));
+	} catch (error) {
+		console.error("打开下载文件失败:", error);
+		// 如果打开失败，可能是权限问题，尝试在文件管理器中显示
+		await showDownloadFile(downloadId);
+	}
+}
+
+/**
+ * 在文件管理器中显示下载文件
+ */
+export async function showDownloadFile(downloadId: string): Promise<void> {
+	try {
+		await browser.downloads.show(parseInt(downloadId));
+	} catch (error) {
+		console.error("在文件管理器中显示文件失败:", error);
+	}
+}
+
+/**
+ * 获取网站图标URL
  */
 export function getFaviconUrl(domain: string): string {
-	return `https://www.google.com/s2/favicons?domain=${domain}&sz=16`;
+	return `https://www.google.com/s2/favicons?domain=${domain}`;
+}
+
+/**
+ * 格式化文件大小
+ */
+export function formatFileSize(bytes: number): string {
+	if (bytes === 0) return "0 B";
+	const k = 1024;
+	const sizes = ["B", "KB", "MB", "GB"];
+	const i = Math.floor(Math.log(bytes) / Math.log(k));
+	return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+}
+
+/**
+ * 搜索历史记录管理
+ */
+export class SearchHistoryManager {
+	private static readonly STORAGE_KEY = "searchHistory";
+	private static readonly MAX_HISTORY = 5;
+
+	/**
+	 * 保存搜索历史
+	 */
+	static async saveSearchHistory(query: string): Promise<void> {
+		if (!query.trim()) return;
+
+		try {
+			const history = await this.getSearchHistory();
+
+			// 移除重复项
+			const filteredHistory = history.filter((item) => item.query !== query);
+
+			// 添加新项到开头
+			const newHistory = [
+				{ query, timestamp: Date.now() },
+				...filteredHistory,
+			].slice(0, this.MAX_HISTORY);
+
+			await browser.storage.local.set({
+				[this.STORAGE_KEY]: newHistory,
+			});
+		} catch (error) {
+			console.error("保存搜索历史失败:", error);
+		}
+	}
+
+	/**
+	 * 获取搜索历史
+	 */
+	static async getSearchHistory(): Promise<SearchHistoryItem[]> {
+		try {
+			const result = await browser.storage.local.get([this.STORAGE_KEY]);
+			return result[this.STORAGE_KEY] || [];
+		} catch (error) {
+			console.error("获取搜索历史失败:", error);
+			return [];
+		}
+	}
+
+	/**
+	 * 清空搜索历史
+	 */
+	static async clearSearchHistory(): Promise<void> {
+		try {
+			await browser.storage.local.remove([this.STORAGE_KEY]);
+		} catch (error) {
+			console.error("清空搜索历史失败:", error);
+		}
+	}
 }

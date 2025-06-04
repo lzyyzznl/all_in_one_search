@@ -1,0 +1,86 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Cursor Rules for Browser Search Master
+
+## 项目架构规则
+
+### Vue 组件开发
+- 使用 Vue 3 Composition API
+- 优先使用 `<script setup>` 语法
+- 组件必须包含 TypeScript 类型注解
+- 使用 reactive/ref 管理状态
+
+### Element Plus 使用规范
+- 所有页面必须通过 `setupElementPlus(app)` 初始化 Element Plus
+- 图标使用 @element-plus/icons-vue，避免使用不存在的图标
+- 可用图标参考：Search, Star, FolderOpened, TopRight, Tools, Setting, Check, Close 等
+- 组件样式通过 Element Plus 主题定制，避免直接覆盖组件样式
+
+### 样式系统
+- 使用 Less 预处理器
+- 样式变量定义在 `entrypoints/styles/variables.less`
+- Element Plus 定制样式分别在：
+  - `entrypoints/styles/element-popup.less` (弹窗页面)
+  - `entrypoints/styles/element-settings.less` (设置页面)
+- 保持深色主题一致性
+
+### 文件结构规范
+```
+entrypoints/
+├── popup.html (需要 setupElementPlus)
+├── newtab.html (需要 setupElementPlus)
+├── settings.html (需要 setupElementPlus)
+└── styles/
+    ├── element-popup.less
+    ├── element-settings.less
+    └── variables.less
+
+utils/
+└── element-plus.ts (Element Plus 配置)
+```
+
+### 依赖管理
+- Element Plus: ^2.9.11
+- @element-plus/icons-vue: ^2.3.1
+- 图标导入格式：`import { IconName } from '@element-plus/icons-vue'`
+- 组件导入格式：`import { ElMessage } from 'element-plus'`
+
+### 构建配置
+- wxt.config.ts 中必须包含 Element Plus 优化配置
+- optimizeDeps: ["element-plus", "@element-plus/icons-vue"]
+
+## 代码质量规则
+
+### TypeScript
+- 严格类型检查，避免 any 类型
+- 使用接口定义复杂对象类型
+- 导入路径使用 .ts 扩展名
+
+### 组件规范
+- 组件名使用 PascalCase
+- Props 和 Emits 必须有类型定义
+- 使用 defineProps 和 defineEmits
+
+### 样式规范
+- 类名使用 kebab-case
+- 避免全局样式污染
+- 使用 scoped 样式或 CSS Modules
+
+## 浏览器扩展规则
+
+### 权限最小化
+- 只申请必要的权限
+- 在 manifest 中明确权限用途
+
+### API 使用
+- 使用 Chrome Extension APIs v3
+- 异步操作使用 async/await
+- 错误处理必须到位
+
+### 性能优化
+- 避免内存泄漏
+- 及时清理事件监听器
+- 合理使用防抖和节流 

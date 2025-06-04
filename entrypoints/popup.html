@@ -7,17 +7,18 @@
   </head>
   <body>
     <div id="app"></div> 
-    <div class="settings-link">
-      <a href="settings.html" target="_blank" class="settings-btn">⚙️ 设置</a>
-    </div>
     
     <script type="module">
-      import "./styles/popup.less";
+      import "./styles/element-popup.less";
       import { createApp } from "vue";
       import PopupApp from "../components/PopupApp.vue";
+      import { setupElementPlus } from "../utils/element-plus.ts";
 
       // 创建Vue应用实例
       const app = createApp(PopupApp);
+      
+      // 设置Element Plus
+      setupElementPlus(app);
 
       // 挂载到DOM
       app.mount("#app");
