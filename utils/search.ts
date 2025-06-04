@@ -249,30 +249,42 @@ export async function searchBookmarksAndHistory(
 ): Promise<{ results: GroupedSearchResults; stats: SearchStats }> {
 	const startTime = Date.now();
 
-	let allItems: SearchResultItem[] = [];
+	let bookmarks: SearchResultItem[] = [];
+	let history: SearchResultItem[] = [];
+	let downloads: SearchResultItem[] = [];
 
 	// 获取书签
 	if (options.includeBookmarks) {
-		const bookmarks = await getAllBookmarks();
+		bookmarks = await getAllBookmarks();
 		// 时间筛选书签
-		const filteredBookmarks = filterItemsByTime(bookmarks, options.timeFilter);
-		allItems = allItems.concat(filteredBookmarks);
+		bookmarks = filterItemsByTime(bookmarks, options.timeFilter);
 	}
 
 	// 获取历史记录
 	if (options.includeHistory) {
-		const history = await getHistory(options.maxResults, options.timeFilter);
-		allItems = allItems.concat(history);
+		history = await getHistory(options.maxResults, options.timeFilter);
 	}
 
 	// 获取下载记录
 	if (options.includeDownloads) {
-		const downloads = await getDownloads(
-			options.maxResults,
-			options.timeFilter
-		);
-		allItems = allItems.concat(downloads);
+		downloads = await getDownloads(options.maxResults, options.timeFilter);
 	}
+
+	// URL去重：如果书签和历史记录有相同URL，只保留书签
+	let allItems: SearchResultItem[] = [];
+
+	// 先添加书签
+	allItems = allItems.concat(bookmarks);
+
+	// 创建书签URL集合用于去重
+	const bookmarkUrls = new Set(bookmarks.map((item) => item.url));
+
+	// 过滤历史记录，排除已有书签的URL
+	const filteredHistory = history.filter((item) => !bookmarkUrls.has(item.url));
+	allItems = allItems.concat(filteredHistory);
+
+	// 添加下载记录（下载记录通常不会与书签/历史记录重复）
+	allItems = allItems.concat(downloads);
 
 	// 过滤和搜索
 	let filteredItems = allItems.filter(

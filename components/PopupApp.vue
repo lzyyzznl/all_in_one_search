@@ -28,7 +28,7 @@
       </div>
       
       <!-- 搜索历史气泡 -->
-      <div v-if="searchHistory.length > 0 && !searchQuery" class="search-history">
+      <div v-if="searchHistory.length > 0" class="search-history">
         <el-tag
           v-for="item in searchHistory" 
           :key="item.timestamp"
@@ -199,7 +199,7 @@
                   :icon="FolderOpened"
                   @click.stop="showDownloadFile(item.id)"
                 >
-                  显示文件
+                  显示文件目录
                 </el-button>
               </div>
             </div>
@@ -599,12 +599,66 @@ const formatDate = (timestamp: number): string => {
   }
 };
 
+// 获取书签栏ID的辅助函数
+const getBookmarkBarId = (bookmarks: chrome.bookmarks.BookmarkTreeNode[]): string | null => {
+  // 书签栏通常是第一个根级别文件夹
+  for (const node of bookmarks) {
+    if (node.children) {
+      for (const child of node.children) {
+        if (child.title === '书签栏' || child.title === 'Bookmarks bar' || child.title === 'Bookmarks') {
+          return child.id;
+        }
+      }
+      // 如果没找到特定名称，返回第一个文件夹（通常是书签栏）
+      if (node.children.length > 0 && !node.children[0].url) {
+        return node.children[0].id;
+      }
+    }
+  }
+  return null;
+};
+
+// 递归查找文件夹ID
+const findFolderById = (folder: any, targetId: string): boolean => {
+  if (folder.id === targetId) return true;
+  if (folder.children) {
+    return folder.children.some((child: any) => findFolderById(child, targetId));
+  }
+  return false;
+};
+
 // 显示书签对话框
-const showBookmarkDialog = (item: SearchResultItem) => {
+const showBookmarkDialog = async (item: SearchResultItem) => {
   bookmarkDialog.item = item;
   bookmarkDialog.title = item.title;
   bookmarkDialog.url = item.url;
-  bookmarkDialog.parentId = '';
+  
+  // 恢复上次选择的文件夹，如果没有则默认选择书签栏
+  try {
+    const result = await chrome.storage.local.get(['lastSelectedFolder']);
+    const lastFolder = result.lastSelectedFolder;
+    
+    if (lastFolder && bookmarkFoldersTree.value.some(folder => findFolderById(folder, lastFolder))) {
+      bookmarkDialog.parentId = lastFolder;
+    } else {
+      // 获取书签栏ID
+      const bookmarks = await chrome.bookmarks.getTree();
+      const bookmarkBarId = getBookmarkBarId(bookmarks);
+      bookmarkDialog.parentId = bookmarkBarId || '';
+    }
+  } catch (error) {
+    console.error('获取上次选择的文件夹失败:', error);
+    // 默认选择书签栏
+    try {
+      const bookmarks = await chrome.bookmarks.getTree();
+      const bookmarkBarId = getBookmarkBarId(bookmarks);
+      bookmarkDialog.parentId = bookmarkBarId || '';
+    } catch (err) {
+      console.error('获取书签栏失败:', err);
+      bookmarkDialog.parentId = '';
+    }
+  }
+  
   bookmarkDialog.show = true;
 };
 
@@ -632,6 +686,8 @@ const saveBookmark = async () => {
     
     if (bookmarkDialog.parentId) {
       bookmarkData.parentId = bookmarkDialog.parentId;
+      // 保存用户选择的文件夹
+      await chrome.storage.local.set({ lastSelectedFolder: bookmarkDialog.parentId });
     }
     
     await chrome.bookmarks.create(bookmarkData);
@@ -649,6 +705,9 @@ const loadBookmarkFolders = async () => {
     const bookmarks = await chrome.bookmarks.getTree();
     const folders: {id: string, title: string}[] = [];
     const foldersTree: any[] = [];
+    
+    // 跳过虚拟根节点，只处理实际的书签文件夹
+    const actualFolders = bookmarks[0]?.children || [];
     
     const traverseBookmarks = (nodes: chrome.bookmarks.BookmarkTreeNode[], depth = 0, parentArray: any[] = foldersTree) => {
       for (const node of nodes) {
@@ -675,7 +734,7 @@ const loadBookmarkFolders = async () => {
       }
     };
     
-    traverseBookmarks(bookmarks);
+    traverseBookmarks(actualFolders);
     bookmarkFolders.value = folders;
     bookmarkFoldersTree.value = foldersTree;
   } catch (error) {

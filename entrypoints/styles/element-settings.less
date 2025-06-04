@@ -289,7 +289,7 @@
 
   .el-tag {
     font-family: @font-family;
-    font-weight: @font-weight-normal;
+    font-weight: @font-weight-medium;
     
     &.el-tag--success {
       background-color: fade(@success-color, 10%);
@@ -310,9 +310,10 @@
     }
     
     &.el-tag--info {
-      background-color: fade(@info-color, 10%);
-      border-color: fade(@info-color, 20%);
-      color: @info-color;
+      background-color: fade(@info-color, 15%);
+      border-color: fade(@info-color, 30%);
+      color: darken(@info-color, 10%);
+      font-weight: @font-weight-semibold;
     }
     
     &.el-tag--primary {
@@ -394,11 +395,11 @@
       .el-tag {
         font-size: @font-size-xs;
         padding: 4px 8px;
-        background-color: @card-color;
-        border-color: @border-color;
-        color: @text-color;
+        background-color: darken(@card-color, 3%);
+        border-color: darken(@border-color, 10%);
+        color: darken(@text-color, 5%);
         font-family: @font-family;
-        font-weight: @font-weight-medium;
+        font-weight: @font-weight-semibold;
       }
     }
   }
