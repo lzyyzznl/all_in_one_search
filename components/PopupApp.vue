@@ -334,7 +334,7 @@ import type {
 
 // 检测是否为新标签页模式
 const isNewTabMode = computed(() => {
-  return window.location.pathname.includes('newtab.html');
+  return window.location.pathname.includes('single_tab.html');
 });
 
 // 响应式数据
@@ -922,7 +922,7 @@ const openInNewTab = () => {
   params.set('time', searchOptions.timeFilter);
   
   chrome.tabs.create({
-    url: chrome.runtime.getURL(`newtab.html?${params.toString()}`)
+    url: chrome.runtime.getURL(`single_tab.html?${params.toString()}`)
   });
 };
 

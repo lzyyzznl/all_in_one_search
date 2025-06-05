@@ -41,7 +41,7 @@ export default defineBackground({
 							);
 							// 如果无法打开popup，则打开新标签页
 							await chrome.tabs.create({
-								url: chrome.runtime.getURL("newtab.html"),
+								url: chrome.runtime.getURL("single_tab.html"),
 							});
 						}
 					}
@@ -56,7 +56,7 @@ export default defineBackground({
 				} catch (error) {
 					console.log("无法打开popup，打开新标签页");
 					await chrome.tabs.create({
-						url: chrome.runtime.getURL("newtab.html"),
+						url: chrome.runtime.getURL("single_tab.html"),
 					});
 				}
 			});

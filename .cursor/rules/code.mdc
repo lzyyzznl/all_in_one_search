@@ -31,7 +31,7 @@ alwaysApply: true
 ```
 entrypoints/
 ├── popup.html (需要 setupElementPlus)
-├── newtab.html (需要 setupElementPlus)
+├── single_tab.html (需要 setupElementPlus)
 ├── settings.html (需要 setupElementPlus)
 └── styles/
     ├── element-popup.less

@@ -134,7 +134,7 @@ my_browser_explorer/
 │   └── SettingsPage.vue       #   设置页面组件
 ├── 🚪 entrypoints/            # WXT入口点
 │   ├── popup.html             #   弹窗入口
-│   ├── newtab.html           #   新标签页入口
+│   ├── single_tab.html           #   新标签页入口
 │   ├── settings.html         #   设置页入口
 │   ├── background.ts         #   后台脚本
 │   └── styles/               #   样式系统
