@@ -1,4 +1,4 @@
-# 🔍 浏览器搜索大师 | Browser Search Master
+# 🔍 浏览器搜索大师 | All In One Search
 
 <div align="center">
 
