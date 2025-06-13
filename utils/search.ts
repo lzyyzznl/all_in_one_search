@@ -164,13 +164,14 @@ export async function getAllBookmarks(): Promise<SearchResultItem[]> {
  */
 export async function getHistory(
 	maxResults: number = 1000,
-	timeFilter: TimeFilter = "all"
+	timeFilter: TimeFilter = "all",
+	query: string = ""
 ): Promise<SearchResultItem[]> {
 	try {
 		const startTime = getTimeFilterStart(timeFilter);
 
 		const historyItems = await browser.history.search({
-			text: "",
+			text: query,
 			maxResults,
 			startTime,
 		});
@@ -198,18 +199,24 @@ export async function getHistory(
  */
 export async function getDownloads(
 	maxResults: number = 1000,
-	timeFilter: TimeFilter = "all"
+	timeFilter: TimeFilter = "all",
+	query: string = ""
 ): Promise<SearchResultItem[]> {
 	try {
 		const startTime = getTimeFilterStart(timeFilter);
 		const startTimeISO =
 			startTime > 0 ? new Date(startTime).toISOString() : undefined;
 
-		const downloadItems = await browser.downloads.search({
+		const searchOptions: any = {
 			limit: maxResults,
 			startedAfter: startTimeISO,
 			orderBy: ["-startTime"],
-		});
+		};
+		if (query) {
+			searchOptions.filenameRegex = query;
+		}
+
+		const downloadItems = await browser.downloads.search(searchOptions);
 
 		return downloadItems
 			.filter((item) => item.filename && item.url)
@@ -262,12 +269,12 @@ export async function searchBookmarksAndHistory(
 
 	// 获取历史记录
 	if (options.includeHistory) {
-		history = await getHistory(options.maxResults, options.timeFilter);
+		history = await getHistory(options.maxResults, options.timeFilter, options.query);
 	}
 
 	// 获取下载记录
 	if (options.includeDownloads) {
-		downloads = await getDownloads(options.maxResults, options.timeFilter);
+		downloads = await getDownloads(options.maxResults, options.timeFilter, options.query);
 	}
 
 	// URL去重：如果书签和历史记录有相同URL，只保留书签

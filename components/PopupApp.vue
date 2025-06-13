@@ -1,253 +1,259 @@
 <template>
   <div class="element-popup-container" :class="{ 'newtab-mode': isNewTabMode }">
-    <!-- 搜索头部 -->
-    <el-card class="search-header-card" :body-style="{ padding: '16px' }">
-      <!-- 搜索输入框 -->
-      <div class="search-input-container" style="display: flex; gap: 8px; align-items: center">
-        <el-input
-          v-model="searchQuery"
-          placeholder="搜索收藏夹、历史记录和下载文件..."
-          size="large"
-          clearable
-          @input="handleSearchInput"
-          @keydown.enter="handleSearchNow"
-          ref="searchInput"
-          style="flex: 1"
-        >
-          <template #prefix>
-            <el-icon><Search /></el-icon>
-          </template>
-        </el-input>
-        <el-button 
-          size="large" 
-          :icon="Setting" 
-          circle
-          @click="openSettings"
-          title="打开设置"
-        />
-      </div>
-      
-      <!-- 搜索历史气泡 -->
-      <div v-if="searchHistory.length > 0" class="search-history">
-        <el-tag
-          v-for="item in searchHistory" 
-          :key="item.timestamp"
-          type="info"
-          effect="plain"
-          size="small"
-          class="history-tag"
-          @click="selectHistoryItem(item.query)"
-        >
-          {{ item.query }}
-        </el-tag>
-      </div>
-      
-      <!-- 搜索选项 - 水平对齐 -->
-      <div class="search-options">
-        <el-row :gutter="4" align="middle" class="controls-row" justify="space-between">
-          <!-- 数据源多选 -->
-          <el-col :span="10" class="filter-control">
-            <div class="control-item">
-              <span class="control-label">搜索项:</span>
-              <el-select
-                v-model="selectedDataSources"
-                multiple
-                collapse-tags
-                collapse-tags-tooltip
-                size="small"
-                class="control-select"
-                @change="updateSearchOptions"
-              >
-                <el-option label="书签" value="bookmarks" />
-                <el-option label="历史记录" value="history" />
-                <el-option label="下载文件" value="downloads" />
-              </el-select>
-            </div>
-          </el-col>
-          <!-- 时间筛选 -->
-          <el-col :span="10" class="filter-control">
-            <div class="control-item">
-              <span class="control-label">时间:</span>
-              <el-select 
-                v-model="searchOptions.timeFilter" 
-                size="small" 
-                class="control-select"
-              >
-                <el-option label="全部时间" value="all" />
-                <el-option label="今天" value="today" />
-                <el-option label="本周" value="week" />
-                <el-option label="本月" value="month" />
-              </el-select>
-            </div>
-          </el-col>
-          
-          <!-- 排序选择 -->
-          <el-col :span="10" class="filter-control">
-            <div class="control-item">
-              <span class="control-label">排序:</span>
-              <el-select 
-                v-model="searchOptions.sortBy" 
-                size="small" 
-                class="control-select"
-              >
-                <el-option label="相关性" value="relevance" />
-                <el-option label="最近访问" value="recent" />
-                <el-option label="访问频率" value="frequency" />
-              </el-select>
-            </div>
-          </el-col>
-        </el-row>
-      </div>
-    </el-card>
-
-    <!-- 搜索统计 -->
-    <div v-if="searchStats" class="search-stats">
-      <el-space :size="8" wrap>
-        <el-tag size="small" type="info" effect="plain">
-          找到 {{ searchStats.totalResults }} 个结果
-        </el-tag>
-        <el-tag v-if="searchStats.bookmarkCount > 0" size="small" type="success" effect="plain">
-          书签 {{ searchStats.bookmarkCount }}
-        </el-tag>
-        <el-tag v-if="searchStats.historyCount > 0" size="small" type="warning" effect="plain">
-          历史 {{ searchStats.historyCount }}
-        </el-tag>
-        <el-tag v-if="searchStats.downloadCount > 0" size="small" type="info" effect="plain">
-          下载 {{ searchStats.downloadCount }}
-        </el-tag>
-        <el-tag size="small" effect="plain">
-          {{ searchStats.uniqueDomains }} 个域名
-        </el-tag>
-        <el-tag size="small" effect="plain">
-          {{ searchStats.searchTime }}ms
-        </el-tag>
-      </el-space>
-    </div>
-
-    <!-- 加载状态 -->
-    <div v-if="isLoading" v-loading="true" class="loading-container">
-      <el-empty description="搜索中..." :image-size="60" />
-    </div>
-
-    <!-- 搜索结果 -->
-    <div v-else-if="hasResults" class="results-container">
-      <el-card
-        v-for="(group, domain) in searchResults"
-        :key="domain"
-        class="domain-group-card"
-        :body-style="{ padding: '12px' }"
-        shadow="hover"
-      >
-        <template #header>
-          <div class="domain-header">
-            <img :src="getFaviconUrl(String(domain))" :alt="String(domain)" class="domain-favicon" />
-            <span class="domain-name">{{ domain }}</span>
-            <el-tag size="small" type="primary" effect="plain">{{ group.totalCount }}</el-tag>
-          </div>
-        </template>
-        
-        <div class="result-items">
-          <el-card
-            v-for="item in group.items"
-            :key="item.id"
-            class="result-item-card"
-            :class="{ 'selected': selectedItem === item.id }"
-            :data-id="item.id"
-            :body-style="{ padding: '12px' }"
-            shadow="hover"
-            @click="selectAndOpenItem(item)"
+    <!-- 固定头部区域 -->
+    <div class="fixed-header">
+      <!-- 搜索头部 -->
+      <el-card class="search-header-card" :body-style="{ padding: '16px' }">
+        <!-- 搜索输入框 -->
+        <div class="search-input-container" style="display: flex; gap: 8px; align-items: center">
+          <el-input
+            v-model="searchQuery"
+            placeholder="搜索收藏夹、历史记录和下载文件..."
+            size="large"
+            clearable
+            @input="handleSearchInput"
+            @keydown.enter="handleSearchNow"
+            ref="searchInput"
+            style="flex: 1"
           >
-            <div class="result-item-content">
-              <div class="item-icon">
-                {{ getItemIcon(item.type) }}
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
+          <el-button 
+            size="large" 
+            :icon="Setting" 
+            circle
+            @click="openSettings"
+            title="打开设置"
+          />
+        </div>
+        
+        <!-- 搜索历史气泡 -->
+        <div v-if="searchHistory.length > 0" class="search-history">
+          <el-tag
+            v-for="item in searchHistory" 
+            :key="item.timestamp"
+            type="info"
+            effect="plain"
+            size="small"
+            class="history-tag"
+            @click="selectHistoryItem(item.query)"
+          >
+            {{ item.query }}
+          </el-tag>
+        </div>
+        
+        <!-- 搜索选项 - 水平对齐 -->
+        <div class="search-options">
+          <el-row :gutter="4" align="middle" class="controls-row" justify="space-between">
+            <!-- 数据源多选 -->
+            <el-col :span="10" class="filter-control">
+              <div class="control-item">
+                <span class="control-label">搜索项:</span>
+                <el-select
+                  v-model="selectedDataSources"
+                  multiple
+                  collapse-tags
+                  collapse-tags-tooltip
+                  size="small"
+                  class="control-select"
+                  @change="updateSearchOptions"
+                >
+                  <el-option label="书签" value="bookmarks" />
+                  <el-option label="历史记录" value="history" />
+                  <el-option label="下载文件" value="downloads" />
+                </el-select>
               </div>
-              <div class="item-content">
-                <div class="item-title" :title="item.title">{{ item.title }}</div>
-                <div class="item-url" :title="item.url">{{ item.url }}</div>
-                <div class="item-meta">
-                  <el-tag v-if="item.folderName" size="small" type="warning" effect="plain">
-                    📁 {{ item.folderName }}
-                  </el-tag>
-                  <el-tag v-if="item.visitCount && item.type !== 'download'" size="small" type="info" effect="plain">
-                    {{ item.visitCount }} 次访问
-                  </el-tag>
-                  <el-tag v-if="item.fileSize && item.type === 'download'" size="small" type="success" effect="plain">
-                    {{ formatFileSize(item.fileSize) }}
-                  </el-tag>
-                  <span v-if="item.lastVisited" class="last-visited">
-                    {{ formatDate(item.lastVisited) }}
-                  </span>
-                  <el-tag v-if="item.type === 'download' && !item.exists" size="small" type="danger" effect="dark">
-                    ⚠️ 文件不存在
-                  </el-tag>
+            </el-col>
+            <!-- 时间筛选 -->
+            <el-col :span="10" class="filter-control">
+              <div class="control-item">
+                <span class="control-label">时间:</span>
+                <el-select 
+                  v-model="searchOptions.timeFilter" 
+                  size="small" 
+                  class="control-select"
+                >
+                  <el-option label="全部时间" value="all" />
+                  <el-option label="今天" value="today" />
+                  <el-option label="本周" value="week" />
+                  <el-option label="本月" value="month" />
+                </el-select>
+              </div>
+            </el-col>
+            
+            <!-- 排序选择 -->
+            <el-col :span="10" class="filter-control">
+              <div class="control-item">
+                <span class="control-label">排序:</span>
+                <el-select 
+                  v-model="searchOptions.sortBy" 
+                  size="small" 
+                  class="control-select"
+                >
+                  <el-option label="相关性" value="relevance" />
+                  <el-option label="最近访问" value="recent" />
+                  <el-option label="访问频率" value="frequency" />
+                </el-select>
+              </div>
+            </el-col>
+          </el-row>
+        </div>
+      </el-card>
+
+      <!-- 搜索统计 -->
+      <div v-if="searchStats" class="search-stats">
+        <el-space :size="8" wrap>
+          <el-tag size="small" type="info" effect="plain">
+            找到 {{ searchStats.totalResults }} 个结果
+          </el-tag>
+          <el-tag v-if="searchStats.bookmarkCount > 0" size="small" type="success" effect="plain">
+            书签 {{ searchStats.bookmarkCount }}
+          </el-tag>
+          <el-tag v-if="searchStats.historyCount > 0" size="small" type="warning" effect="plain">
+            历史 {{ searchStats.historyCount }}
+          </el-tag>
+          <el-tag v-if="searchStats.downloadCount > 0" size="small" type="info" effect="plain">
+            下载 {{ searchStats.downloadCount }}
+          </el-tag>
+          <el-tag size="small" effect="plain">
+            {{ searchStats.uniqueDomains }} 个域名
+          </el-tag>
+          <el-tag size="small" effect="plain">
+            {{ searchStats.searchTime }}ms
+          </el-tag>
+        </el-space>
+      </div>
+    </div>
+
+    <!-- 可滚动内容区域 -->
+    <div class="scrollable-content">
+      <!-- 加载状态 -->
+      <div v-if="isLoading" v-loading="true" class="loading-container">
+        <el-empty description="搜索中..." :image-size="60" />
+      </div>
+
+      <!-- 搜索结果 -->
+      <div v-else-if="hasResults" class="results-container">
+        <el-card
+          v-for="(group, domain) in searchResults"
+          :key="domain"
+          class="domain-group-card"
+          :body-style="{ padding: '12px' }"
+          shadow="hover"
+        >
+          <template #header>
+            <div class="domain-header">
+              <img :src="getFaviconUrl(String(domain))" :alt="String(domain)" class="domain-favicon" />
+              <span class="domain-name">{{ domain }}</span>
+              <el-tag size="small" type="primary" effect="plain">{{ group.totalCount }}</el-tag>
+            </div>
+          </template>
+          
+          <div class="result-items">
+            <el-card
+              v-for="item in group.items"
+              :key="item.id"
+              class="result-item-card"
+              :class="{ 'selected': selectedItem === item.id }"
+              :data-id="item.id"
+              :body-style="{ padding: '12px' }"
+              shadow="hover"
+              @click="selectAndOpenItem(item)"
+            >
+              <div class="result-item-content">
+                <div class="item-icon">
+                  {{ getItemIcon(item.type) }}
+                </div>
+                <div class="item-content">
+                  <div class="item-title" :title="item.title">{{ item.title }}</div>
+                  <div class="item-url" :title="item.url">{{ item.url }}</div>
+                  <div class="item-meta">
+                    <el-tag v-if="item.folderName" size="small" type="warning" effect="plain">
+                      📁 {{ item.folderName }}
+                    </el-tag>
+                    <el-tag v-if="item.visitCount && item.type !== 'download'" size="small" type="info" effect="plain">
+                      {{ item.visitCount }} 次访问
+                    </el-tag>
+                    <el-tag v-if="item.fileSize && item.type === 'download'" size="small" type="success" effect="plain">
+                      {{ formatFileSize(item.fileSize) }}
+                    </el-tag>
+                    <span v-if="item.lastVisited" class="last-visited">
+                      {{ formatDate(item.lastVisited) }}
+                    </span>
+                    <el-tag v-if="item.type === 'download' && !item.exists" size="small" type="danger" effect="dark">
+                      ⚠️ 文件不存在
+                    </el-tag>
+                  </div>
+                </div>
+                <div class="item-actions">
+                  <el-button 
+                    v-if="item.type === 'history'"
+                    size="small"
+                    type="primary"
+                    :icon="Star"
+                    @click.stop="showBookmarkDialog(item)"
+                  >
+                    收藏
+                  </el-button>
+                  <el-button 
+                    v-if="item.type === 'download'"
+                    size="small"
+                    type="success"
+                    :icon="FolderOpened"
+                    @click.stop="showDownloadFile(item.id)"
+                  >
+                    显示文件目录
+                  </el-button>
                 </div>
               </div>
-              <div class="item-actions">
-                <el-button 
-                  v-if="item.type === 'history'"
-                  size="small"
-                  type="primary"
-                  :icon="Star"
-                  @click.stop="showBookmarkDialog(item)"
-                >
-                  收藏
-                </el-button>
-                <el-button 
-                  v-if="item.type === 'download'"
-                  size="small"
-                  type="success"
-                  :icon="FolderOpened"
-                  @click.stop="showDownloadFile(item.id)"
-                >
-                  显示文件目录
-                </el-button>
-              </div>
+            </el-card>
+          </div>
+        </el-card>
+      </div>
+
+      <!-- 空状态 -->
+      <div v-else-if="searchQuery && !isLoading" class="empty-state">
+        <el-empty description="未找到匹配的结果" :image-size="80">
+          <template #description>
+            <p>未找到匹配的结果</p>
+            <p>尝试不同的关键词或调整搜索选项</p>
+          </template>
+        </el-empty>
+      </div>
+
+      <!-- 初始状态 -->
+      <div v-else class="initial-state">
+        <el-card class="welcome-card" :body-style="{ padding: '32px', textAlign: 'center' }">
+          <div class="welcome-tips">
+            <div class="tip-item">
+              <el-icon class="tip-icon"><MagicStick /></el-icon>
+              <span>支持模糊搜索</span>
             </div>
-          </el-card>
-        </div>
-      </el-card>
-    </div>
-
-    <!-- 空状态 -->
-    <div v-else-if="searchQuery && !isLoading" class="empty-state">
-      <el-empty description="未找到匹配的结果" :image-size="80">
-        <template #description>
-          <p>未找到匹配的结果</p>
-          <p>尝试不同的关键词或调整搜索选项</p>
-        </template>
-      </el-empty>
-    </div>
-
-    <!-- 初始状态 -->
-    <div v-else class="initial-state">
-      <el-card class="welcome-card" :body-style="{ padding: '32px', textAlign: 'center' }">
-        <div class="welcome-tips">
-          <div class="tip-item">
-            <el-icon class="tip-icon"><MagicStick /></el-icon>
-            <span>支持模糊搜索</span>
+            <div class="tip-item">
+              <el-icon class="tip-icon"><Collection /></el-icon>
+              <span>结果按域名分组显示</span>
+            </div>
+            <div class="tip-item">
+              <el-icon class="tip-icon"><Mouse /></el-icon>
+              <span>单击直接打开链接</span>
+            </div>
+            <div class="tip-item">
+              <el-icon class="tip-icon"><Star /></el-icon>
+              <span>历史记录可添加到书签</span>
+            </div>
+            <div class="tip-item">
+              <el-icon class="tip-icon"><Download /></el-icon>
+              <span>支持搜索下载文件</span>
+            </div>
+            <div v-if="mainShortcut" class="tip-item">
+              <el-icon class="tip-icon"><Tools /></el-icon>
+              <span>快捷键: {{ mainShortcut }}</span>
+            </div>
           </div>
-          <div class="tip-item">
-            <el-icon class="tip-icon"><Collection /></el-icon>
-            <span>结果按域名分组显示</span>
-          </div>
-          <div class="tip-item">
-            <el-icon class="tip-icon"><Mouse /></el-icon>
-            <span>单击直接打开链接</span>
-          </div>
-          <div class="tip-item">
-            <el-icon class="tip-icon"><Star /></el-icon>
-            <span>历史记录可添加到书签</span>
-          </div>
-          <div class="tip-item">
-            <el-icon class="tip-icon"><Download /></el-icon>
-            <span>支持搜索下载文件</span>
-          </div>
-          <div v-if="mainShortcut" class="tip-item">
-            <el-icon class="tip-icon"><Tools /></el-icon>
-            <span>快捷键: {{ mainShortcut }}</span>
-          </div>
-        </div>
-      </el-card>
+        </el-card>
+      </div>
     </div>
 
     <!-- 快捷键提示 -->
@@ -810,17 +816,41 @@ const handleKeyDown = (event: KeyboardEvent) => {
       event.preventDefault();
       const nextIndex = currentIndex < allItems.length - 1 ? currentIndex + 1 : 0;
       selectedItem.value = allItems[nextIndex].id;
-      document.querySelector(`[data-id="${allItems[nextIndex].id}"]`)?.scrollIntoView({
-        block: 'nearest'
-      });
+      // 滚动到可见区域，但确保在可滚动容器内
+      const nextElement = document.querySelector(`[data-id="${allItems[nextIndex].id}"]`);
+      if (nextElement) {
+        const scrollableContainer = document.querySelector('.scrollable-content');
+        if (scrollableContainer) {
+          const containerRect = scrollableContainer.getBoundingClientRect();
+          const elementRect = nextElement.getBoundingClientRect();
+          
+          if (elementRect.bottom > containerRect.bottom) {
+            nextElement.scrollIntoView({ block: 'end', behavior: 'smooth' });
+          } else if (elementRect.top < containerRect.top) {
+            nextElement.scrollIntoView({ block: 'start', behavior: 'smooth' });
+          }
+        }
+      }
       break;
     case navigationConfig.up:
       event.preventDefault();
       const prevIndex = currentIndex > 0 ? currentIndex - 1 : allItems.length - 1;
       selectedItem.value = allItems[prevIndex].id;
-      document.querySelector(`[data-id="${allItems[prevIndex].id}"]`)?.scrollIntoView({
-        block: 'nearest'
-      });
+      // 滚动到可见区域，但确保在可滚动容器内
+      const prevElement = document.querySelector(`[data-id="${allItems[prevIndex].id}"]`);
+      if (prevElement) {
+        const scrollableContainer = document.querySelector('.scrollable-content');
+        if (scrollableContainer) {
+          const containerRect = scrollableContainer.getBoundingClientRect();
+          const elementRect = prevElement.getBoundingClientRect();
+          
+          if (elementRect.top < containerRect.top) {
+            prevElement.scrollIntoView({ block: 'start', behavior: 'smooth' });
+          } else if (elementRect.bottom > containerRect.bottom) {
+            prevElement.scrollIntoView({ block: 'end', behavior: 'smooth' });
+          }
+        }
+      }
       break;
     case navigationConfig.open:
       if (selectedItem.value) {
