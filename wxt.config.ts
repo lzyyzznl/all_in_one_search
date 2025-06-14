@@ -1,4 +1,5 @@
 import { defineConfig } from "wxt";
+import { APP_CONSTANTS } from "./utils/constants";
 
 export default defineConfig({
 	// 使用 Vue 模块
@@ -24,10 +25,10 @@ export default defineConfig({
 
 		// 快捷键配置
 		commands: {
-			_execute_action: {
+			[APP_CONSTANTS.SHORTCUTS.EXECUTE_ACTION]: {
 				suggested_key: {
-					default: "Ctrl+Shift+S",
-					mac: "Command+Shift+S",
+					default: APP_CONSTANTS.SHORTCUTS.DEFAULT_KEY,
+					mac: APP_CONSTANTS.SHORTCUTS.MAC_KEY,
 				},
 				description: "默认打开收藏夹历史记录搜索器",
 			},

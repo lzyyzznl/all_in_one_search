@@ -9,6 +9,7 @@ import type {
 	SearchHistoryItem,
 	TimeFilter,
 } from "./types";
+import { APP_CONSTANTS } from "./constants";
 
 /**
  * 从URL中提取域名
@@ -45,9 +46,12 @@ export function getTimeFilterStart(timeFilter: TimeFilter): number {
 		case "today":
 			return today.getTime();
 		case "week":
-			const weekAgo = new Date(today);
-			weekAgo.setDate(today.getDate() - 7);
+			const weekAgo = new Date(today.getTime() - APP_CONSTANTS.TIME.WEEK_IN_MS);
 			return weekAgo.getTime();
+		case "month":
+			const monthAgo = new Date(today);
+			monthAgo.setMonth(today.getMonth() - 1);
+			return monthAgo.getTime();
 		case "all":
 		default:
 			return 0;
@@ -85,35 +89,68 @@ export function calculateRelevanceScore(
 	const titleLower = item.title.toLowerCase();
 	const urlLower = item.url.toLowerCase();
 
-	// 标题完全匹配
-	if (titleLower === queryLower) score += 100;
-	// 标题开头匹配
-	else if (titleLower.startsWith(queryLower)) score += 80;
-	// 标题包含
-	else if (titleLower.includes(queryLower)) score += 60;
+	// 标题匹配度评分
+	score += calculateTitleScore(titleLower, queryLower);
 
-	// URL匹配
-	if (urlLower.includes(queryLower)) score += 30;
-
-	// 域名匹配
-	if (item.domain.toLowerCase().includes(queryLower)) score += 40;
-
-	// 文件名匹配（下载记录）
-	if (item.filename && item.filename.toLowerCase().includes(queryLower)) {
-		score += 70;
+	// URL匹配评分
+	if (urlLower.includes(queryLower)) {
+		score += APP_CONSTANTS.SCORE_WEIGHTS.URL_CONTAINS;
 	}
 
-	// 类型优先级
-	if (item.type === "bookmark") score += 15;
-	else if (item.type === "download") score += 10;
-	else if (item.type === "history") score += 5;
+	// 域名匹配评分
+	if (item.domain.toLowerCase().includes(queryLower)) {
+		score += APP_CONSTANTS.SCORE_WEIGHTS.DOMAIN_MATCH;
+	}
+
+	// 文件名匹配评分（下载记录）
+	if (item.filename && item.filename.toLowerCase().includes(queryLower)) {
+		score += APP_CONSTANTS.SCORE_WEIGHTS.FILENAME_MATCH;
+	}
+
+	// 类型优先级评分
+	score += getTypeScore(item.type);
 
 	// 访问频率加分
 	if (item.visitCount) {
-		score += Math.min(item.visitCount * 2, 20);
+		score += Math.min(
+			item.visitCount * APP_CONSTANTS.SCORE_WEIGHTS.VISIT_COUNT_MULTIPLIER,
+			APP_CONSTANTS.SCORE_WEIGHTS.MAX_VISIT_COUNT_BONUS
+		);
 	}
 
 	return score;
+}
+
+/**
+ * 计算标题匹配度分数
+ */
+function calculateTitleScore(titleLower: string, queryLower: string): number {
+	if (titleLower === queryLower) {
+		return APP_CONSTANTS.SCORE_WEIGHTS.EXACT_TITLE_MATCH;
+	}
+	if (titleLower.startsWith(queryLower)) {
+		return APP_CONSTANTS.SCORE_WEIGHTS.TITLE_START_MATCH;
+	}
+	if (titleLower.includes(queryLower)) {
+		return APP_CONSTANTS.SCORE_WEIGHTS.TITLE_CONTAINS;
+	}
+	return 0;
+}
+
+/**
+ * 获取类型优先级分数
+ */
+function getTypeScore(type: SearchResultItem["type"]): number {
+	switch (type) {
+		case "bookmark":
+			return APP_CONSTANTS.SCORE_WEIGHTS.BOOKMARK_PRIORITY;
+		case "download":
+			return APP_CONSTANTS.SCORE_WEIGHTS.DOWNLOAD_PRIORITY;
+		case "history":
+			return APP_CONSTANTS.SCORE_WEIGHTS.HISTORY_PRIORITY;
+		default:
+			return 0;
+	}
 }
 
 /**
@@ -269,12 +306,20 @@ export async function searchBookmarksAndHistory(
 
 	// 获取历史记录
 	if (options.includeHistory) {
-		history = await getHistory(options.maxResults, options.timeFilter, options.query);
+		history = await getHistory(
+			options.maxResults,
+			options.timeFilter,
+			options.query
+		);
 	}
 
 	// 获取下载记录
 	if (options.includeDownloads) {
-		downloads = await getDownloads(options.maxResults, options.timeFilter, options.query);
+		downloads = await getDownloads(
+			options.maxResults,
+			options.timeFilter,
+			options.query
+		);
 	}
 
 	// URL去重：如果书签和历史记录有相同URL，只保留书签
@@ -445,8 +490,9 @@ export function formatFileSize(bytes: number): string {
  * 搜索历史记录管理
  */
 export class SearchHistoryManager {
-	private static readonly STORAGE_KEY = "searchHistory";
-	private static readonly MAX_HISTORY = 5;
+	private static readonly STORAGE_KEY =
+		APP_CONSTANTS.STORAGE_KEYS.SEARCH_HISTORY;
+	private static readonly MAX_HISTORY = APP_CONSTANTS.SEARCH.MAX_HISTORY_ITEMS;
 
 	/**
 	 * 保存搜索历史

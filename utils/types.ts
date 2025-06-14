@@ -39,24 +39,33 @@ export interface SearchHistoryItem {
 }
 
 // 时间筛选选项
-export type TimeFilter = 'all' | 'today' | 'week';
+export type TimeFilter = "all" | "today" | "week" | "month";
+
+// 排序选项
+export type SortBy = "relevance" | "recent" | "frequency";
+
+// 数据源类型
+export type DataSourceType = "bookmarks" | "history" | "downloads";
+
+// 搜索结果类型
+export type SearchResultType = "bookmark" | "history" | "download";
 
 // 搜索结果项接口
 export interface SearchResultItem {
-	id: string;
-	title: string;
-	url: string;
-	type: "bookmark" | "history" | "download";
-	lastVisited?: number;
-	visitCount?: number;
-	domain: string;
-	favicon?: string;
-	path?: string;
-	folderName?: string; // 书签所在文件夹名称
-	fileSize?: number; // 文件大小（下载记录）
-	filename?: string; // 文件名（下载记录）
-	startTime?: string; // 下载开始时间
-	exists?: boolean; // 文件是否存在
+	readonly id: string;
+	readonly title: string;
+	readonly url: string;
+	readonly type: SearchResultType;
+	readonly lastVisited?: number;
+	readonly visitCount?: number;
+	readonly domain: string;
+	readonly favicon?: string;
+	readonly path?: string;
+	readonly folderName?: string; // 书签所在文件夹名称
+	readonly fileSize?: number; // 文件大小（下载记录）
+	readonly filename?: string; // 文件名（下载记录）
+	readonly startTime?: string; // 下载开始时间
+	readonly exists?: boolean; // 文件是否存在
 }
 
 // 按域名分组的搜索结果
@@ -70,13 +79,13 @@ export interface GroupedSearchResults {
 
 // 搜索选项
 export interface SearchOptions {
-	query: string;
-	includeBookmarks: boolean;
-	includeHistory: boolean;
-	includeDownloads: boolean;
-	maxResults: number;
-	sortBy: "relevance" | "recent" | "frequency";
-	timeFilter: TimeFilter;
+	readonly query: string;
+	readonly includeBookmarks: boolean;
+	readonly includeHistory: boolean;
+	readonly includeDownloads: boolean;
+	readonly maxResults: number;
+	readonly sortBy: SortBy;
+	readonly timeFilter: TimeFilter;
 }
 
 // 搜索统计

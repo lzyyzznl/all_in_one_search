@@ -1,5 +1,3 @@
-import type { LessOptions } from "less";
-
 interface LessGlobalVars {
 	[key: string]: string;
 }
