@@ -1,5 +1,5 @@
 {
-	"name": "my_browser_explorer",
+	"name": "all_in_one_search",
 	"version": "1.0.0",
 	"description": "浏览器插件 - 收藏夹和历史记录模糊查询",
 	"main": "index.js",

@@ -128,7 +128,7 @@ background: radial-gradient(#2D3748, #1A202C);
 
 ### 📁 项目结构
 ```
-my_browser_explorer/
+all_in_one_search/
 ├── 🎨 components/              # Vue组件层
 │   ├── PopupApp.vue           #   弹窗主组件
 │   └── SettingsPage.vue       #   设置页面组件
@@ -171,8 +171,8 @@ my_browser_explorer/
 
 ```bash
 # 🚀 克隆项目
-git clone https://github.com/your-username/browser-search-master.git
-cd browser-search-master
+git clone https://github.com/your-username/all_in_one_search.git
+cd all_in_one_search
 
 # 📦 安装依赖  
 pnpm install
