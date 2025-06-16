@@ -59,22 +59,53 @@ export function getTimeFilterStart(timeFilter: TimeFilter): number {
 }
 
 /**
- * 模糊匹配算法
+ * 模糊匹配算法 - 支持忽略大小写和多种匹配模式
  */
 export function fuzzyMatch(text: string, query: string): boolean {
 	if (!query || !text) return false;
 
-	const textLower = text.toLowerCase();
-	const queryLower = query.toLowerCase();
+	// 转换为小写进行匹配，确保大小写不敏感
+	const textLower = text.toLowerCase().trim();
+	const queryLower = query.toLowerCase().trim();
 
-	// 直接包含
+	// 空查询返回false
+	if (!queryLower) return false;
+
+	// 1. 直接包含匹配（最高优先级）
 	if (textLower.includes(queryLower)) {
 		return true;
 	}
 
-	// 拼音首字母匹配（简单实现）
-	const words = queryLower.split(" ");
-	return words.every((word) => textLower.includes(word));
+	// 2. 分词匹配 - 支持多个关键词用空格分隔
+	const queryWords = queryLower.split(/\s+/).filter(word => word.length > 0);
+	if (queryWords.length > 1) {
+		// 所有关键词都要在文本中找到
+		return queryWords.every(word => textLower.includes(word));
+	}
+
+	// 3. 字符顺序匹配（不需要连续）
+	let queryIndex = 0;
+	for (let i = 0; i < textLower.length && queryIndex < queryLower.length; i++) {
+		if (textLower[i] === queryLower[queryIndex]) {
+			queryIndex++;
+		}
+	}
+
+	// 4. 如果字符顺序匹配成功
+	if (queryIndex === queryLower.length) {
+		return true;
+	}
+
+	// 5. 拼音/缩写匹配（针对中英文混合）
+	// 例如: "github" 可以匹配 "GitHub"
+	const words = textLower.split(/\s+|[_\-\.]/);
+	for (const word of words) {
+		if (word.startsWith(queryLower)) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 /**
@@ -176,7 +207,7 @@ export async function getAllBookmarks(): Promise<SearchResultItem[]> {
 						domain: extractDomain(node.url),
 						path: extractPath(node.url),
 						folderName: folderPath,
-						lastVisited: node.dateAdded,
+						lastVisited: node.dateAdded || Date.now(),
 					});
 				} else if (node.children) {
 					// 这是一个文件夹，递归遍历
@@ -222,8 +253,8 @@ export async function getHistory(
 				type: "history" as const,
 				domain: extractDomain(item.url!),
 				path: extractPath(item.url!),
-				lastVisited: item.lastVisitTime,
-				visitCount: item.visitCount,
+				lastVisited: item.lastVisitTime || 0,
+				visitCount: item.visitCount || 0,
 			}));
 	} catch (error) {
 		console.error("获取历史记录失败:", error);

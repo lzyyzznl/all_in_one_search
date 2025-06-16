@@ -265,45 +265,12 @@
   </div>
 
     <!-- 书签对话框 -->
-    <el-dialog
-      v-model="bookmarkDialog.show"
-      title="添加到书签"
-      width="500px"
-      :before-close="closeBookmarkDialog"
-    >
-      <el-form 
-        :model="bookmarkDialog" 
-        label-width="80px"
-        :rules="bookmarkRules"
-        ref="bookmarkForm"
-      >
-        <el-form-item label="标题" prop="title">
-          <el-input v-model="bookmarkDialog.title" />
-        </el-form-item>
-        <el-form-item label="URL">
-          <el-input v-model="bookmarkDialog.url" readonly />
-        </el-form-item>
-        <el-form-item label="文件夹">
-          <el-tree-select
-            v-model="bookmarkDialog.parentId"
-            :data="bookmarkFoldersTree"
-            :props="{ label: 'title', value: 'id', children: 'children' }"
-            filterable
-            placeholder="请选择文件夹"
-            style="width: 100%"
-            check-strictly
-            clearable
-          />
-        </el-form-item>
-      </el-form>
-      
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="closeBookmarkDialog">取消</el-button>
-          <el-button type="primary" @click="validateAndSaveBookmark">保存</el-button>
-        </span>
-      </template>
-    </el-dialog>
+    <UnifiedBookmarkDialog
+      :show="bookmarkDialog.show"
+      :dialog="bookmarkDialog"
+      @close="closeBookmarkDialog"
+      @save="handleBookmarkSave"
+    />
 </template>
 
 <script setup lang="ts">
@@ -319,6 +286,7 @@ import {
   TopRight,
   Setting
 } from '@element-plus/icons-vue';
+import UnifiedBookmarkDialog from './UnifiedBookmarkDialog.vue';
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
 import {
   formatFileSize,
@@ -380,30 +348,29 @@ const bookmarkDialog = reactive({
   item: null as SearchResultItem | null
 });
 
-// 书签表单验证规则
-const bookmarkRules = reactive({
-  title: [
-    { required: true, message: '请输入书签标题', trigger: 'blur' },
-    { min: 1, max: 100, message: '长度在1到100个字符', trigger: 'blur' }
-  ]
-});
 
-// 书签表单引用
-const bookmarkForm = ref();
 
-// 书签文件夹列表
-const bookmarkFolders = ref<{id: string, title: string}[]>([]);
-
-// 书签文件夹树形结构
-const bookmarkFoldersTree = ref<any[]>([]);
-
-// 验证并保存书签
-const validateAndSaveBookmark = async () => {
+// 处理书签保存
+const handleBookmarkSave = async (data: { title: string; url: string; parentId: string }) => {
   try {
-    await bookmarkForm.value.validate();
-    await saveBookmark();
+    const bookmarkData: chrome.bookmarks.CreateDetails = {
+      title: data.title,
+      url: data.url
+    };
+    
+    if (data.parentId) {
+      bookmarkData.parentId = data.parentId;
+      // 保存用户选择的文件夹
+      await chrome.storage.local.set({ lastSelectedFolder: data.parentId });
+    }
+    
+    await chrome.bookmarks.create(bookmarkData);
+    closeBookmarkDialog();
+    // 可以选择显示成功消息
+    console.log('书签添加成功！');
   } catch (error) {
-    console.error('表单验证失败:', error);
+    console.error('添加书签失败:', error);
+    throw error; // 重新抛出错误，让对话框处理
   }
 };
 
@@ -644,7 +611,7 @@ const showBookmarkDialog = async (item: SearchResultItem) => {
     const result = await chrome.storage.local.get(['lastSelectedFolder']);
     const lastFolder = result.lastSelectedFolder;
     
-    if (lastFolder && bookmarkFoldersTree.value.some(folder => findFolderById(folder, lastFolder))) {
+    if (lastFolder) {
       bookmarkDialog.parentId = lastFolder;
     } else {
       // 获取书签栏ID
@@ -677,76 +644,7 @@ const closeBookmarkDialog = () => {
   bookmarkDialog.item = null;
 };
 
-// 保存书签
-const saveBookmark = async () => {
-  if (!bookmarkDialog.title || !bookmarkDialog.url) {
-    alert('请填写标题和URL');
-    return;
-  }
-  
-  try {
-    const bookmarkData: chrome.bookmarks.CreateDetails = {
-      title: bookmarkDialog.title,
-      url: bookmarkDialog.url
-    };
-    
-    if (bookmarkDialog.parentId) {
-      bookmarkData.parentId = bookmarkDialog.parentId;
-      // 保存用户选择的文件夹
-      await chrome.storage.local.set({ lastSelectedFolder: bookmarkDialog.parentId });
-    }
-    
-    await chrome.bookmarks.create(bookmarkData);
-    alert('书签添加成功！');
-    closeBookmarkDialog();
-  } catch (error) {
-    console.error('添加书签失败:', error);
-    alert('添加书签失败，请重试');
-  }
-};
 
-// 获取书签文件夹
-const loadBookmarkFolders = async () => {
-  try {
-    const bookmarks = await chrome.bookmarks.getTree();
-    const folders: {id: string, title: string}[] = [];
-    const foldersTree: any[] = [];
-    
-    // 跳过虚拟根节点，只处理实际的书签文件夹
-    const actualFolders = bookmarks[0]?.children || [];
-    
-    const traverseBookmarks = (nodes: chrome.bookmarks.BookmarkTreeNode[], depth = 0, parentArray: any[] = foldersTree) => {
-      for (const node of nodes) {
-        if (!node.url) { // 文件夹
-          const prefix = '  '.repeat(depth);
-          // 为平铺结构添加
-          folders.push({
-            id: node.id,
-            title: `${prefix}${node.title || '未命名文件夹'}`
-          });
-          
-          // 为树形结构添加
-          const treeNode = {
-            id: node.id,
-            title: node.title || '未命名文件夹',
-            children: []
-          };
-          parentArray.push(treeNode);
-          
-          if (node.children) {
-            traverseBookmarks(node.children, depth + 1, treeNode.children);
-          }
-        }
-      }
-    };
-    
-    traverseBookmarks(actualFolders);
-    bookmarkFolders.value = folders;
-    bookmarkFoldersTree.value = foldersTree;
-  } catch (error) {
-    console.error('获取书签文件夹失败:', error);
-  }
-};
 
 // 加载快捷键配置
 const loadShortcutConfig = async () => {
@@ -918,9 +816,6 @@ onMounted(async () => {
   
   // 监听storage变化
   chrome.storage.onChanged.addListener(handleStorageChange);
-  
-  // 加载书签文件夹
-  await loadBookmarkFolders();
 });
 
 // 组件卸载
