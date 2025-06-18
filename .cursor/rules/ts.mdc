@@ -1,6 +1,6 @@
 ---
 description: 
-globs: *.ts,*.tsx,*.d.ts
+globs: **/*.tsx,**/*.d.ts,**/*.ts
 alwaysApply: false
 ---
 ---

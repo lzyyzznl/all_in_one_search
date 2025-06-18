@@ -2,16 +2,16 @@
   <div
     class="result-item"
     :class="{ 'selected': isSelected, 'floating': isFloating }"
-    :data-id="item.id"
-    @click="handleSelect"
-    @keydown.enter="handleSelect"
+    :data-id="dataId || item.id"
+    @click="handleClick"
+    @keydown.enter="handleOpen"
     tabindex="0"
   >
     <div class="item-icon">
       {{ itemIcon }}
     </div>
     <div class="item-content">
-      <div class="item-title" :title="item.title">{{ item.title }}</div>
+      <div class="item-title" :title="item.title">{{ highlightedTitle }}</div>
       <div class="item-url" :title="item.url">{{ item.url }}</div>
       <div class="item-meta">
         <span v-if="item.folderName" class="folder-tag">
@@ -72,44 +72,89 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { SearchResultItem } from '../utils/types';
-import { useUI } from '../utils/composables/useUI';
+import { formatFileSize } from '../utils/search';
 
 interface Props {
   item: SearchResultItem;
+  query?: string;
   isSelected?: boolean;
-  isFloating?: boolean; // 是否在浮动搜索中使用
-  showActions?: boolean; // 是否显示操作按钮
+  isFloating?: boolean;
+  showActions?: boolean;
+  dataId?: string;
 }
 
 interface Emits {
-  (e: 'select', item: SearchResultItem): void;
+  (e: 'click'): void;
+  (e: 'open', item: SearchResultItem): void;
   (e: 'bookmark', item: SearchResultItem): void;
   (e: 'showFile', item: SearchResultItem): void;
   (e: 'copy', url: string): void;
+  // 兼容新的事件名
+  (e: 'select', item: SearchResultItem): void;
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  query: '',
   isSelected: false,
   isFloating: false,
   showActions: true,
+  dataId: ''
 });
 
 const emit = defineEmits<Emits>();
 
-const { getItemIcon, formatDate, formatFileSizeDisplay } = useUI();
+// 获取项目图标
+const itemIcon = computed(() => {
+  switch (props.item.type) {
+    case 'bookmark': return '🔖';
+    case 'history': return '🕒';
+    case 'download': return '📥';
+    default: return '📄';
+  }
+});
 
-const itemIcon = computed(() => getItemIcon(props.item.type));
+// 高亮标题
+const highlightedTitle = computed(() => {
+  if (!props.query) return props.item.title;
+  
+  const regex = new RegExp(`(${props.query})`, 'gi');
+  return props.item.title.replace(regex, '<mark>$1</mark>');
+});
 
-const formattedDate = computed(() => 
-  props.item.lastVisited ? formatDate(props.item.lastVisited) : ''
-);
+// 格式化日期
+const formattedDate = computed(() => {
+  if (!props.item.lastVisited) return '';
+  
+  const date = new Date(props.item.lastVisited);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
+  if (diffMins < 60) {
+    return `${diffMins} 分钟前`;
+  } else if (diffHours < 24) {
+    return `${diffHours} 小时前`;
+  } else if (diffDays < 7) {
+    return `${diffDays} 天前`;
+  } else {
+    return date.toLocaleDateString('zh-CN');
+  }
+});
+
+// 格式化文件大小
 const formattedFileSize = computed(() => 
-  props.item.fileSize ? formatFileSizeDisplay(props.item.fileSize) : ''
+  props.item.fileSize ? formatFileSize(props.item.fileSize) : ''
 );
 
-function handleSelect(): void {
-  emit('select', props.item);
+// 事件处理
+function handleClick(): void {
+  emit('click');
+}
+
+function handleOpen(): void {
+  emit('open', props.item);
 }
 
 function handleBookmark(): void {
@@ -125,160 +170,113 @@ function handleCopy(): void {
 }
 </script>
 
-<style scoped>
+<style>
 .result-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  outline: none;
-  position: relative;
+  @apply flex items-center gap-3 p-2 px-3 rounded-lg cursor-pointer transition-all duration-200 outline-none relative;
 }
 
 .result-item:hover,
 .result-item:focus,
 .result-item.selected {
-  background: rgba(102, 126, 234, 0.1);
-  transform: translateX(4px);
+  @apply bg-primary/10 translate-x-1;
 }
 
 .result-item.selected {
-  background: rgba(102, 126, 234, 0.2);
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  @apply bg-primary/20 shadow-md shadow-primary/30;
 }
 
 .item-icon {
-  font-size: 16px;
-  flex-shrink: 0;
+  @apply text-base flex-shrink-0;
 }
 
 .item-content {
-  flex: 1;
-  min-width: 0;
+  @apply flex-1 min-w-0;
 }
 
 .item-title {
-  font-weight: 500;
-  color: #2d3748;
-  margin-bottom: 2px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @apply font-medium text-gray-800 mb-0.5 overflow-hidden text-ellipsis whitespace-nowrap;
+}
+
+.item-title :deep(mark) {
+  @apply bg-yellow-200 text-yellow-800;
 }
 
 .item-url {
-  font-size: 12px;
-  color: #718096;
-  margin-bottom: 2px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @apply text-xs text-gray-500 mb-0.5 overflow-hidden text-ellipsis whitespace-nowrap;
 }
 
 .item-meta {
-  display: flex;
-  gap: 8px;
-  font-size: 11px;
-  color: #a0aec0;
-  flex-wrap: wrap;
+  @apply flex gap-2 text-xs text-gray-400 flex-wrap;
 }
 
 .folder-tag {
-  color: #d69e2e;
-  font-weight: 500;
+  @apply text-yellow-600 font-medium;
 }
 
 .visit-count {
-  color: #3182ce;
+  @apply text-blue-600;
 }
 
 .file-size {
-  color: #38a169;
-  font-weight: 500;
+  @apply text-green-600 font-medium;
 }
 
 .last-visited {
-  color: #718096;
+  @apply text-gray-500;
 }
 
 .file-missing {
-  color: #e53e3e;
-  font-weight: 500;
+  @apply text-red-600 font-medium;
 }
 
 .item-actions {
-  display: flex;
-  gap: 6px;
-  opacity: 0;
-  transition: opacity 0.2s ease;
+  @apply flex gap-1.5 opacity-0 transition-opacity duration-200;
 }
 
 .result-item:hover .item-actions {
-  opacity: 1;
+  @apply opacity-100;
 }
 
 .action-button {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  border: none;
-  border-radius: 4px;
-  background: transparent;
-  color: #718096;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 12px;
+  @apply flex items-center gap-1 p-1 px-2 border-none rounded bg-transparent text-gray-500 cursor-pointer transition-all duration-200 text-xs;
 }
 
 .action-button:hover {
-  background: rgba(0, 0, 0, 0.05);
-  color: #2d3748;
+  @apply bg-black/5 text-gray-700;
 }
 
 .bookmark-button:hover {
-  background: rgba(56, 178, 172, 0.1);
-  color: #319795;
+  @apply bg-teal-100 text-teal-700;
 }
 
 .folder-button:hover {
-  background: rgba(56, 161, 105, 0.1);
-  color: #38a169;
+  @apply bg-green-100 text-green-700;
 }
 
 .copy-button:hover {
-  background: rgba(49, 130, 206, 0.1);
-  color: #3182ce;
+  @apply bg-blue-100 text-blue-700;
 }
 
 /* 浮动搜索模式的样式调整 */
 .result-item.floating {
-  background: transparent;
+  @apply bg-transparent;
 }
 
 .result-item.floating:hover,
 .result-item.floating:focus,
 .result-item.floating.selected {
-  background: rgba(102, 126, 234, 0.1);
+  @apply bg-primary/10;
 }
 
 .result-item.floating .action-button {
-  padding: 6px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.9);
-  color: #4a5568;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  @apply p-1.5 rounded-full bg-white/90 text-gray-600 shadow-sm;
 }
 
 .result-item.floating .action-button span {
-  display: none;
+  @apply hidden;
 }
 
 .result-item.floating .action-button:hover {
-  background: white;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  @apply bg-white shadow-md;
 }
 </style> 

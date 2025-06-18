@@ -325,182 +325,85 @@ onUnmounted(() => {
 
 <style scoped>
 .floating-search-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(102, 126, 234, 0.15);
+  @apply fixed top-0 left-0 w-screen h-screen bg-primary bg-opacity-15 backdrop-blur-lg z-modal flex-center fade-in;
   backdrop-filter: blur(12px) saturate(180%);
   -webkit-backdrop-filter: blur(12px) saturate(180%);
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: fadeIn 0.3s ease-out;
   pointer-events: auto !important;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
 .floating-search-container {
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-  width: 90%;
-  max-width: 600px;
-  max-height: 80vh;
-  overflow: hidden;
-  animation: slideUp 0.3s ease-out;
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  @apply bg-white rounded-xl shadow-2xl w-90% max-w-2xl max-h-80vh overflow-hidden slide-up;
 }
 
 .search-box {
-  display: flex;
-  align-items: center;
-  padding: 20px;
-  border-bottom: 1px solid #e2e8f0;
+  @apply flex items-center p-5 border-b border-gray-200;
 }
 
 .search-input {
-  flex: 1;
-  padding: 12px 16px;
-  border: 2px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 16px;
-  outline: none;
-  transition: border-color 0.2s ease;
+  @apply flex-1 p-3 border-2 border-gray-200 rounded-lg text-base outline-none transition-colors;
 }
 
 .search-input:focus {
-  border-color: #667eea;
+  @apply border-primary;
 }
 
 .search-button {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: none;
-  border-radius: 50%;
-  width: 44px;
-  height: 44px;
-  margin-left: 12px;
-  cursor: pointer;
-  font-size: 18px;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.2s ease;
+  @apply gradient-primary border-none rounded-full w-11 h-11 ml-3 cursor-pointer text-lg text-white flex-center transition-transform;
 }
 
 .search-button:hover {
-  transform: scale(1.05);
+  @apply scale-105;
 }
 
 .search-options {
-  display: flex;
-  gap: 16px;
-  padding: 12px 20px;
-  background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
+  @apply flex gap-4 p-3 px-5 bg-gray-50 border-b border-gray-200;
 }
 
 .checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  color: #4a5568;
+  @apply flex items-center gap-1.5 cursor-pointer text-sm text-gray-600;
 }
 
 .checkbox-label input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+  @apply w-4 h-4;
 }
 
 .search-results {
-  max-height: 400px;
-  overflow-y: auto;
+  @apply max-h-100 overflow-y-auto custom-scrollbar;
 }
 
 .results-container {
-  padding: 16px;
+  @apply p-4;
 }
 
 .domain-group {
-  margin-bottom: 20px;
+  @apply mb-5;
 }
 
 .domain-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: #f1f5f9;
-  border-radius: 8px;
-  margin-bottom: 8px;
+  @apply flex items-center gap-2 p-2 px-3 bg-gray-100 rounded-lg mb-2;
 }
 
 .domain-favicon {
-  width: 16px;
-  height: 16px;
-  border-radius: 2px;
+  @apply w-4 h-4 rounded-sm;
 }
 
 .domain-name {
-  flex: 1;
-  font-weight: 500;
-  color: #2d3748;
+  @apply flex-1 font-medium text-gray-700;
 }
 
 .result-count {
-  background: #667eea;
-  color: white;
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-size: 12px;
-  font-weight: 500;
+  @apply bg-primary text-white px-2 py-0.5 rounded-full text-xs font-medium;
 }
 
 .results-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  @apply flex flex-col gap-1;
 }
 
 .empty-state {
-  padding: 40px;
-  text-align: center;
-  color: #718096;
+  @apply p-10 text-center text-gray-500;
 }
 
 .usage-hints {
-  display: flex;
-  gap: 16px;
-  padding: 12px 20px;
-  background: #f8fafc;
-  border-top: 1px solid #e2e8f0;
-  font-size: 12px;
-  color: #718096;
-  justify-content: center;
+  @apply flex gap-4 p-3 px-5 bg-gray-50 border-t border-gray-200 text-xs text-gray-500 justify-center;
 }
-
-/* 浮动搜索特有样式 */
 </style> 

@@ -1,0 +1,112 @@
+/* UnoCSS样式入口文件 */
+@import "uno.css";
+
+/* 全局样式重置 */
+@import "@unocss/reset/tailwind.css";
+
+/* 自定义全局样式 */
+:root {
+  /* CSS变量 - 兼容现有样式 */
+  --color-primary: #667eea;
+  --color-primary-dark: #5a67d8;
+  --color-primary-light: rgba(102, 126, 234, 0.1);
+  
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-error: #f44336;
+  --color-info: #6b7280;
+  
+  --color-bg: #f8fafc;
+  --color-card: #ffffff;
+  --color-text: #334155;
+  --color-text-light: #64748b;
+  --color-text-disabled: #94a3b8;
+  --color-border: #e2e8f0;
+  --color-hover: #f1f5f9;
+  
+  --font-family-base: 'Inter', 'Segoe UI', 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  
+  --transition-base: all 0.2s cubic-bezier(0.645, 0.045, 0.355, 1);
+  --transition-fast: all 0.1s cubic-bezier(0.645, 0.045, 0.355, 1);
+  --transition-slow: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+}
+
+/* 自定义动画 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* 工具类 */
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+.slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+/* Element Plus 主题定制 */
+.el-button--primary {
+  @apply bg-gradient-to-br from-primary to-purple-600 border-primary;
+}
+
+.el-button--primary:hover {
+  @apply from-primary-dark to-purple-700;
+}
+
+.el-input__wrapper {
+  @apply border-gray-200 rounded;
+}
+
+.el-input__wrapper.is-focus {
+  @apply border-primary shadow-sm;
+}
+
+/* 自定义滚动条样式 */
+.custom-scrollbar::-webkit-scrollbar {
+  @apply w-1.5 h-1.5;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  @apply bg-gray-100 rounded-sm;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded-sm;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400;
+} 

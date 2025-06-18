@@ -359,6 +359,143 @@ onMounted(async () => {
 });
 </script>
 
-<style lang="less" scoped>
-@import '../entrypoints/styles/element-settings.less';
+<style scoped>
+/* 引入UnoCSS样式 */
+@import '../entrypoints/styles/uno.css';
+
+/* 设置页面样式 */
+.settings-container {
+  @apply min-h-screen bg-gray-50 p-6;
+}
+
+.settings-content {
+  @apply max-w-4xl mx-auto;
+}
+
+.settings-header {
+  @apply text-center mb-8;
+}
+
+.settings-title {
+  @apply text-3xl font-bold text-gray-800 mb-2;
+}
+
+.settings-subtitle {
+  @apply text-gray-600;
+}
+
+.settings-sections {
+  @apply space-y-6;
+}
+
+.settings-section {
+  @apply bg-white rounded-lg shadow-sm border border-gray-200 p-6;
+}
+
+.section-header {
+  @apply flex items-center gap-3 mb-4 pb-3 border-b border-gray-200;
+}
+
+.section-icon {
+  @apply text-2xl;
+}
+
+.section-title {
+  @apply text-xl font-semibold text-gray-800;
+}
+
+.section-description {
+  @apply text-sm text-gray-600 mt-1;
+}
+
+.setting-item {
+  @apply flex justify-between items-center py-3 border-b border-gray-100 last:border-b-0;
+}
+
+.setting-label {
+  @apply flex-1;
+}
+
+.setting-name {
+  @apply font-medium text-gray-700;
+}
+
+.setting-desc {
+  @apply text-sm text-gray-500 mt-1;
+}
+
+.setting-control {
+  @apply flex-shrink-0;
+}
+
+/* 表单控件样式 */
+.el-input__wrapper {
+  @apply bg-white border border-gray-200;
+}
+
+.el-input__wrapper:hover {
+  @apply border-primary;
+}
+
+.el-input__wrapper.is-focus {
+  @apply border-primary shadow-sm;
+}
+
+.el-select {
+  @apply min-w-32;
+}
+
+.el-switch.is-checked .el-switch__core {
+  @apply bg-primary;
+}
+
+.el-button--primary {
+  @apply gradient-primary border-primary;
+}
+
+.el-button--primary:hover {
+  @apply from-primary-dark to-purple-700;
+}
+
+/* 快捷键显示 */
+.shortcut-display {
+  @apply bg-gray-100 px-3 py-1 rounded font-mono text-sm border;
+}
+
+/* 重置按钮样式 */
+.reset-section {
+  @apply bg-red-50 border-red-200 rounded-lg p-4 mt-6;
+}
+
+.reset-warning {
+  @apply text-red-700 text-sm mb-3;
+}
+
+.reset-button {
+  @apply bg-red-600 hover:bg-red-700 border-red-600 hover:border-red-700;
+}
+
+/* 保存区域 */
+.save-section {
+  @apply bg-white rounded-lg shadow-sm border border-gray-200 p-6 mt-6 text-center;
+}
+
+.save-buttons {
+  @apply flex gap-3 justify-center;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .settings-container {
+    @apply p-4;
+  }
+  
+  .setting-item {
+    @apply flex-col items-start gap-3;
+  }
+  
+  .setting-control {
+    @apply w-full;
+  }
+}
 </style>
