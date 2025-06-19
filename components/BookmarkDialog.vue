@@ -1,75 +1,77 @@
 <template>
-  <div v-if="show" class="dialog-portal">
-    <div class="dialog-overlay" @click="handleClose">
-      <div class="dialog-container" @click.stop>
-        <div class="dialog-header">
-          <h3>添加到书签</h3>
-          <button class="close-button" @click="handleClose">×</button>
-        </div>
-        
-        <div class="dialog-content">
-          <div class="form-group">
-            <label>标题:</label>
-            <input 
-              v-model="localDialog.title" 
-              type="text" 
-              class="form-input"
-              :class="{ error: !localDialog.title.trim() }"
-              placeholder="请输入书签标题"
-              maxlength="100"
-            />
-          </div>
-          
-          <div class="form-group">
-            <label>URL:</label>
-            <input 
-              v-model="localDialog.url" 
-              type="text" 
-              class="form-input" 
-              readonly 
-            />
-          </div>
-          
-          <div class="form-group">
-            <label>文件夹:</label>
-            <select v-model="localDialog.parentId" class="form-select">
-              <option value="">选择文件夹</option>
-              <option 
-                v-for="folder in folders" 
-                :key="folder.id" 
-                :value="folder.id"
-              >
-                {{ folder.title }}
-              </option>
-            </select>
-          </div>
-        </div>
-        
-        <div class="dialog-footer">
-          <button class="button button-secondary" @click="handleClose">
-            取消
-          </button>
-          <button 
-            class="button button-primary" 
-            @click="handleSave"
-            :disabled="!localDialog.title.trim() || saving"
-          >
-            {{ saving ? '保存中...' : '保存' }}
-          </button>
-        </div>
+  <el-dialog
+    :model-value="show"
+    @update:model-value="handleDialogUpdate"
+    title="添加到书签"
+    width="500px"
+    :before-close="handleClose"
+    :z-index="10000"
+    class="bookmark-dialog"
+  >
+    <el-form 
+      :model="localDialog" 
+      label-width="80px"
+      :rules="bookmarkRules"
+      ref="bookmarkForm"
+    >
+      <el-form-item label="标题" prop="title">
+        <el-input 
+          v-model="localDialog.title" 
+          placeholder="请输入书签标题"
+          maxlength="100"
+          show-word-limit
+        />
+      </el-form-item>
+      
+      <el-form-item label="URL">
+        <el-input 
+          v-model="localDialog.url" 
+          readonly
+          class="readonly-input"
+        />
+      </el-form-item>
+      
+      <el-form-item label="文件夹">
+        <el-tree-select
+          v-model="localDialog.parentId"
+          :data="bookmarkFoldersTree"
+          :props="{ label: 'title', value: 'id', children: 'children' }"
+          filterable
+          placeholder="请选择文件夹"
+          style="width: 100%"
+          check-strictly
+          clearable
+          :loading="foldersLoading"
+        />
+      </el-form-item>
+    </el-form>
+    
+    <template #footer>
+      <div class="dialog-footer">
+        <el-button @click="handleClose">
+          取消
+        </el-button>
+        <el-button 
+          type="primary" 
+          @click="handleSave"
+          :loading="saving"
+          :disabled="!localDialog.title.trim()"
+        >
+          {{ saving ? '保存中...' : '保存' }}
+        </el-button>
       </div>
-    </div>
-  </div>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
-import type { BookmarkDialogState, BookmarkFolder } from '../utils/composables/useBookmarks';
+import { ref, watch, onMounted, reactive } from 'vue';
+import type { BookmarkDialogState } from '../utils/composables/useBookmarks';
+import { getBookmarkTree } from '../utils/bookmarksApiWrapper';
 
 interface Props {
   show: boolean;
   dialog: BookmarkDialogState;
-  folders: { id: string; title: string }[];
 }
 
 interface Emits {
@@ -81,12 +83,25 @@ const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
 const saving = ref(false);
+const foldersLoading = ref(true);
+const bookmarkForm = ref();
 
 // 本地对话框状态，避免直接修改props
 const localDialog = ref({
   title: '',
   url: '',
   parentId: ''
+});
+
+// 书签文件夹树形结构
+const bookmarkFoldersTree = ref<any[]>([]);
+
+// 表单验证规则
+const bookmarkRules = reactive({
+  title: [
+    { required: true, message: '请输入书签标题', trigger: 'blur' },
+    { min: 1, max: 100, message: '长度在1到100个字符', trigger: 'blur' }
+  ]
 });
 
 // 监听props变化，同步到本地状态
@@ -98,17 +113,64 @@ watch(() => props.dialog, (newDialog) => {
   };
 }, { immediate: true, deep: true });
 
+// 监听显示状态，加载文件夹
+watch(() => props.show, (newShow) => {
+  if (newShow) {
+    loadBookmarkFolders();
+  }
+});
+
+/**
+ * 构建书签文件夹树
+ */
+function buildFolderTree(nodes: chrome.bookmarks.BookmarkTreeNode[]): any[] {
+  return nodes
+    .filter((node) => !node.url) // 只要文件夹
+    .map((node) => ({
+      id: node.id,
+      title: node.title || '未命名文件夹',
+      children: node.children ? buildFolderTree(node.children) : [],
+    }));
+}
+
+/**
+ * 加载书签文件夹
+ */
+async function loadBookmarkFolders(): Promise<void> {
+  foldersLoading.value = true;
+  try {
+    const bookmarks = await getBookmarkTree();
+    const actualFolders = bookmarks[0]?.children || [];
+    bookmarkFoldersTree.value = buildFolderTree(actualFolders);
+  } catch (error) {
+    console.error('获取书签文件夹失败:', error);
+    bookmarkFoldersTree.value = [];
+  } finally {
+    foldersLoading.value = false;
+  }
+}
+
 const handleClose = () => {
   emit('close');
 };
 
-const handleSave = async () => {
-  if (!localDialog.value.title.trim()) {
-    return;
+const handleDialogUpdate = (visible: boolean) => {
+  if (!visible) {
+    handleClose();
   }
+};
 
-  saving.value = true;
+const handleSave = async () => {
+  if (!bookmarkForm.value) return;
+  
   try {
+    await bookmarkForm.value.validate();
+    
+    if (!localDialog.value.title.trim()) {
+      return;
+    }
+
+    saving.value = true;
     await emit('save', {
       title: localDialog.value.title.trim(),
       url: localDialog.value.url,
@@ -120,185 +182,60 @@ const handleSave = async () => {
     saving.value = false;
   }
 };
+
+// 组件挂载时预加载文件夹
+onMounted(() => {
+  loadBookmarkFolders();
+});
 </script>
 
 <style scoped>
-.dialog-portal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: 10000;
-}
-
-.dialog-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(4px);
-  animation: fadeIn 0.3s ease-out;
-}
-
-.dialog-container {
-  background: white;
+.bookmark-dialog :deep(.el-dialog) {
   border-radius: 12px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-  width: 90%;
-  max-width: 480px;
-  max-height: 90vh;
-  overflow: hidden;
-  animation: slideIn 0.3s ease-out;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-20px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.dialog-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px;
-  border-bottom: 1px solid #e2e8f0;
+.bookmark-dialog :deep(.el-dialog__header) {
   background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 20px;
 }
 
-.dialog-header h3 {
-  margin: 0;
+.bookmark-dialog :deep(.el-dialog__title) {
   font-size: 18px;
   font-weight: 600;
   color: #2d3748;
 }
 
-.close-button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #718096;
-  font-size: 24px;
-  padding: 4px;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-  line-height: 1;
-}
-
-.close-button:hover {
-  background: #e2e8f0;
-  color: #2d3748;
-}
-
-.dialog-content {
+.bookmark-dialog :deep(.el-dialog__body) {
   padding: 20px;
 }
 
-.form-group {
-  margin-bottom: 16px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 6px;
+.bookmark-dialog :deep(.el-form-item__label) {
   font-weight: 500;
   color: #4a5568;
-  font-size: 14px;
 }
 
-.form-input,
-.form-select {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 14px;
-  transition: border-color 0.2s ease;
-  box-sizing: border-box;
-}
-
-.form-input:focus,
-.form-select:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-.form-input[readonly] {
+.readonly-input :deep(.el-input__inner) {
   background: #f7fafc;
   color: #718096;
 }
 
-.form-input.error {
-  border-color: #e53e3e;
-}
-
-.form-input.error:focus {
-  border-color: #e53e3e;
-  box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.1);
-}
-
 .dialog-footer {
-  padding: 20px;
-  background: #f8fafc;
-  border-top: 1px solid #e2e8f0;
   display: flex;
   gap: 12px;
   justify-content: flex-end;
+  padding-top: 8px;
 }
 
-.button {
-  padding: 10px 20px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border: none;
-  min-width: 80px;
+.bookmark-dialog :deep(.el-dialog__footer) {
+  padding: 20px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
 }
 
-.button-secondary {
-  background: #e2e8f0;
-  color: #4a5568;
-}
-
-.button-secondary:hover {
-  background: #cbd5e0;
-}
-
-.button-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-}
-
-.button-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-}
-
-.button-primary:disabled {
-  background: #cbd5e0;
-  color: #a0aec0;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
+/* 动画效果 */
+.bookmark-dialog :deep(.el-overlay) {
+  backdrop-filter: blur(4px);
 }
 </style> 

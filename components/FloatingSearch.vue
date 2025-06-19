@@ -10,7 +10,7 @@
           placeholder="搜索收藏夹、历史记录和下载文件..."
           class="search-input"
           @input="debouncedSearch"
-          @keydown.escape="closeFloatingSearch"
+          @keydown.escape="forceCloseAll"
           @keydown.arrow-down.prevent="navigateDown"
           @keydown.arrow-up.prevent="navigateUp"
           @keydown.enter.prevent="openSelectedItem"
@@ -76,11 +76,12 @@
     </div>
 
     <!-- 书签对话框 -->
-    <UnifiedBookmarkDialog
+    <BookmarkDialog
       :show="showBookmarkDialog"
       :dialog="bookmarkDialogState"
       @close="closeBookmarkDialog"
       @save="saveBookmark"
+      @click.stop
     />
   </div>
 </template>
@@ -93,7 +94,7 @@ import { useNotification } from '../utils/composables/useNotification';
 import { APP_CONSTANTS } from '../utils/constants';
 import type { SearchResultItem } from '../utils/types';
 import SearchResultItemComponent from './SearchResultItem.vue';
-import UnifiedBookmarkDialog from './UnifiedBookmarkDialog.vue';
+import BookmarkDialog from './BookmarkDialog.vue';
 
 const { getSiteFaviconUrl } = useUI();
 const { success, error: showError } = useNotification();
@@ -171,6 +172,11 @@ const toggleFloatingSearch = () => {
 
 // 关闭浮动搜索
 const closeFloatingSearch = () => {
+  // 如果书签对话框正在显示，则不关闭浮动搜索框
+  if (showBookmarkDialog.value) {
+    return;
+  }
+  
   isVisible.value = false;
   searchQuery.value = '';
   searchResults.value = {};
@@ -274,6 +280,15 @@ const handleCopyItem = async (url: string) => {
 
 const closeBookmarkDialog = () => {
   showBookmarkDialog.value = false;
+};
+
+// 强制关闭所有界面（ESC键使用）
+const forceCloseAll = () => {
+  showBookmarkDialog.value = false;
+  isVisible.value = false;
+  searchQuery.value = '';
+  searchResults.value = {};
+  selectedItem.value = null;
 };
 
 const saveBookmark = async (data: { title: string; url: string; parentId: string }) => {

@@ -265,10 +265,10 @@
   </div>
 
     <!-- 书签对话框 -->
-    <UnifiedBookmarkDialog
-      :show="bookmarkDialog.show"
-      :dialog="bookmarkDialog"
-      @close="closeBookmarkDialog"
+            <BookmarkDialog
+          :show="bookmarkDialog.show"
+          :dialog="bookmarkDialog"
+          @close="closeBookmarkDialog"
       @save="handleBookmarkSave"
     />
 </template>
@@ -286,7 +286,7 @@ import {
   TopRight,
   Setting
 } from '@element-plus/icons-vue';
-import UnifiedBookmarkDialog from './UnifiedBookmarkDialog.vue';
+import BookmarkDialog from './BookmarkDialog.vue';
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
 import {
   formatFileSize,
