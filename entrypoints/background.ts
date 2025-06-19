@@ -6,6 +6,7 @@ import {
 	openDownloadFile,
 	showDownloadFile,
 	SearchHistoryManager,
+	getRecommendedContent,
 } from "../utils/search";
 
 export default defineBackground({
@@ -172,6 +173,18 @@ export default defineBackground({
 						const history = await SearchHistoryManager.getSearchHistory();
 						console.log("搜索历史结果:", history?.length || 0);
 						sendResponse({ success: true, history });
+						break;
+					}
+
+					case "get-recommended-content": {
+						console.log("获取推荐内容");
+						const recommendedContent = await getRecommendedContent();
+						console.log("推荐内容结果:", {
+							history: recommendedContent.recentHistory.length,
+							bookmarks: recommendedContent.frequentBookmarks.length,
+							downloads: recommendedContent.latestDownloads.length,
+						});
+						sendResponse({ success: true, recommendedContent });
 						break;
 					}
 

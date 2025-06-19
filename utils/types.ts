@@ -98,6 +98,20 @@ export interface SearchStats {
 	searchTime: number; // 搜索耗时(ms)
 }
 
+// 推荐内容类型
+export interface RecommendedContent {
+	recentHistory: SearchResultItem[];
+	frequentBookmarks: SearchResultItem[];
+	latestDownloads: SearchResultItem[];
+}
+
+// 推荐内容分组
+export interface RecommendedGroup {
+	title: string;
+	items: SearchResultItem[];
+	type: 'history' | 'bookmarks' | 'downloads';
+}
+
 // 应用状态
 export interface AppState {
 	searchQuery: string;

@@ -62,6 +62,39 @@
         </div>
       </div>
 
+      <!-- 推荐内容 -->
+      <div v-else-if="showRecommended" class="recommended-content">
+        <div class="recommended-container">
+          <div v-for="group in recommendedGroups" :key="group.type" class="recommended-group">
+            <div class="group-header">
+              <span class="group-icon">
+                {{ group.type === 'history' ? '🕐' : group.type === 'bookmarks' ? '📚' : '📥' }}
+              </span>
+              <span class="group-title">{{ group.title }}</span>
+              <span class="item-count">{{ group.items.length }}</span>
+            </div>
+            <div class="group-items">
+              <SearchResultItemComponent
+                v-for="item in group.items.slice(0, 6)"
+                :key="item.id"
+                :item="item"
+                :isSelected="selectedItem === item.id"
+                :isFloating="true"
+                @select="handleSelectItem"
+                @bookmark="handleBookmarkItem"
+                @showFile="handleShowFileItem"
+                @copy="handleCopyItem"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 推荐内容加载状态 -->
+      <div v-else-if="isLoadingRecommended" class="loading-state">
+        <p>正在加载推荐内容...</p>
+      </div>
+
       <!-- 空状态 -->
       <div v-else-if="searchQuery && !isLoading" class="empty-state">
         <p>未找到匹配的结果</p>
@@ -107,7 +140,11 @@ const {
   performSearch,
   updateSearchOptions,
   openSearchItem,
-  showDownloadItem
+  showDownloadItem,
+  recommendedGroups,
+  showRecommended,
+  loadRecommendedContent,
+  isLoadingRecommended
 } = useContentSearch();
 
 const isVisible = ref(false);
@@ -162,6 +199,8 @@ const toggleFloatingSearch = () => {
   if (isVisible.value) {
     nextTick(() => {
       searchInput.value?.focus();
+      // 加载推荐内容
+      loadRecommendedContent();
     });
   } else {
     searchQuery.value = '';
@@ -216,9 +255,20 @@ const openSelectedItem = () => {
 
 const getAllItems = (): SearchResultItem[] => {
   const items: SearchResultItem[] = [];
-  Object.values(searchResults.value).forEach(group => {
-    items.push(...group.items.slice(0, 5));
-  });
+  
+  // 如果有搜索结果，返回搜索结果
+  if (Object.keys(searchResults.value).length > 0) {
+    Object.values(searchResults.value).forEach(group => {
+      items.push(...group.items.slice(0, 5));
+    });
+  } 
+  // 如果显示推荐内容，返回推荐内容
+  else if (showRecommended.value) {
+    recommendedGroups.value.forEach(group => {
+      items.push(...group.items.slice(0, 6));
+    });
+  }
+  
   return items;
 };
 
@@ -246,7 +296,7 @@ const handleBookmarkItem = async (item: SearchResultItem) => {
   
   try {
     bookmarkDialogState.value = {
-      show: true,
+      show: false,
       title: item.title,
       url: item.url,
       parentId: '',
@@ -515,6 +565,70 @@ onUnmounted(() => {
   font-size: 12px;
   color: #718096;
   justify-content: center;
+}
+
+/* 推荐内容样式 */
+.recommended-content {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.recommended-container {
+  padding: 0 20px 20px;
+}
+
+.recommended-group {
+  margin-bottom: 24px;
+}
+
+.recommended-group:last-child {
+  margin-bottom: 0;
+}
+
+.group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0 8px;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 8px;
+}
+
+.group-icon {
+  font-size: 16px;
+}
+
+.group-title {
+  font-weight: 600;
+  color: #334155;
+  font-size: 14px;
+  flex: 1;
+}
+
+.item-count {
+  background: #f1f5f9;
+  color: #64748b;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.group-items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.loading-state {
+  padding: 40px 20px;
+  text-align: center;
+  color: #666;
+}
+
+.loading-state p {
+  margin: 0;
+  font-size: 16px;
 }
 
 /* 浮动搜索特有样式 */

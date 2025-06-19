@@ -18,16 +18,13 @@
         <el-input 
           v-model="localDialog.title" 
           placeholder="请输入书签标题"
-          maxlength="100"
-          show-word-limit
         />
       </el-form-item>
       
-      <el-form-item label="URL">
+      <el-form-item label="URL" prop="url">
         <el-input 
           v-model="localDialog.url" 
-          readonly
-          class="readonly-input"
+          placeholder="请输入网址"
         />
       </el-form-item>
       
@@ -55,7 +52,7 @@
           type="primary" 
           @click="handleSave"
           :loading="saving"
-          :disabled="!localDialog.title.trim()"
+          :disabled="!localDialog.title?.trim() || !localDialog.url?.trim()"
         >
           {{ saving ? '保存中...' : '保存' }}
         </el-button>
@@ -99,8 +96,10 @@ const bookmarkFoldersTree = ref<any[]>([]);
 // 表单验证规则
 const bookmarkRules = reactive({
   title: [
-    { required: true, message: '请输入书签标题', trigger: 'blur' },
-    { min: 1, max: 100, message: '长度在1到100个字符', trigger: 'blur' }
+    { required: true, message: '请输入书签标题', trigger: 'blur' }
+  ],
+  url: [
+    { required: true, message: '请输入网址', trigger: 'blur' }
   ]
 });
 
@@ -166,14 +165,14 @@ const handleSave = async () => {
   try {
     await bookmarkForm.value.validate();
     
-    if (!localDialog.value.title.trim()) {
+    if (!localDialog.value.title?.trim() || !localDialog.value.url?.trim()) {
       return;
     }
 
     saving.value = true;
     await emit('save', {
       title: localDialog.value.title.trim(),
-      url: localDialog.value.url,
+      url: localDialog.value.url.trim(),
       parentId: localDialog.value.parentId
     });
   } catch (error) {
@@ -214,11 +213,6 @@ onMounted(() => {
 .bookmark-dialog :deep(.el-form-item__label) {
   font-weight: 500;
   color: #4a5568;
-}
-
-.readonly-input :deep(.el-input__inner) {
-  background: #f7fafc;
-  color: #718096;
 }
 
 .dialog-footer {

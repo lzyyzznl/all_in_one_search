@@ -32,7 +32,7 @@ export const APP_CONSTANTS = {
 	// 快捷键
 	SHORTCUTS: {
 		EXECUTE_ACTION: "_execute_action",
-		FLOATING_SEARCH: "_floating_search",
+		FLOATING_SEARCH: "floating_search",
 		DEFAULT_KEY: "Ctrl+Shift+S",
 		MAC_KEY: "Command+Shift+S",
 		FLOATING_DEFAULT_KEY: "Ctrl+Shift+F",

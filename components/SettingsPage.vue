@@ -236,8 +236,13 @@ const showSaveSuccess = ref(false);
 const shortcuts = ref([
   {
     name: '_execute_action',
-    description: '打开收藏夹历史记录搜索器',
-    shortcut: 'Ctrl+Shift+S'
+    description: '默认打开收藏夹历史记录搜索器',
+    shortcut: '未设置'
+  },
+  {
+    name: 'floating_search',
+    description: '在页面中央显示浮动搜索框',
+    shortcut: '未设置'
   }
 ]);
 
@@ -279,6 +284,7 @@ const loadShortcuts = async () => {
         shortcut: command?.shortcut || '未设置'
       };
     });
+    console.log('快捷键配置已加载:', shortcuts.value);
   } catch (error) {
     console.error('加载快捷键失败:', error);
   }
@@ -333,7 +339,6 @@ const saveSearchSettings = async () => {
     showSaveSuccessMessage();
   } catch (error) {
     console.error('保存搜索设置失败:', error);
-    ElMessage.error('保存设置失败，请重试');
   }
 };
 
@@ -347,7 +352,6 @@ const saveNavigationSettings = async () => {
     showSaveSuccessMessage();
   } catch (error) {
     console.error('保存键盘导航设置失败:', error);
-    ElMessage.error('保存设置失败，请重试');
   }
 };
 

@@ -223,7 +223,43 @@
         </el-empty>
       </div>
 
-      <!-- 初始状态 -->
+      <!-- 初始状态 - 显示推荐内容 -->
+      <div v-else-if="showRecommended" class="recommended-content">
+        <div class="recommended-container">
+          <div v-for="group in recommendedGroups" :key="group.type" class="recommended-group">
+            <div class="group-header">
+              <span class="group-icon">
+                {{ group.type === 'history' ? '🕐' : group.type === 'bookmarks' ? '📚' : '📥' }}
+              </span>
+              <span class="group-title">{{ group.title }}</span>
+              <span class="item-count">{{ group.items.length }}</span>
+            </div>
+            <div class="group-items">
+              <SearchResultItemComponent
+                v-for="item in group.items.slice(0, 6)"
+                :key="item.id"
+                :item="item"
+                :isSelected="selectedItem === item.id"
+                :isFloating="false"
+                @select="openItem"
+                @bookmark="showBookmarkDialog"
+                @showFile="showDownloadFile"
+                @copy="handleCopyUrl"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 推荐内容加载状态 -->
+      <div v-else-if="isLoadingRecommended" class="loading-state">
+        <div class="loading-content">
+          <el-icon class="loading-icon"><Search /></el-icon>
+          <p>正在加载推荐内容...</p>
+        </div>
+      </div>
+
+      <!-- 初始状态 - 功能说明（作为后备） -->
       <div v-else class="initial-state">
         <el-card class="welcome-card" :body-style="{ padding: '32px', textAlign: 'center' }">
           <div class="welcome-tips">
@@ -298,13 +334,17 @@ import {
   showDownloadFile as showDownloadFileInExplorer
 } from '../utils/search';
 import { formatShortcut, getNavigationKeys, getShortcut } from '../utils/shortcuts.ts';
+import { ContentSearchService } from '../utils/contentSearch';
 import type {
   GroupedSearchResults,
   SearchHistoryItem,
   SearchOptions,
   SearchResultItem,
-  SearchStats
+  SearchStats,
+  RecommendedContent,
+  RecommendedGroup
 } from '../utils/types';
+import SearchResultItemComponent from './SearchResultItem.vue';
 
 // 检测是否为新标签页模式
 const isNewTabMode = computed(() => {
@@ -326,6 +366,16 @@ const DEBOUNCE_DELAY = 300;
 
 // 选中的数据源 - 默认全选
 const selectedDataSources = ref<string[]>(['bookmarks', 'history', 'downloads']);
+
+// 推荐内容相关状态
+const recommendedContent = ref<RecommendedContent>({
+  recentHistory: [],
+  frequentBookmarks: [],
+  latestDownloads: []
+});
+const recommendedGroups = ref<RecommendedGroup[]>([]);
+const showRecommended = ref(false);
+const isLoadingRecommended = ref(false);
 
 // 快捷键显示
 const mainShortcut = ref('');
@@ -389,6 +439,52 @@ const searchOptions = reactive<SearchOptions>({
 const hasResults = computed(() => {
   return Object.keys(searchResults.value).length > 0;
 });
+
+// 处理推荐内容分组
+const updateRecommendedGroups = () => {
+  const groups: RecommendedGroup[] = [];
+  
+  if (recommendedContent.value.recentHistory.length > 0) {
+    groups.push({
+      type: 'history',
+      title: '最近访问',
+      items: recommendedContent.value.recentHistory,
+    });
+  }
+  
+  if (recommendedContent.value.frequentBookmarks.length > 0) {
+    groups.push({
+      type: 'bookmarks',
+      title: '常用书签',
+      items: recommendedContent.value.frequentBookmarks,
+    });
+  }
+  
+  if (recommendedContent.value.latestDownloads.length > 0) {
+    groups.push({
+      type: 'downloads',
+      title: '最近下载',
+      items: recommendedContent.value.latestDownloads,
+    });
+  }
+  
+  recommendedGroups.value = groups;
+  showRecommended.value = groups.length > 0;
+};
+
+// 加载推荐内容
+const loadRecommendedContent = async (): Promise<void> => {
+  try {
+    isLoadingRecommended.value = true;
+    const content = await ContentSearchService.getRecommendedContent();
+    recommendedContent.value = content;
+    updateRecommendedGroups();
+  } catch (error) {
+    console.error("加载推荐内容失败:", error);
+  } finally {
+    isLoadingRecommended.value = false;
+  }
+};
 
 // 获取项目图标
 const getItemIcon = (type: string): string => {
@@ -540,7 +636,34 @@ const openItem = async (item: SearchResultItem) => {
 
 // 显示下载文件
 const showDownloadFile = async (downloadId: string) => {
-  await showDownloadFileInExplorer(downloadId);
+  try {
+    await showDownloadFileInExplorer(downloadId);
+  } catch (error) {
+    console.error('显示下载文件失败:', error);
+  }
+};
+
+// 复制URL到剪贴板
+const handleCopyUrl = async (url: string) => {
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(url);
+      console.log('已复制到剪贴板:', url);
+    } else {
+      // 降级方案：使用传统方法
+      const textArea = document.createElement('textarea');
+      textArea.value = url;
+      textArea.style.position = 'absolute';
+      textArea.style.left = '-9999px';
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      console.log('已复制到剪贴板:', url);
+    }
+  } catch (error) {
+    console.error('复制失败:', error);
+  }
 };
 
 // 根据ID查找项目
@@ -807,6 +930,9 @@ onMounted(async () => {
   // 加载搜索历史
   await loadSearchHistory();
   
+  // 加载推荐内容
+  await loadRecommendedContent();
+  
   // 聚焦搜索框
   await nextTick();
   searchInput.value?.focus();
@@ -861,4 +987,83 @@ defineExpose({
 
 <style lang="less" scoped>
 @import '../entrypoints/styles/element-popup.less';
+
+/* 推荐内容样式 */
+.recommended-content {
+  padding: 16px;
+  
+  .recommended-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .recommended-group {
+    .group-header {
+      display: flex;
+      align-items: center;
+      padding: 8px 12px;
+      background: var(--el-bg-color-page);
+      border-radius: 6px;
+      margin-bottom: 8px;
+      
+      .group-icon {
+        font-size: 16px;
+        margin-right: 8px;
+      }
+      
+      .group-title {
+        font-weight: 500;
+        color: var(--el-text-color-primary);
+        flex: 1;
+      }
+      
+      .item-count {
+        font-size: 12px;
+        color: var(--el-text-color-secondary);
+        background: var(--el-color-info-light-9);
+        padding: 2px 6px;
+        border-radius: 10px;
+      }
+    }
+    
+    .group-items {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+  }
+}
+
+.loading-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  
+  .loading-content {
+    text-align: center;
+    color: var(--el-text-color-secondary);
+    
+    .loading-icon {
+      font-size: 24px;
+      margin-bottom: 12px;
+      animation: rotation 2s infinite linear;
+    }
+    
+    p {
+      margin: 0;
+      font-size: 14px;
+    }
+  }
+}
+
+@keyframes rotation {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
 </style>

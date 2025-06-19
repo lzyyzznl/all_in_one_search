@@ -1,4 +1,9 @@
-import type { GroupedSearchResults, SearchOptions, SearchStats } from "./types";
+import type {
+	GroupedSearchResults,
+	SearchOptions,
+	SearchStats,
+	RecommendedContent,
+} from "./types";
 
 /**
  * Content Script 搜索服务
@@ -167,6 +172,39 @@ export class ContentSearchService {
 		} catch (error) {
 			console.error("创建书签失败:", error);
 			throw error;
+		}
+	}
+
+	/**
+	 * 获取推荐内容
+	 */
+	static async getRecommendedContent(): Promise<RecommendedContent> {
+		try {
+			const response = await chrome.runtime.sendMessage({
+				action: "get-recommended-content",
+			});
+
+			if (response && response.success) {
+				return (
+					response.recommendedContent || {
+						recentHistory: [],
+						frequentBookmarks: [],
+						latestDownloads: [],
+					}
+				);
+			}
+			return {
+				recentHistory: [],
+				frequentBookmarks: [],
+				latestDownloads: [],
+			};
+		} catch (error) {
+			console.error("获取推荐内容失败:", error);
+			return {
+				recentHistory: [],
+				frequentBookmarks: [],
+				latestDownloads: [],
+			};
 		}
 	}
 }

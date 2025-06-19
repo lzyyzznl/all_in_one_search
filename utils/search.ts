@@ -208,6 +208,7 @@ export async function getAllBookmarks(): Promise<SearchResultItem[]> {
 						path: extractPath(node.url),
 						folderName: folderPath,
 						lastVisited: node.dateAdded || Date.now(),
+						visitCount: 0, // 书签默认访问次数为0，实际访问次数需要从历史记录获取
 					});
 				} else if (node.children) {
 					// 这是一个文件夹，递归遍历
@@ -520,6 +521,68 @@ export function formatFileSize(bytes: number): string {
 /**
  * 搜索历史记录管理
  */
+/**
+ * 获取推荐内容
+ */
+export async function getRecommendedContent(): Promise<{
+	recentHistory: SearchResultItem[];
+	frequentBookmarks: SearchResultItem[];
+	latestDownloads: SearchResultItem[];
+}> {
+	try {
+		// 获取最近7天的历史记录，按访问时间排序
+		const recentHistory = await getHistory(20, "week");
+
+		// 获取所有书签
+		const allBookmarks = await getAllBookmarks();
+
+		// 获取历史记录以便计算书签的实际访问频率
+		const allHistory = await getHistory(1000, "all");
+		const historyMap = new Map<string, SearchResultItem>();
+		allHistory.forEach((item) => {
+			historyMap.set(item.url, item);
+		});
+
+		// 为书签添加实际访问频率数据
+		const bookmarksWithVisitCount = allBookmarks.map((bookmark) => {
+			const historyItem = historyMap.get(bookmark.url);
+			return {
+				...bookmark,
+				visitCount: historyItem?.visitCount || 0,
+				lastVisited:
+					historyItem?.lastVisited || bookmark.lastVisited || Date.now(),
+			};
+		});
+
+		// 按访问频率和添加时间排序常用书签
+		const frequentBookmarks = bookmarksWithVisitCount
+			.sort((a, b) => {
+				// 首先按访问频率排序
+				const visitDiff = (b.visitCount || 0) - (a.visitCount || 0);
+				if (visitDiff !== 0) return visitDiff;
+				// 访问频率相同时按最近访问时间排序
+				return (b.lastVisited || 0) - (a.lastVisited || 0);
+			})
+			.slice(0, 15);
+
+		// 获取最近的下载文件
+		const latestDownloads = await getDownloads(10, "week");
+
+		return {
+			recentHistory: recentHistory.slice(0, 15),
+			frequentBookmarks,
+			latestDownloads: latestDownloads.slice(0, 10),
+		};
+	} catch (error) {
+		console.error("获取推荐内容失败:", error);
+		return {
+			recentHistory: [],
+			frequentBookmarks: [],
+			latestDownloads: [],
+		};
+	}
+}
+
 export class SearchHistoryManager {
 	private static readonly STORAGE_KEY =
 		APP_CONSTANTS.STORAGE_KEYS.SEARCH_HISTORY;
