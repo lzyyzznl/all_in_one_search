@@ -21,6 +21,7 @@ export default defineConfig({
 			"storage",
 			"tabs",
 			"commands",
+			"search",
 		],
 
 		// 快捷键配置
@@ -54,6 +55,14 @@ export default defineConfig({
 			48: "icon/48.png",
 			128: "icon/128.png",
 		},
+
+		// 新增 web_accessible_resources 配置
+		web_accessible_resources: [
+			{
+				resources: ["searchEngineIcon/*.png"],
+				matches: ["<all_urls>"],
+			},
+		],
 	},
 
 	// 开发配置

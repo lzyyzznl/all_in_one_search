@@ -1,4 +1,5 @@
 /// <reference types="chrome" />
+/// <reference types="wxt" />
 import { APP_CONSTANTS } from "../utils/constants";
 import {
 	searchBookmarksAndHistory,
@@ -8,6 +9,11 @@ import {
 	SearchHistoryManager,
 	getRecommendedContent,
 } from "../utils/search";
+import {
+	SearchEngineManager,
+	getDefaultSearchEngine,
+	performWebSearch,
+} from "../utils/searchEngines";
 
 export default defineBackground({
 	main() {
@@ -83,18 +89,36 @@ export default defineBackground({
 				// 向当前活动标签页发送消息显示浮动搜索框
 				chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
 					console.log("查询到的标签页:", tabs.length);
-					if (tabs.length > 0 && tabs[0]?.id) {
-						console.log("向标签页发送消息:", tabs[0].id);
-						chrome.tabs
-							.sendMessage(tabs[0].id, {
-								action: "toggle-floating-search",
-							})
-							.then((response) => {
-								console.log("消息发送成功，响应:", response);
-							})
-							.catch((error) => {
-								console.error("发送浮动搜索消息失败:", error);
-							});
+					if (tabs.length > 0 && typeof tabs[0]?.id === "number") {
+						const tab = tabs[0];
+						const url = tab.url || "";
+						const isRestricted =
+							url.startsWith("chrome://") ||
+							url.startsWith("edge://") ||
+							url.startsWith("about:") ||
+							url.includes("newtab");
+						if (isRestricted) {
+							// 特殊页面，弹出popup.html
+							chrome.tabs.create({ url: chrome.runtime.getURL("popup.html") });
+						} else {
+							// 正常向content-script发送消息
+							chrome.tabs.sendMessage(
+								tab.id as number,
+								{
+									action: "toggle-floating-search",
+								},
+								(response) => {
+									if (chrome.runtime.lastError) {
+										console.error(
+											"发送浮动搜索消息失败:",
+											chrome.runtime.lastError.message
+										);
+									} else {
+										console.log("消息发送成功，响应:", response);
+									}
+								}
+							);
+						}
 					} else {
 						console.warn("没有找到活动标签页");
 					}
@@ -228,6 +252,40 @@ export default defineBackground({
 
 					case "toggle-floating-search": {
 						console.log("切换浮动搜索");
+						sendResponse({ success: true });
+						break;
+					}
+
+					case "get-default-search-engine": {
+						console.log("获取默认搜索引擎");
+						const defaultEngine = await getDefaultSearchEngine();
+						console.log("默认搜索引擎:", defaultEngine.name);
+						sendResponse({ success: true, engine: defaultEngine });
+						break;
+					}
+
+					case "get-all-search-engines": {
+						console.log("获取所有搜索引擎");
+						const engines = SearchEngineManager.getAllEngines();
+						console.log("搜索引擎数量:", engines.length);
+						sendResponse({ success: true, engines });
+						break;
+					}
+
+					case "set-preferred-search-engine": {
+						console.log("设置偏好搜索引擎:", message.engineId);
+						await SearchEngineManager.setPreferredEngine(message.engineId);
+						sendResponse({ success: true });
+						break;
+					}
+
+					case "perform-web-search": {
+						console.log("执行网络搜索:", message.engineId, message.query);
+						await performWebSearch(
+							message.engineId,
+							message.query,
+							message.inNewTab !== false
+						);
 						sendResponse({ success: true });
 						break;
 					}

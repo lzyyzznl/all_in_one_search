@@ -78,6 +78,28 @@
           label-width="160px"
           label-position="top"
         >
+          <el-form-item label="偏好搜索引擎" prop="preferredSearchEngine">
+            <el-select 
+              v-model="searchSettings.preferredSearchEngine" 
+              @change="saveSearchSettings"
+              style="width: 100%"
+              placeholder="默认使用浏览器设置"
+            >
+              <el-option
+                v-for="engine in availableEngines"
+                :key="engine.id"
+                :label="engine.name"
+                :value="engine.id"
+              >
+                <template #default>
+                  <img :src="getEngineIconUrl(engine)" alt="icon" style="width:16px;height:16px;vertical-align:middle;margin-right:4px;" />
+                  <span>{{ engine.name }}</span>
+                </template>
+              </el-option>
+            </el-select>
+            <div class="setting-hint">选择您偏好的网络搜索引擎，用于 Ctrl+Enter 快捷搜索。</div>
+          </el-form-item>
+
           <el-form-item label="默认搜索结果数量" prop="defaultMaxResults">
             <el-select 
               v-model="searchSettings.defaultMaxResults" 
@@ -228,9 +250,11 @@ import {
 } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { onMounted, reactive, ref } from 'vue';
+import type { SearchEngine } from '../utils/types';
 
 // 显示保存成功消息
 const showSaveSuccess = ref(false);
+const availableEngines = ref<SearchEngine[]>([]);
 
 // 快捷键列表
 const shortcuts = ref([
@@ -248,8 +272,9 @@ const shortcuts = ref([
 
 // 搜索设置
 const searchSettings = reactive({
-  defaultMaxResults: 50,
-  defaultSortBy: 'relevance'
+  defaultMaxResults: 100,
+  defaultSortBy: 'relevance',
+  preferredSearchEngine: ''
 });
 
 // 键盘导航设置
@@ -287,6 +312,18 @@ const loadShortcuts = async () => {
     console.log('快捷键配置已加载:', shortcuts.value);
   } catch (error) {
     console.error('加载快捷键失败:', error);
+  }
+};
+
+// 加载所有搜索引擎
+const loadAvailableEngines = async () => {
+  try {
+    const response = await chrome.runtime.sendMessage({ action: 'get-all-search-engines' });
+    if (response?.success) {
+      availableEngines.value = response.engines;
+    }
+  } catch (error) {
+    console.error("加载可用搜索引擎失败:", error);
   }
 };
 
@@ -355,14 +392,46 @@ const saveNavigationSettings = async () => {
   }
 };
 
+// 获取搜索引擎图标URL
+const getEngineIconUrl = (engine: SearchEngine | null) => {
+  if (!engine || !chrome?.runtime?.getURL) return '';
+  switch (engine.id) {
+    case 'baidu':
+      return chrome.runtime.getURL('searchEngineIcon/baidu.png');
+    case 'google':
+      return chrome.runtime.getURL('searchEngineIcon/google.png');
+    case 'bing':
+      return chrome.runtime.getURL('searchEngineIcon/bing.png');
+    default:
+      return '';
+  }
+};
+
 // 组件挂载时加载设置
 onMounted(async () => {
   await loadShortcuts();
   await loadSearchSettings();
   await loadNavigationSettings();
+  await loadAvailableEngines();
 });
 </script>
 
 <style lang="less" scoped>
 @import '../entrypoints/styles/element-settings.less';
+
+.setting-section {
+  margin-bottom: 24px;
+  
+  .setting-hint {
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
+    margin-top: 4px;
+  }
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
 </style>

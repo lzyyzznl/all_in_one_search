@@ -79,13 +79,13 @@ export interface GroupedSearchResults {
 
 // 搜索选项
 export interface SearchOptions {
-	readonly query: string;
-	readonly includeBookmarks: boolean;
-	readonly includeHistory: boolean;
-	readonly includeDownloads: boolean;
-	readonly maxResults: number;
-	readonly sortBy: SortBy;
-	readonly timeFilter: TimeFilter;
+	query: string;
+	includeBookmarks: boolean;
+	includeHistory: boolean;
+	includeDownloads: boolean;
+	maxResults: number;
+	sortBy: SortBy;
+	timeFilter: TimeFilter;
 }
 
 // 搜索统计
@@ -109,7 +109,25 @@ export interface RecommendedContent {
 export interface RecommendedGroup {
 	title: string;
 	items: SearchResultItem[];
-	type: 'history' | 'bookmarks' | 'downloads';
+	type: "history" | "bookmarks" | "downloads";
+}
+
+// 搜索引擎配置接口
+export interface SearchEngine {
+	id: string;
+	name: string;
+	baseUrl: string;
+	queryParam: string;
+	icon: string;
+	encoding?: string;
+	description?: string;
+}
+
+// 网络搜索选项接口
+export interface WebSearchOptions {
+	engine: SearchEngine;
+	query: string;
+	inNewTab: boolean;
 }
 
 // 应用状态
@@ -121,4 +139,5 @@ export interface AppState {
 	searchOptions: SearchOptions;
 	selectedItem: string | null;
 	searchHistory: SearchHistoryItem[];
+	defaultSearchEngine?: SearchEngine;
 }

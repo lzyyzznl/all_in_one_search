@@ -21,6 +21,8 @@ export const APP_CONSTANTS = {
 		SEARCH_HISTORY: "searchHistory",
 		USER_SETTINGS: "userSettings",
 		SHORTCUT_CONFIG: "shortcut",
+		PREFERRED_SEARCH_ENGINE: "preferredSearchEngine",
+		DEFAULT_SEARCH_ENGINE: "defaultSearchEngine",
 	},
 
 	// 时间相关
@@ -46,6 +48,8 @@ export const APP_CONSTANTS = {
 		DOWNLOAD: "📥",
 		FOLDER: "📁",
 		WARNING: "⚠️",
+		WEB_SEARCH: "🌐",
+		SEARCH_ENGINE: "🔍",
 	},
 
 	// 评分权重

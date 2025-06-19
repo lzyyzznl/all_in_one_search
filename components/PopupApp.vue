@@ -8,11 +8,12 @@
         <div class="search-input-container" style="display: flex; gap: 8px; align-items: center">
           <el-input
             v-model="searchQuery"
-            placeholder="搜索收藏夹、历史记录和下载文件..."
+            placeholder="搜索本地文件，或按 Ctrl+Enter 进行网络搜索"
             size="large"
             clearable
             @input="handleSearchInput"
-            @keydown.enter="handleSearchNow"
+            @keydown.enter.prevent="handleEnterKey"
+            @keydown.ctrl.enter.prevent="performWebSearch"
             ref="searchInput"
             style="flex: 1"
           >
@@ -202,7 +203,7 @@
                     size="small"
                     type="success"
                     :icon="FolderOpened"
-                    @click.stop="showDownloadFile(item.id)"
+                    @click.stop="showDownloadFile(item)"
                   >
                     显示文件目录
                   </el-button>
@@ -213,12 +214,33 @@
         </el-card>
       </div>
 
+      <!-- 网络搜索建议 -->
+      <div v-if="searchQuery && !isLoading && defaultSearchEngine" class="web-search-suggestion">
+        <el-card class="web-search-card" :body-style="{ padding: '16px' }" shadow="hover">
+          <div class="web-search-header">
+            <img :src="getEngineIconUrl(defaultSearchEngine)" alt="icon" class="search-engine-icon" style="width:18px;height:18px;vertical-align:middle;" />
+            <span class="suggestion-text">在{{ defaultSearchEngine.name }}中搜索</span>
+          </div>
+          <div class="web-search-query">
+            <span class="query-text">"{{ searchQuery }}"</span>
+            <el-button 
+              type="primary" 
+              size="small"
+              :icon="TopRight"
+              @click="performWebSearch"
+            >
+              搜索
+            </el-button>
+          </div>
+        </el-card>
+      </div>
+
       <!-- 空状态 -->
       <div v-else-if="searchQuery && !isLoading" class="empty-state">
         <el-empty description="未找到匹配的结果" :image-size="80">
           <template #description>
             <p>未找到匹配的结果</p>
-            <p>尝试不同的关键词或调整搜索选项</p>
+            <p>可尝试 <el-tag size="small" type="primary" effect="light">Ctrl+Enter</el-tag> 进行网络搜索</p>
           </template>
         </el-empty>
       </div>
@@ -333,6 +355,10 @@ import {
   SearchHistoryManager,
   showDownloadFile as showDownloadFileInExplorer
 } from '../utils/search';
+import {
+  getDefaultSearchEngine,
+  SearchEngineManager
+} from '../utils/searchEngines';
 import { formatShortcut, getNavigationKeys, getShortcut } from '../utils/shortcuts.ts';
 import { ContentSearchService } from '../utils/contentSearch';
 import type {
@@ -342,7 +368,8 @@ import type {
   SearchResultItem,
   SearchStats,
   RecommendedContent,
-  RecommendedGroup
+  RecommendedGroup,
+  SearchEngine
 } from '../utils/types';
 import SearchResultItemComponent from './SearchResultItem.vue';
 
@@ -381,6 +408,9 @@ const isLoadingRecommended = ref(false);
 const mainShortcut = ref('');
 const navigationKeys = ref(getNavigationKeys());
 
+// 默认搜索引擎
+const defaultSearchEngine = ref<SearchEngine | null>(null);
+
 // 键盘导航配置（从设置中加载）
 const navigationConfig = reactive({
   up: 'ArrowUp',
@@ -398,7 +428,16 @@ const bookmarkDialog = reactive({
   item: null as SearchResultItem | null
 });
 
-
+// 兼容Vite环境下的import.meta.env类型声明
+// @ts-ignore
+declare global {
+  interface ImportMeta {
+    env: {
+      BASE_URL: string;
+      [key: string]: any;
+    };
+  }
+}
 
 // 处理书签保存
 const handleBookmarkSave = async (data: { title: string; url: string; parentId: string }) => {
@@ -602,22 +641,6 @@ watch(() => [searchOptions.timeFilter, searchOptions.sortBy], () => {
   }
 }, { deep: true });
 
-// 回车处理
-const handleEnter = () => {
-  if (selectedItem.value) {
-    const item = findItemById(selectedItem.value);
-    if (item) {
-      openItem(item);
-    }
-  } else {
-    // 打开第一个结果
-    const firstGroup = Object.values(searchResults.value)[0];
-    if (firstGroup && firstGroup.items.length > 0) {
-      openItem(firstGroup.items[0]);
-    }
-  }
-};
-
 // 选择并打开项目（单击）
 const selectAndOpenItem = async (item: SearchResultItem) => {
   selectedItem.value = item.id;
@@ -635,9 +658,10 @@ const openItem = async (item: SearchResultItem) => {
 };
 
 // 显示下载文件
-const showDownloadFile = async (downloadId: string) => {
+const showDownloadFile = async (item: SearchResultItem) => {
+  if (item.type !== 'download') return;
   try {
-    await showDownloadFileInExplorer(downloadId);
+    await showDownloadFileInExplorer(item.id);
   } catch (error) {
     console.error('显示下载文件失败:', error);
   }
@@ -706,8 +730,11 @@ const getBookmarkBarId = (bookmarks: chrome.bookmarks.BookmarkTreeNode[]): strin
         }
       }
       // 如果没找到特定名称，返回第一个文件夹（通常是书签栏）
-      if (node.children.length > 0 && !node.children[0].url) {
-        return node.children[0].id;
+      if (node.children.length > 0) {
+        const firstChild = node.children[0];
+        if (firstChild && !firstChild.url) {
+          return firstChild.id;
+        }
       }
     }
   }
@@ -836,19 +863,22 @@ const handleKeyDown = (event: KeyboardEvent) => {
     case navigationConfig.down:
       event.preventDefault();
       const nextIndex = currentIndex < allItems.length - 1 ? currentIndex + 1 : 0;
-      selectedItem.value = allItems[nextIndex].id;
-      // 滚动到可见区域，但确保在可滚动容器内
-      const nextElement = document.querySelector(`[data-id="${allItems[nextIndex].id}"]`);
-      if (nextElement) {
-        const scrollableContainer = document.querySelector('.scrollable-content');
-        if (scrollableContainer) {
-          const containerRect = scrollableContainer.getBoundingClientRect();
-          const elementRect = nextElement.getBoundingClientRect();
-          
-          if (elementRect.bottom > containerRect.bottom) {
-            nextElement.scrollIntoView({ block: 'end', behavior: 'smooth' });
-          } else if (elementRect.top < containerRect.top) {
-            nextElement.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      const nextItem = allItems[nextIndex];
+      if (nextItem) {
+        selectedItem.value = nextItem.id;
+        // 滚动到可见区域，但确保在可滚动容器内
+        const nextElement = document.querySelector(`[data-id="${nextItem.id}"]`);
+        if (nextElement) {
+          const scrollableContainer = document.querySelector('.scrollable-content');
+          if (scrollableContainer) {
+            const containerRect = scrollableContainer.getBoundingClientRect();
+            const elementRect = nextElement.getBoundingClientRect();
+
+            if (elementRect.bottom > containerRect.bottom) {
+              nextElement.scrollIntoView({ block: 'end', behavior: 'smooth' });
+            } else if (elementRect.top < containerRect.top) {
+              nextElement.scrollIntoView({ block: 'start', behavior: 'smooth' });
+            }
           }
         }
       }
@@ -856,19 +886,22 @@ const handleKeyDown = (event: KeyboardEvent) => {
     case navigationConfig.up:
       event.preventDefault();
       const prevIndex = currentIndex > 0 ? currentIndex - 1 : allItems.length - 1;
-      selectedItem.value = allItems[prevIndex].id;
-      // 滚动到可见区域，但确保在可滚动容器内
-      const prevElement = document.querySelector(`[data-id="${allItems[prevIndex].id}"]`);
-      if (prevElement) {
-        const scrollableContainer = document.querySelector('.scrollable-content');
-        if (scrollableContainer) {
-          const containerRect = scrollableContainer.getBoundingClientRect();
-          const elementRect = prevElement.getBoundingClientRect();
-          
-          if (elementRect.top < containerRect.top) {
-            prevElement.scrollIntoView({ block: 'start', behavior: 'smooth' });
-          } else if (elementRect.bottom > containerRect.bottom) {
-            prevElement.scrollIntoView({ block: 'end', behavior: 'smooth' });
+      const prevItem = allItems[prevIndex];
+      if (prevItem) {
+        selectedItem.value = prevItem.id;
+        // 滚动到可见区域，但确保在可滚动容器内
+        const prevElement = document.querySelector(`[data-id="${prevItem.id}"]`);
+        if (prevElement) {
+          const scrollableContainer = document.querySelector('.scrollable-content');
+          if (scrollableContainer) {
+            const containerRect = scrollableContainer.getBoundingClientRect();
+            const elementRect = prevElement.getBoundingClientRect();
+
+            if (elementRect.top < containerRect.top) {
+              prevElement.scrollIntoView({ block: 'start', behavior: 'smooth' });
+            } else if (elementRect.bottom > containerRect.bottom) {
+              prevElement.scrollIntoView({ block: 'end', behavior: 'smooth' });
+            }
           }
         }
       }
@@ -885,6 +918,64 @@ const handleKeyDown = (event: KeyboardEvent) => {
   }
 };
 
+// 执行网络搜索
+const performWebSearch = async () => {
+  if (!searchQuery.value.trim() || !defaultSearchEngine.value) {
+    return;
+  }
+  
+  try {
+    const response = await chrome.runtime.sendMessage({
+      action: 'perform-web-search',
+      engineId: defaultSearchEngine.value.id,
+      query: searchQuery.value.trim(),
+      inNewTab: true
+    });
+    
+    if (response?.success) {
+      console.log('网络搜索成功');
+      // 可选：关闭弹窗
+      if (!isNewTabMode.value) {
+        window.close();
+      }
+    } else {
+      console.error('网络搜索失败:', response?.error);
+    }
+  } catch (error) {
+    console.error('执行网络搜索失败:', error);
+  }
+};
+
+// 加载默认搜索引擎
+const loadDefaultSearchEngine = async () => {
+  try {
+    // 1. 先查用户设置
+    const settingsResult = await chrome.storage.local.get(['searchSettings']);
+    const preferredId = settingsResult?.searchSettings?.preferredSearchEngine;
+    if (preferredId) {
+      // 2. 查所有可用引擎
+      const allEnginesResp = await chrome.runtime.sendMessage({ action: 'get-all-search-engines' });
+      if (allEnginesResp?.success && Array.isArray(allEnginesResp.engines)) {
+        const found = allEnginesResp.engines.find((e: any) => e.id === preferredId);
+        if (found) {
+          defaultSearchEngine.value = found;
+          return;
+        }
+      }
+    }
+    // 3. 没有设置或找不到，兜底用浏览器默认
+    const response = await chrome.runtime.sendMessage({ action: 'get-default-search-engine' });
+    if (response?.success && response.engine) {
+      defaultSearchEngine.value = response.engine;
+    } else {
+      defaultSearchEngine.value = null;
+    }
+  } catch (error) {
+    console.error('获取默认搜索引擎失败:', error);
+    defaultSearchEngine.value = null;
+  }
+};
+
 // 监听storage变化
 const handleStorageChange = (changes: Record<string, chrome.storage.StorageChange>) => {
   // 监听搜索设置变化
@@ -898,7 +989,8 @@ const handleStorageChange = (changes: Record<string, chrome.storage.StorageChang
         searchOptions.sortBy = newSettings.defaultSortBy;
       }
       console.log('搜索设置已更新:', newSettings);
-      
+      // 新增：设置变更时刷新默认搜索引擎
+      loadDefaultSearchEngine();
       // 如果有搜索查询，重新搜索以应用新设置
       if (searchQuery.value.trim()) {
         handleSearchNow();
@@ -932,6 +1024,9 @@ onMounted(async () => {
   
   // 加载推荐内容
   await loadRecommendedContent();
+  
+  // 加载默认搜索引擎
+  await loadDefaultSearchEngine();
   
   // 聚焦搜索框
   await nextTick();
@@ -983,6 +1078,40 @@ defineExpose({
   formatFileSize,
   openInNewTab
 });
+
+const handleEnterKey = () => {
+  if (selectedItem.value) {
+    const item = findItemById(selectedItem.value);
+    if (item) {
+      openItem(item);
+    }
+  } else {
+    const firstGroup = Object.values(searchResults.value)[0];
+    if (firstGroup && firstGroup.items.length > 0) {
+      const firstItem = firstGroup.items[0];
+      if (firstItem) {
+        openItem(firstItem);
+      }
+    } else {
+      handleSearchNow();
+    }
+  }
+};
+
+// 获取搜索引擎图标URL
+const getEngineIconUrl = (engine: SearchEngine | null) => {
+  if (!engine || !chrome?.runtime?.getURL) return '';
+  switch (engine.id) {
+    case 'baidu':
+      return chrome.runtime.getURL('searchEngineIcon/baidu.png');
+    case 'google':
+      return chrome.runtime.getURL('searchEngineIcon/google.png');
+    case 'bing':
+      return chrome.runtime.getURL('searchEngineIcon/bing.png');
+    default:
+      return '';
+  }
+};
 </script>
 
 <style lang="less" scoped>
@@ -1064,6 +1193,53 @@ defineExpose({
   }
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* 网络搜索建议样式 */
+.web-search-suggestion {
+  padding: 0 16px 16px;
+  
+  .web-search-card {
+    border: 1px dashed var(--el-color-primary);
+    
+    .web-search-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      
+      .search-engine-icon {
+        font-size: 18px;
+      }
+      
+      .suggestion-text {
+        font-weight: 500;
+        color: var(--el-text-color-primary);
+      }
+    }
+    
+    .web-search-query {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      
+      .query-text {
+        font-style: italic;
+        color: var(--el-color-primary);
+        font-weight: 500;
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+    
+    &:hover {
+      border-color: var(--el-color-primary-light-3);
+      background-color: var(--el-color-primary-light-9);
+    }
   }
 }
 </style>

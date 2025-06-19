@@ -7,13 +7,14 @@
           ref="searchInput"
           v-model="searchQuery"
           type="text"
-          placeholder="搜索收藏夹、历史记录和下载文件..."
+          placeholder="搜索本地文件，或按 Ctrl+Enter 进行网络搜索"
           class="search-input"
           @input="debouncedSearch"
           @keydown.escape="forceCloseAll"
           @keydown.arrow-down.prevent="navigateDown"
           @keydown.arrow-up.prevent="navigateUp"
           @keydown.enter.prevent="openSelectedItem"
+          @keydown.ctrl.enter.prevent="performWebSearch"
         />
         <button class="search-button" @click="performSearchClick">
           🔍
@@ -62,6 +63,15 @@
         </div>
       </div>
 
+      <!-- 网络搜索建议 -->
+      <div v-if="searchQuery && !isLoading && Object.keys(searchResults).length === 0 && defaultSearchEngine" class="web-search-suggestion-float" @click="performWebSearch">
+        <div class="suggestion-content">
+          <img :src="getEngineIconUrl(defaultSearchEngine)" alt="icon" class="search-engine-icon" style="width:16px;height:16px;vertical-align:middle;" />
+          <span class="suggestion-text">在 {{ defaultSearchEngine.name }} 中搜索 "{{ searchQuery }}"</span>
+          <span class="action-hint">↵</span>
+        </div>
+      </div>
+      
       <!-- 推荐内容 -->
       <div v-else-if="showRecommended" class="recommended-content">
         <div class="recommended-container">
@@ -98,6 +108,9 @@
       <!-- 空状态 -->
       <div v-else-if="searchQuery && !isLoading" class="empty-state">
         <p>未找到匹配的结果</p>
+        <p class="web-search-hint">
+          可尝试 <kbd>Ctrl</kbd> + <kbd>Enter</kbd> 进行网络搜索
+        </p>
       </div>
 
       <!-- 使用提示 -->
@@ -125,7 +138,7 @@ import { useContentSearch } from '../utils/composables/useContentSearch';
 import { useUI } from '../utils/composables/useUI';
 import { useNotification } from '../utils/composables/useNotification';
 import { APP_CONSTANTS } from '../utils/constants';
-import type { SearchResultItem } from '../utils/types';
+import type { SearchResultItem, SearchEngine } from '../utils/types';
 import SearchResultItemComponent from './SearchResultItem.vue';
 import BookmarkDialog from './BookmarkDialog.vue';
 
@@ -151,6 +164,7 @@ const isVisible = ref(false);
 const selectedItem = ref<string | null>(null);
 const searchInput = ref<HTMLInputElement | null>(null);
 const searchTimeout = ref<number | null>(null);
+const defaultSearchEngine = ref<SearchEngine | null>(null);
 
 // 书签对话框相关状态
 const showBookmarkDialog = ref(false);
@@ -166,6 +180,9 @@ const bookmarkDialogState = ref({
 const handleMessage = (message: any) => {
   if (message.action === 'toggle-floating-search') {
     toggleFloatingSearch();
+    if (isVisible.value && !defaultSearchEngine.value) {
+      loadDefaultSearchEngine();
+    }
   }
 };
 
@@ -202,6 +219,10 @@ const toggleFloatingSearch = () => {
       // 加载推荐内容
       loadRecommendedContent();
     });
+    // 加载默认搜索引擎
+    if (!defaultSearchEngine.value) {
+      loadDefaultSearchEngine();
+    }
   } else {
     searchQuery.value = '';
     searchResults.value = {};
@@ -244,7 +265,11 @@ const navigateUp = () => {
 };
 
 const openSelectedItem = () => {
-  if (!selectedItem.value) return;
+  if (!selectedItem.value) {
+    // 如果没有选中项，则响应Enter键执行常规搜索
+    performSearch(searchQuery.value);
+    return;
+  }
   
   const items = getAllItems();
   const item = items.find(item => item.id === selectedItem.value);
@@ -367,15 +392,78 @@ const saveBookmark = async (data: { title: string; url: string; parentId: string
   }
 };
 
+// 执行网络搜索
+const performWebSearch = async () => {
+  if (!searchQuery.value.trim() || !defaultSearchEngine.value) {
+    return;
+  }
+  try {
+    await chrome.runtime.sendMessage({
+      action: 'perform-web-search',
+      engineId: defaultSearchEngine.value.id,
+      query: searchQuery.value.trim(),
+      inNewTab: true
+    });
+    forceCloseAll(); // 搜索后关闭
+  } catch (e) {
+    console.error("执行网络搜索失败:", e);
+    showError("网络搜索失败");
+  }
+};
+
+// 加载默认搜索引擎
+const loadDefaultSearchEngine = async () => {
+  try {
+    // 1. 先查用户设置
+    const settingsResult = await chrome.storage.local.get(['searchSettings']);
+    const preferredId = settingsResult?.searchSettings?.preferredSearchEngine;
+    if (preferredId) {
+      // 2. 查所有可用引擎
+      const allEnginesResp = await chrome.runtime.sendMessage({ action: 'get-all-search-engines' });
+      if (allEnginesResp?.success && Array.isArray(allEnginesResp.engines)) {
+        const found = allEnginesResp.engines.find((e: any) => e.id === preferredId);
+        if (found) {
+          defaultSearchEngine.value = found;
+          return;
+        }
+      }
+    }
+    // 3. 没有设置或找不到，兜底用浏览器默认
+    const response = await chrome.runtime.sendMessage({ action: 'get-default-search-engine' });
+    if (response?.success && response.engine) {
+      defaultSearchEngine.value = response.engine;
+    } else {
+      defaultSearchEngine.value = null;
+    }
+  } catch (error) {
+    console.error('获取默认搜索引擎失败:', error);
+    defaultSearchEngine.value = null;
+  }
+};
+
+// 获取搜索引擎图标URL
+const getEngineIconUrl = (engine: SearchEngine | null) => {
+  if (!engine || !chrome?.runtime?.getURL) return '';
+  switch (engine.id) {
+    case 'baidu':
+      return chrome.runtime.getURL('searchEngineIcon/baidu.png');
+    case 'google':
+      return chrome.runtime.getURL('searchEngineIcon/google.png');
+    case 'bing':
+      return chrome.runtime.getURL('searchEngineIcon/bing.png');
+    default:
+      return '';
+  }
+};
+
 // 组件挂载和卸载
 onMounted(() => {
   console.log("FloatingSearch 组件已挂载");
   // 监听全局事件
-  window.addEventListener('toggle-floating-search', () => {
-    console.log("FloatingSearch 收到全局事件，切换显示状态");
-    toggleFloatingSearch();
-  });
+  chrome.runtime.onMessage.addListener(handleMessage);
   console.log("全局事件监听器已注册");
+  // 新增：监听storage变化，变更时刷新默认搜索引擎
+  chrome.storage.onChanged.addListener(handleStorageChange);
 });
 
 onUnmounted(() => {
@@ -384,8 +472,28 @@ onUnmounted(() => {
   }
   console.log("FloatingSearch 组件已卸载");
   // 移除全局事件监听器
-  window.removeEventListener('toggle-floating-search', toggleFloatingSearch);
+  chrome.runtime.onMessage.removeListener(handleMessage);
+  // 新增：移除storage监听
+  chrome.storage.onChanged.removeListener(handleStorageChange);
 });
+
+// 新增：storage变更回调，变更时刷新默认搜索引擎
+const handleStorageChange = (changes: Record<string, chrome.storage.StorageChange>) => {
+  if (changes.searchSettings) {
+    loadDefaultSearchEngine();
+  }
+};
+
+// @ts-ignore
+// 兼容Vite环境下的import.meta.env类型声明
+declare global {
+  interface ImportMeta {
+    env: {
+      BASE_URL: string;
+      [key: string]: any;
+    };
+  }
+}
 </script>
 
 <style scoped>
@@ -551,9 +659,25 @@ onUnmounted(() => {
 }
 
 .empty-state {
-  padding: 40px;
+  padding: 20px;
   text-align: center;
-  color: #718096;
+  color: #888;
+  font-size: 14px;
+
+  .web-search-hint {
+    margin-top: 8px;
+    font-size: 13px;
+    color: #aaa;
+  }
+
+  kbd {
+    background-color: #333;
+    border-radius: 3px;
+    border: 1px solid #555;
+    color: #eee;
+    padding: 2px 4px;
+    font-size: 12px;
+  }
 }
 
 .usage-hints {
@@ -632,4 +756,37 @@ onUnmounted(() => {
 }
 
 /* 浮动搜索特有样式 */
+.web-search-suggestion-float {
+  padding: 12px 20px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.web-search-suggestion-float:hover {
+  background-color: #f0f2f5;
+}
+
+.suggestion-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.search-engine-icon {
+  font-size: 16px;
+}
+
+.suggestion-text {
+  flex: 1;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.action-hint {
+  font-weight: bold;
+  color: #667eea;
+}
 </style> 
