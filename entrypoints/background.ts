@@ -98,8 +98,10 @@ export default defineBackground({
 							url.startsWith("about:") ||
 							url.includes("newtab");
 						if (isRestricted) {
-							// 特殊页面，弹出popup.html
-							chrome.tabs.create({ url: chrome.runtime.getURL("popup.html") });
+							// 特殊页面，打开single_tab.html（完整搜索页面）
+							chrome.tabs.create({
+								url: chrome.runtime.getURL("single_tab.html"),
+							});
 						} else {
 							// 正常向content-script发送消息
 							chrome.tabs.sendMessage(

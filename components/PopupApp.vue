@@ -1,78 +1,79 @@
 <template>
-	<v-app
-		class="w-250 h-250 min-w-250 min-h-250 max-w-250 max-h-250 m-0 p-0 border-none bg-gradient-to-br from-blue-400 to-purple-600 overflow-hidden flex items-center justify-center relative"
-	>
-		<div
-			class="flex flex-col items-center gap-7.5 w-full max-w-175 px-7.5 py-15"
-		>
-			<!-- 品字型按钮布局 -->
-			<div class="flex justify-center w-full gap-7.5">
+	<v-app class="w-full h-full bg-grey-100">
+		<v-container fluid class="pa-4 h-full d-flex flex-column justify-center">
+			<!-- 品字型卡片布局 -->
+			<v-row no-gutters class="mb-3">
 				<!-- 左上：当前页签打开悬浮搜索 -->
-				<v-btn
-					class="w-70 h-50 rounded-5 shadow-lg transition-all duration-300 backdrop-blur-10 border border-white/20 hover:translate-y--2 hover:scale-105 hover:shadow-xl active:translate-y--1 active:scale-102"
-					size="x-large"
-					color="primary"
-					variant="elevated"
-					@click="openFloatingSearch"
-				>
-					<div
-						class="flex flex-col items-center justify-center h-full text-center text-white"
+				<v-col cols="6" class="pr-2">
+					<v-card
+						class="h-100 cursor-pointer transition-all duration-200"
+						color="primary"
+						variant="elevated"
+						elevation="3"
+						hover
+						@click="openFloatingSearch"
 					>
-						<v-icon size="32" class="mb-2">mdi-magnify</v-icon>
-						<div class="text-4.5 font-semibold mb-2 leading-tight">
-							当前页面搜索
-						</div>
-						<div class="text-3.5 opacity-90 font-normal leading-tight">
-							悬浮搜索框
-						</div>
-					</div>
-				</v-btn>
+						<v-card-text
+							class="pa-3 d-flex flex-column align-center justify-center h-100 text-center"
+						>
+							<v-icon size="28" color="white" class="mb-2">mdi-magnify</v-icon>
+							<div class="text-body-1 font-weight-medium text-white mb-1">
+								当前页面搜索
+							</div>
+							<div class="text-caption text-white opacity-90">悬浮搜索框</div>
+						</v-card-text>
+					</v-card>
+				</v-col>
 
 				<!-- 右上：新标签页打开完整搜索 -->
-				<v-btn
-					class="w-70 h-50 rounded-5 shadow-lg transition-all duration-300 backdrop-blur-10 border border-white/20 hover:translate-y--2 hover:scale-105 hover:shadow-xl active:translate-y--1 active:scale-102"
-					size="x-large"
-					color="success"
-					variant="elevated"
-					@click="openNewTabSearch"
-				>
-					<div
-						class="flex flex-col items-center justify-center h-full text-center text-white"
+				<v-col cols="6" class="pl-2">
+					<v-card
+						class="h-100 cursor-pointer transition-all duration-200"
+						color="success"
+						variant="elevated"
+						elevation="3"
+						hover
+						@click="openNewTabSearch"
 					>
-						<v-icon size="32" class="mb-2">mdi-open-in-new</v-icon>
-						<div class="text-4.5 font-semibold mb-2 leading-tight">
-							新标签页搜索
-						</div>
-						<div class="text-3.5 opacity-90 font-normal leading-tight">
-							完整搜索页面
-						</div>
-					</div>
-				</v-btn>
-			</div>
+						<v-card-text
+							class="pa-3 d-flex flex-column align-center justify-center h-100 text-center"
+						>
+							<v-icon size="28" color="white" class="mb-2"
+								>mdi-open-in-new</v-icon
+							>
+							<div class="text-body-1 font-weight-medium text-white mb-1">
+								新标签页搜索
+							</div>
+							<div class="text-caption text-white opacity-90">完整搜索页面</div>
+						</v-card-text>
+					</v-card>
+				</v-col>
+			</v-row>
 
 			<!-- 下方：设置按钮 -->
-			<div class="flex justify-center w-full">
-				<v-btn
-					class="w-147.5 h-50 rounded-5 shadow-lg transition-all duration-300 backdrop-blur-10 border border-white/20 hover:translate-y--2 hover:scale-105 hover:shadow-xl active:translate-y--1 active:scale-102"
-					size="x-large"
-					color="info"
-					variant="elevated"
-					@click="openSettings"
-				>
-					<div
-						class="flex flex-col items-center justify-center h-full text-center text-white"
+			<v-row no-gutters>
+				<v-col cols="12">
+					<v-card
+						class="cursor-pointer transition-all duration-200"
+						color="info"
+						variant="elevated"
+						elevation="3"
+						hover
+						@click="openSettings"
 					>
-						<v-icon size="32" class="mb-2">mdi-cog</v-icon>
-						<div class="text-4.5 font-semibold mb-2 leading-tight">
-							插件设置
-						</div>
-						<div class="text-3.5 opacity-90 font-normal leading-tight">
-							配置选项
-						</div>
-					</div>
-				</v-btn>
-			</div>
-		</div>
+						<v-card-text
+							class="pa-3 d-flex flex-column align-center justify-center text-center"
+						>
+							<v-icon size="28" color="white" class="mb-2">mdi-cog</v-icon>
+							<div class="text-body-1 font-weight-medium text-white mb-1">
+								插件设置
+							</div>
+							<div class="text-caption text-white opacity-90">配置选项</div>
+						</v-card-text>
+					</v-card>
+				</v-col>
+			</v-row>
+		</v-container>
 	</v-app>
 </template>
 
@@ -155,68 +156,22 @@ const openSettings = () => {
 </script>
 
 <style scoped>
-/* 按钮特定渐变背景 - 使用CSS变量保持兼容性 */
-.v-btn[color="primary"] {
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+/* 卡片悬停效果增强 */
+.v-card:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
 }
 
-.v-btn[color="success"] {
-	background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
+.v-card:active {
+	transform: translateY(0);
 }
 
-.v-btn[color="info"] {
-	background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important;
+/* 确保卡片高度一致 */
+.v-row .v-col .v-card {
+	min-height: 120px;
 }
 
-/* 响应式调整 */
-@media (max-width: 900px) {
-	.gap-7\.5 {
-		gap: 1.25rem;
-	}
-
-	.w-70 {
-		width: 15rem !important;
-	}
-
-	.h-50 {
-		height: 11.25rem !important;
-	}
-
-	.w-147\.5 {
-		width: 31.25rem !important; /* 15rem * 2 + 1.25rem gap */
-	}
-}
-
-@media (max-width: 600px) {
-	.py-15 {
-		padding-top: 1.875rem !important;
-		padding-bottom: 1.875rem !important;
-	}
-
-	.px-7\.5 {
-		padding-left: 1.25rem !important;
-		padding-right: 1.25rem !important;
-	}
-
-	.gap-7\.5 {
-		gap: 1.25rem !important;
-	}
-
-	.flex.justify-center.w-full.gap-7\.5 {
-		flex-direction: column;
-		align-items: center;
-	}
-
-	.w-70 {
-		width: 16.25rem !important;
-	}
-
-	.h-50 {
-		height: 10rem !important;
-	}
-
-	.w-147\.5 {
-		width: 16.25rem !important; /* 与其他按钮保持一致 */
-	}
+.v-row:last-child .v-col .v-card {
+	min-height: 80px;
 }
 </style>

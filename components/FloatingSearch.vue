@@ -268,15 +268,7 @@ const bookmarkDialogState = ref({
 	item: null as SearchResultItem | null,
 });
 
-// 监听全局消息
-const handleMessage = (message: any) => {
-	if (message.action === "toggle-floating-search") {
-		toggleFloatingSearch();
-		if (isVisible.value && !defaultSearchEngine.value) {
-			loadDefaultSearchEngine();
-		}
-	}
-};
+// 注意：不再需要 handleMessage 函数，因为我们只使用 window 自定义事件
 
 // 防抖搜索
 const debouncedSearch = () => {
@@ -309,6 +301,7 @@ watch(
 // 显示/隐藏浮动搜索
 const toggleFloatingSearch = () => {
 	isVisible.value = !isVisible.value;
+
 	if (isVisible.value) {
 		nextTick(() => {
 			searchInput.value?.focus();
@@ -566,13 +559,23 @@ const getEngineIconUrl = (engine: SearchEngine | null) => {
 	}
 };
 
+// 处理 window 自定义事件
+const handleWindowEvent = (event: Event) => {
+	if (event.type === "toggle-floating-search") {
+		toggleFloatingSearch();
+		if (isVisible.value && !defaultSearchEngine.value) {
+			loadDefaultSearchEngine();
+		}
+	}
+};
+
 // 组件挂载和卸载
 onMounted(() => {
-	console.log("FloatingSearch 组件已挂载");
-	// 监听全局事件
-	chrome.runtime.onMessage.addListener(handleMessage);
-	console.log("全局事件监听器已注册");
-	// 新增：监听storage变化，变更时刷新默认搜索引擎
+	// 只监听 window 自定义事件，不监听 chrome.runtime.onMessage
+	// 因为 content script 会派发 window 自定义事件
+	window.addEventListener("toggle-floating-search", handleWindowEvent);
+
+	// 监听storage变化，变更时刷新默认搜索引擎
 	chrome.storage.onChanged.addListener(handleStorageChange);
 });
 
@@ -580,10 +583,11 @@ onUnmounted(() => {
 	if (searchTimeout.value) {
 		clearTimeout(searchTimeout.value);
 	}
-	console.log("FloatingSearch 组件已卸载");
-	// 移除全局事件监听器
-	chrome.runtime.onMessage.removeListener(handleMessage);
-	// 新增：移除storage监听
+
+	// 移除 window 自定义事件监听器
+	window.removeEventListener("toggle-floating-search", handleWindowEvent);
+
+	// 移除storage监听
 	chrome.storage.onChanged.removeListener(handleStorageChange);
 });
 

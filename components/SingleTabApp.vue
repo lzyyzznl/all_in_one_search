@@ -3,427 +3,502 @@
 		class="w-screen h-screen min-h-screen min-w-screen bg-gray-50 overflow-hidden flex flex-col"
 	>
 		<!-- 固定头部区域 -->
-		<div class="flex-shrink-0 w-full bg-white border-b border-gray-200 m-0 p-0">
+		<v-container
+			fluid
+			class="flex-shrink-0 bg-white border-b border-gray-200 pa-0"
+		>
 			<!-- 搜索头部 -->
 			<v-card class="rounded-0 shadow-none pa-4">
 				<!-- 搜索输入框 -->
-				<div class="search-input-container d-flex ga-2 align-center">
-					<v-text-field
-						v-model="searchQuery"
-						placeholder="搜索本地文件，或按 Ctrl+Enter 进行网络搜索"
-						variant="outlined"
-						density="comfortable"
-						clearable
-						@input="handleSearchInput"
-						@keydown.enter.prevent="handleEnterKey"
-						@keydown.ctrl.enter.prevent="performWebSearch"
-						ref="searchInput"
-						class="flex-grow-1"
-					>
-						<template #prepend-inner>
-							<v-icon>mdi-magnify</v-icon>
-						</template>
-					</v-text-field>
-					<v-btn
-						size="large"
-						icon="mdi-cog"
-						@click="openSettings"
-						title="打开设置"
-					/>
-				</div>
+				<v-row no-gutters class="align-center">
+					<v-col>
+						<v-text-field
+							v-model="searchQuery"
+							placeholder="搜索本地文件，或按 Ctrl+Enter 进行网络搜索"
+							variant="outlined"
+							density="comfortable"
+							clearable
+							@input="handleSearchInput"
+							@keydown.enter.prevent="handleEnterKey"
+							@keydown.ctrl.enter.prevent="performWebSearch"
+							ref="searchInput"
+						>
+							<template #prepend-inner>
+								<v-icon>mdi-magnify</v-icon>
+							</template>
+						</v-text-field>
+					</v-col>
+				</v-row>
 
 				<!-- 搜索历史气泡 -->
-				<div
-					v-if="searchHistory.length > 0"
-					class="search-history d-flex flex-wrap ga-2 mt-3"
-				>
-					<v-chip
-						v-for="item in searchHistory"
-						:key="item.timestamp"
-						color="info"
-						variant="outlined"
-						size="small"
-						class="history-tag"
-						@click="selectHistoryItem(item.query)"
-					>
-						{{ item.query }}
-					</v-chip>
-				</div>
+				<v-row v-if="searchHistory.length > 0" no-gutters class="mt-3">
+					<v-col>
+						<v-chip-group>
+							<v-chip
+								v-for="item in searchHistory"
+								:key="item.timestamp"
+								color="info"
+								variant="outlined"
+								size="small"
+								class="history-tag"
+								@click="selectHistoryItem(item.query)"
+							>
+								{{ item.query }}
+							</v-chip>
+						</v-chip-group>
+					</v-col>
+				</v-row>
 
 				<!-- 搜索选项 - 水平对齐 -->
-				<div class="search-options mt-3">
-					<v-row class="controls-row align-center" justify="space-between">
-						<!-- 数据源多选 -->
-						<v-col cols="4" class="filter-control">
-							<div class="control-item d-flex align-center ga-2">
-								<span class="control-label text-body-2">搜索项:</span>
+				<v-divider class="mt-3 mb-3" />
+				<v-row class="controls-row align-center" justify="space-between">
+					<!-- 数据源多选 -->
+					<v-col cols="4" class="filter-control">
+						<v-row no-gutters class="align-center ga-2">
+							<v-col cols="auto">
+								<v-label class="text-body-2">搜索项:</v-label>
+							</v-col>
+							<v-col>
 								<v-select
 									v-model="selectedDataSources"
 									multiple
 									chips
 									variant="outlined"
 									density="compact"
-									class="control-select"
+									:items="[
+										{ value: 'bookmarks', title: '书签' },
+										{ value: 'history', title: '历史记录' },
+										{ value: 'downloads', title: '下载文件' },
+									]"
 									@update:model-value="updateSearchOptions"
-								>
-									<v-list-item value="bookmarks" title="书签" />
-									<v-list-item value="history" title="历史记录" />
-									<v-list-item value="downloads" title="下载文件" />
-								</v-select>
-							</div>
-						</v-col>
-						<!-- 时间筛选 -->
-						<v-col cols="4" class="filter-control">
-							<div class="control-item d-flex align-center ga-2">
-								<span class="control-label text-body-2">时间:</span>
+								/>
+							</v-col>
+						</v-row>
+					</v-col>
+					<!-- 时间筛选 -->
+					<v-col cols="4" class="filter-control">
+						<v-row no-gutters class="align-center ga-2">
+							<v-col cols="auto">
+								<v-label class="text-body-2">时间:</v-label>
+							</v-col>
+							<v-col>
 								<v-select
 									v-model="searchOptions.timeFilter"
 									variant="outlined"
 									density="compact"
-									class="control-select"
-								>
-									<v-list-item value="all" title="全部时间" />
-									<v-list-item value="today" title="今天" />
-									<v-list-item value="week" title="本周" />
-									<v-list-item value="month" title="本月" />
-								</v-select>
-							</div>
-						</v-col>
+									:items="[
+										{ value: 'all', title: '全部时间' },
+										{ value: 'today', title: '今天' },
+										{ value: 'week', title: '本周' },
+										{ value: 'month', title: '本月' },
+									]"
+								/>
+							</v-col>
+						</v-row>
+					</v-col>
 
-						<!-- 排序选择 -->
-						<v-col cols="4" class="filter-control">
-							<div class="control-item d-flex align-center ga-2">
-								<span class="control-label text-body-2">排序:</span>
+					<!-- 排序选择 -->
+					<v-col cols="4" class="filter-control">
+						<v-row no-gutters class="align-center ga-2">
+							<v-col cols="auto">
+								<v-label class="text-body-2">排序:</v-label>
+							</v-col>
+							<v-col>
 								<v-select
 									v-model="searchOptions.sortBy"
 									variant="outlined"
 									density="compact"
-									class="control-select"
-								>
-									<v-list-item value="relevance" title="相关性" />
-									<v-list-item value="recent" title="最近访问" />
-									<v-list-item value="frequency" title="访问频率" />
-								</v-select>
-							</div>
-						</v-col>
-					</v-row>
-				</div>
+									:items="[
+										{ value: 'relevance', title: '相关性' },
+										{ value: 'recent', title: '最近访问' },
+										{ value: 'frequency', title: '访问频率' },
+									]"
+								/>
+							</v-col>
+						</v-row>
+					</v-col>
+				</v-row>
 			</v-card>
 
 			<!-- 搜索统计 -->
-			<div
+			<v-sheet
 				v-if="searchStats"
-				class="bg-gray-50 border-b border-gray-200 d-flex flex-wrap ga-2 pa-2"
+				class="bg-gray-50 border-b border-gray-200 pa-2"
 			>
-				<v-chip size="small" color="info" variant="outlined">
-					找到 {{ searchStats.totalResults }} 个结果
-				</v-chip>
-				<v-chip
-					v-if="searchStats.bookmarkCount > 0"
-					size="small"
-					color="success"
-					variant="outlined"
-				>
-					书签 {{ searchStats.bookmarkCount }}
-				</v-chip>
-				<v-chip
-					v-if="searchStats.historyCount > 0"
-					size="small"
-					color="warning"
-					variant="outlined"
-				>
-					历史 {{ searchStats.historyCount }}
-				</v-chip>
-				<v-chip
-					v-if="searchStats.downloadCount > 0"
-					size="small"
-					color="info"
-					variant="outlined"
-				>
-					下载 {{ searchStats.downloadCount }}
-				</v-chip>
-				<v-chip size="small" variant="outlined">
-					{{ searchStats.uniqueDomains }} 个域名
-				</v-chip>
-				<v-chip size="small" variant="outlined">
-					{{ searchStats.searchTime }}ms
-				</v-chip>
-			</div>
-		</div>
+				<v-chip-group>
+					<v-chip size="small" color="info" variant="outlined">
+						找到 {{ searchStats.totalResults }} 个结果
+					</v-chip>
+					<v-chip
+						v-if="searchStats.bookmarkCount > 0"
+						size="small"
+						color="success"
+						variant="outlined"
+					>
+						书签 {{ searchStats.bookmarkCount }}
+					</v-chip>
+					<v-chip
+						v-if="searchStats.historyCount > 0"
+						size="small"
+						color="warning"
+						variant="outlined"
+					>
+						历史 {{ searchStats.historyCount }}
+					</v-chip>
+					<v-chip
+						v-if="searchStats.downloadCount > 0"
+						size="small"
+						color="info"
+						variant="outlined"
+					>
+						下载 {{ searchStats.downloadCount }}
+					</v-chip>
+					<v-chip size="small" variant="outlined">
+						{{ searchStats.uniqueDomains }} 个域名
+					</v-chip>
+					<v-chip size="small" variant="outlined">
+						{{ searchStats.searchTime }}ms
+					</v-chip>
+				</v-chip-group>
+			</v-sheet>
+		</v-container>
 
 		<!-- 可滚动内容区域 -->
-		<div class="flex-1 overflow-y-auto overflow-x-hidden w-full m-0 p-0">
+		<v-container fluid class="flex-1 overflow-y-auto overflow-x-hidden pa-0">
 			<!-- 加载状态 -->
-			<div
+			<v-row
 				v-if="isLoading"
-				class="loading-container d-flex justify-center align-center pa-8"
+				no-gutters
+				class="justify-center align-center pa-8"
+				style="min-height: 200px"
 			>
-				<div class="text-center">
+				<v-col cols="auto" class="text-center">
 					<v-progress-circular indeterminate color="primary" size="60" />
-					<div class="mt-4 text-body-1">搜索中...</div>
-				</div>
-			</div>
+					<v-card-text class="mt-4 text-body-1">搜索中...</v-card-text>
+				</v-col>
+			</v-row>
 
 			<!-- 搜索结果 -->
-			<div v-else-if="hasResults" class="results-container">
-				<v-card
-					v-for="(group, domain) in searchResults"
-					:key="domain"
-					class="domain-group-card ma-2"
-					elevation="2"
+			<v-container v-else-if="hasResults" fluid class="results-container pa-4">
+				<v-infinite-scroll
+					@load="loadMoreResults"
+					mode="intersect"
+					side="end"
+					:empty-text="hasMoreResults ? '' : '没有更多结果了'"
 				>
-					<v-card-title class="domain-header d-flex align-center ga-3 pa-3">
-						<img
-							:src="getFaviconUrl(String(domain))"
-							:alt="String(domain)"
-							class="domain-favicon"
-						/>
-						<span class="domain-name flex-grow-1">{{ domain }}</span>
-						<v-chip size="small" color="primary" variant="outlined">{{
-							group.totalCount
-						}}</v-chip>
-					</v-card-title>
+					<template
+						v-for="[domain, group] in Object.entries(searchResults)"
+						:key="domain"
+					>
+						<v-card class="domain-group-card ma-2" elevation="2">
+							<v-card-title class="domain-header d-flex align-center ga-3 pa-3">
+								<img
+									:src="getFaviconUrl(String(domain))"
+									:alt="String(domain)"
+									class="domain-favicon"
+								/>
+								<span class="domain-name flex-grow-1">{{ domain }}</span>
+								<v-chip size="small" color="primary" variant="outlined">{{
+									group.totalCount
+								}}</v-chip>
+							</v-card-title>
 
-					<v-card-text class="result-items pa-3">
-						<v-card
-							v-for="item in group.items"
-							:key="item.id"
-							class="result-item-card mb-2"
-							:class="{ selected: selectedItem === item.id }"
-							:data-id="item.id"
-							elevation="1"
-							@click="selectAndOpenItem(item)"
-						>
-							<v-card-text
-								class="result-item-content d-flex align-center ga-3 pa-3"
-							>
-								<div class="item-icon text-h6">
-									{{ getItemIcon(item.type) }}
-								</div>
-								<div class="item-content flex-grow-1">
-									<div
-										class="item-title text-body-1 font-weight-medium"
-										:title="item.title"
+							<v-card-text class="result-items pa-3">
+								<v-card
+									v-for="item in group.items"
+									:key="item.id"
+									class="result-item-card mb-2"
+									:class="{ selected: selectedItem === item.id }"
+									:data-id="item.id"
+									elevation="1"
+									@click="selectAndOpenItem(item)"
+								>
+									<v-card-text
+										class="result-item-content d-flex align-center ga-3 pa-3"
 									>
-										{{ item.title }}
-									</div>
-									<div
-										class="item-url text-body-2 text-medium-emphasis"
-										:title="item.url"
-									>
-										{{ item.url }}
-									</div>
-									<div class="item-meta d-flex flex-wrap ga-1 mt-1">
-										<v-chip
-											v-if="item.folderName"
-											size="x-small"
-											color="warning"
-											variant="outlined"
-										>
-											📁 {{ item.folderName }}
-										</v-chip>
-										<v-chip
-											v-if="item.visitCount && item.type !== 'download'"
-											size="x-small"
-											color="info"
-											variant="outlined"
-										>
-											{{ item.visitCount }} 次访问
-										</v-chip>
-										<v-chip
-											v-if="item.fileSize && item.type === 'download'"
-											size="x-small"
-											color="success"
-											variant="outlined"
-										>
-											{{ formatFileSize(item.fileSize) }}
-										</v-chip>
-										<span
-											v-if="item.lastVisited"
-											class="last-visited text-caption text-medium-emphasis"
-										>
-											{{ formatDate(item.lastVisited) }}
-										</span>
-										<v-chip
-											v-if="item.type === 'download' && !item.exists"
-											size="x-small"
-											color="error"
-											variant="flat"
-										>
-											⚠️ 文件不存在
-										</v-chip>
-									</div>
-								</div>
-								<div class="item-actions d-flex flex-column ga-1">
-									<v-btn
-										v-if="item.type === 'history'"
-										size="small"
-										color="primary"
-										prepend-icon="mdi-star"
-										@click.stop="showBookmarkDialog(item)"
-									>
-										收藏
-									</v-btn>
-									<v-btn
-										v-if="item.type === 'download'"
-										size="small"
-										color="success"
-										prepend-icon="mdi-folder-open"
-										@click.stop="showDownloadFile(item)"
-									>
-										显示文件目录
-									</v-btn>
-								</div>
+										<div class="item-icon text-h6">
+											{{ getItemIcon(item.type) }}
+										</div>
+										<div class="item-content flex-grow-1">
+											<div
+												class="item-title text-body-1 font-weight-medium"
+												:title="item.title"
+											>
+												{{ item.title }}
+											</div>
+											<div
+												class="item-url text-body-2 text-medium-emphasis"
+												:title="item.url"
+											>
+												{{ item.url }}
+											</div>
+											<div class="item-meta d-flex flex-wrap ga-1 mt-1">
+												<v-chip
+													v-if="item.folderName"
+													size="x-small"
+													color="warning"
+													variant="outlined"
+												>
+													📁 {{ item.folderName }}
+												</v-chip>
+												<v-chip
+													v-if="item.visitCount && item.type !== 'download'"
+													size="x-small"
+													color="info"
+													variant="outlined"
+												>
+													{{ item.visitCount }} 次访问
+												</v-chip>
+												<v-chip
+													v-if="item.fileSize && item.type === 'download'"
+													size="x-small"
+													color="success"
+													variant="outlined"
+												>
+													{{ formatFileSize(item.fileSize) }}
+												</v-chip>
+												<span
+													v-if="item.lastVisited"
+													class="last-visited text-caption text-medium-emphasis"
+												>
+													{{ formatDate(item.lastVisited) }}
+												</span>
+												<v-chip
+													v-if="item.type === 'download' && !item.exists"
+													size="x-small"
+													color="error"
+													variant="flat"
+												>
+													⚠️ 文件不存在
+												</v-chip>
+											</div>
+										</div>
+										<div class="item-actions d-flex flex-column ga-1">
+											<v-btn
+												v-if="item.type === 'history'"
+												size="small"
+												color="primary"
+												prepend-icon="mdi-star"
+												@click.stop="showBookmarkDialog(item)"
+											>
+												收藏
+											</v-btn>
+											<v-btn
+												v-if="item.type === 'download'"
+												size="small"
+												color="success"
+												prepend-icon="mdi-folder-open"
+												@click.stop="showDownloadFile(item)"
+											>
+												显示文件目录
+											</v-btn>
+										</div>
+									</v-card-text>
+								</v-card>
 							</v-card-text>
 						</v-card>
-					</v-card-text>
-				</v-card>
-			</div>
+					</template>
+
+					<!-- 加载更多状态 -->
+					<template #loading>
+						<v-row no-gutters class="justify-center pa-4">
+							<v-col cols="auto" class="text-center">
+								<v-progress-circular indeterminate color="primary" size="40" />
+								<v-card-text class="mt-2 text-body-2"
+									>加载更多结果...</v-card-text
+								>
+							</v-col>
+						</v-row>
+					</template>
+				</v-infinite-scroll>
+			</v-container>
 
 			<!-- 网络搜索建议 -->
-			<div
+			<v-container
 				v-if="searchQuery && !isLoading && defaultSearchEngine"
-				class="web-search-suggestion"
+				fluid
+				class="web-search-suggestion pa-4"
 			>
 				<v-card class="web-search-card ma-2" elevation="2">
 					<v-card-text class="pa-4">
-						<div class="web-search-header d-flex align-center ga-2 mb-3">
-							<img
-								:src="getEngineIconUrl(defaultSearchEngine)"
-								alt="icon"
-								class="search-engine-icon"
-								style="width: 18px; height: 18px"
-							/>
-							<span class="suggestion-text"
-								>在{{ defaultSearchEngine.name }}中搜索</span
-							>
-						</div>
-						<div
-							class="web-search-query d-flex align-center justify-space-between"
-						>
-							<span class="query-text text-body-1">"{{ searchQuery }}"</span>
-							<v-btn
-								color="primary"
-								size="small"
-								prepend-icon="mdi-open-in-new"
-								@click="performWebSearch"
-							>
-								搜索
-							</v-btn>
-						</div>
+						<v-row no-gutters class="align-center ga-2 mb-3">
+							<v-col cols="auto">
+								<v-img
+									:src="getEngineIconUrl(defaultSearchEngine)"
+									alt="icon"
+									width="18"
+									height="18"
+									class="search-engine-icon"
+								/>
+							</v-col>
+							<v-col>
+								<v-card-text class="suggestion-text pa-0"
+									>在{{ defaultSearchEngine.name }}中搜索</v-card-text
+								>
+							</v-col>
+						</v-row>
+						<v-row no-gutters class="align-center justify-space-between">
+							<v-col>
+								<v-card-text class="query-text text-body-1 pa-0"
+									>"{{ searchQuery }}"</v-card-text
+								>
+							</v-col>
+							<v-col cols="auto">
+								<v-btn
+									color="primary"
+									size="small"
+									prepend-icon="mdi-open-in-new"
+									@click="performWebSearch"
+								>
+									搜索
+								</v-btn>
+							</v-col>
+						</v-row>
 					</v-card-text>
 				</v-card>
-			</div>
+			</v-container>
 
 			<!-- 空状态 -->
-			<div v-else-if="searchQuery && !isLoading" class="empty-state">
-				<div class="text-center pa-8">
-					<v-icon size="80" color="grey-lighten-1">mdi-magnify-close</v-icon>
-					<div class="text-h6 mt-4 mb-2">未找到匹配的结果</div>
-					<div class="text-body-2 text-medium-emphasis">
-						可尝试
-						<v-chip size="small" color="primary" variant="outlined"
-							>Ctrl+Enter</v-chip
+			<v-container
+				v-else-if="searchQuery && !isLoading"
+				fluid
+				class="empty-state"
+			>
+				<v-row no-gutters class="justify-center pa-8">
+					<v-col cols="auto" class="text-center">
+						<v-icon size="80" color="grey-lighten-1">mdi-magnify-close</v-icon>
+						<v-card-title class="text-h6 mt-4 mb-2"
+							>未找到匹配的结果</v-card-title
 						>
-						进行网络搜索
-					</div>
-				</div>
-			</div>
+						<v-card-text class="text-body-2 text-medium-emphasis">
+							可尝试
+							<v-chip size="small" color="primary" variant="outlined"
+								>Ctrl+Enter</v-chip
+							>
+							进行网络搜索
+						</v-card-text>
+					</v-col>
+				</v-row>
+			</v-container>
 
 			<!-- 初始状态 - 显示推荐内容 -->
-			<div v-else-if="showRecommended" class="recommended-content">
-				<div class="recommended-container">
-					<div
+			<v-container
+				v-else-if="showRecommended"
+				fluid
+				class="recommended-content pa-4"
+			>
+				<v-row>
+					<v-col
 						v-for="group in recommendedGroups"
 						:key="group.type"
-						class="recommended-group mb-4"
+						cols="12"
+						class="mb-4"
 					>
-						<div class="group-header d-flex align-center ga-2 pa-3">
-							<span class="group-icon text-h6">
-								{{
-									group.type === "history"
-										? "🕐"
-										: group.type === "bookmarks"
-										? "📚"
-										: "📥"
-								}}
-							</span>
-							<span class="group-title text-h6 flex-grow-1">{{
-								group.title
-							}}</span>
-							<v-chip size="small" variant="outlined">{{
-								group.items.length
-							}}</v-chip>
-						</div>
-						<div class="group-items">
-							<SearchResultItemComponent
-								v-for="item in group.items.slice(0, 6)"
-								:key="item.id"
-								:item="item"
-								:isSelected="selectedItem === item.id"
-								:isFloating="false"
-								@select="openItem"
-								@bookmark="showBookmarkDialog"
-								@showFile="showDownloadFile"
-								@copy="handleCopyUrl"
-							/>
-						</div>
-					</div>
-				</div>
-			</div>
+						<v-card class="recommended-group" elevation="2">
+							<v-card-title class="group-header d-flex align-center ga-2 pa-3">
+								<v-icon class="group-icon text-h6">
+									{{
+										group.type === "history"
+											? "🕐"
+											: group.type === "bookmarks"
+											? "📚"
+											: "📥"
+									}}
+								</v-icon>
+								<v-spacer />
+								<v-card-text class="group-title text-h6 pa-0">{{
+									group.title
+								}}</v-card-text>
+								<v-spacer />
+								<v-chip size="small" variant="outlined">{{
+									group.items.length
+								}}</v-chip>
+							</v-card-title>
+							<v-card-text class="group-items pa-4">
+								<SearchResultItemComponent
+									v-for="item in group.items.slice(0, 6)"
+									:key="item.id"
+									:item="item"
+									:isSelected="selectedItem === item.id"
+									:isFloating="false"
+									@select="openItem"
+									@bookmark="showBookmarkDialog"
+									@showFile="showDownloadFile"
+									@copy="handleCopyUrl"
+								/>
+							</v-card-text>
+						</v-card>
+					</v-col>
+				</v-row>
+			</v-container>
 
 			<!-- 推荐内容加载状态 -->
-			<div
+			<v-container
 				v-else-if="isLoadingRecommended"
-				class="loading-state text-center pa-8"
+				fluid
+				class="loading-state pa-8"
 			>
-				<v-progress-circular indeterminate color="primary" size="40" />
-				<div class="mt-4 text-body-1">正在加载推荐内容...</div>
-			</div>
+				<v-row no-gutters class="justify-center">
+					<v-col cols="auto" class="text-center">
+						<v-progress-circular indeterminate color="primary" size="40" />
+						<v-card-text class="mt-4 text-body-1"
+							>正在加载推荐内容...</v-card-text
+						>
+					</v-col>
+				</v-row>
+			</v-container>
 
 			<!-- 初始状态 - 功能说明（作为后备） -->
-			<div v-else class="initial-state">
+			<v-container v-else fluid class="initial-state pa-4">
 				<v-card class="welcome-card ma-2" elevation="2">
 					<v-card-text class="text-center pa-8">
-						<div class="welcome-tips">
-							<div class="tip-item d-flex align-center ga-3 mb-3">
-								<v-icon color="primary">mdi-auto-fix</v-icon>
-								<span>支持模糊搜索</span>
-							</div>
-							<div class="tip-item d-flex align-center ga-3 mb-3">
-								<v-icon color="primary">mdi-folder-multiple</v-icon>
-								<span>结果按域名分组显示</span>
-							</div>
-							<div class="tip-item d-flex align-center ga-3 mb-3">
-								<v-icon color="primary">mdi-cursor-default-click</v-icon>
-								<span>单击直接打开链接</span>
-							</div>
-							<div class="tip-item d-flex align-center ga-3 mb-3">
-								<v-icon color="primary">mdi-star</v-icon>
-								<span>历史记录可添加到书签</span>
-							</div>
-							<div class="tip-item d-flex align-center ga-3 mb-3">
-								<v-icon color="primary">mdi-download</v-icon>
-								<span>支持搜索下载文件</span>
-							</div>
-							<div
-								v-if="mainShortcut"
-								class="tip-item d-flex align-center ga-3 mb-3"
-							>
-								<v-icon color="primary">mdi-tools</v-icon>
-								<span>快捷键: {{ mainShortcut }}</span>
-							</div>
-						</div>
+						<v-list class="welcome-tips">
+							<v-list-item class="tip-item mb-3">
+								<template #prepend>
+									<v-icon color="primary">mdi-auto-fix</v-icon>
+								</template>
+								<v-list-item-title>支持模糊搜索</v-list-item-title>
+							</v-list-item>
+							<v-list-item class="tip-item mb-3">
+								<template #prepend>
+									<v-icon color="primary">mdi-folder-multiple</v-icon>
+								</template>
+								<v-list-item-title>结果按域名分组显示</v-list-item-title>
+							</v-list-item>
+							<v-list-item class="tip-item mb-3">
+								<template #prepend>
+									<v-icon color="primary">mdi-cursor-default-click</v-icon>
+								</template>
+								<v-list-item-title>单击直接打开链接</v-list-item-title>
+							</v-list-item>
+							<v-list-item class="tip-item mb-3">
+								<template #prepend>
+									<v-icon color="primary">mdi-star</v-icon>
+								</template>
+								<v-list-item-title>历史记录可添加到书签</v-list-item-title>
+							</v-list-item>
+							<v-list-item class="tip-item mb-3">
+								<template #prepend>
+									<v-icon color="primary">mdi-download</v-icon>
+								</template>
+								<v-list-item-title>支持搜索下载文件</v-list-item-title>
+							</v-list-item>
+							<v-list-item v-if="mainShortcut" class="tip-item mb-3">
+								<template #prepend>
+									<v-icon color="primary">mdi-tools</v-icon>
+								</template>
+								<v-list-item-title
+									>快捷键: {{ mainShortcut }}</v-list-item-title
+								>
+							</v-list-item>
+						</v-list>
 					</v-card-text>
 				</v-card>
-			</div>
-		</div>
+			</v-container>
+		</v-container>
 
 		<!-- 快捷键提示 -->
-		<div
-			class="shortcuts d-flex justify-center ga-2 pa-2"
-			style="flex-shrink: 0"
-		>
+		<v-footer class="shortcuts justify-center ga-2 pa-2">
 			<v-chip size="small" variant="outlined"
 				>{{ navigationKeys.open }} 打开</v-chip
 			>
@@ -431,7 +506,7 @@
 				>{{ navigationKeys.up }}{{ navigationKeys.down }} 选择</v-chip
 			>
 			<v-chip size="small" variant="outlined">Esc 关闭</v-chip>
-		</div>
+		</v-footer>
 
 		<!-- 书签对话框 -->
 		<BookmarkDialog
@@ -465,7 +540,7 @@ import {
 	SearchHistoryManager,
 	showDownloadFile as showDownloadFileInExplorer,
 } from "../utils/search";
-import { getDefaultSearchEngine } from "../utils/searchEngines";
+// import { getDefaultSearchEngine } from "../utils/searchEngines"; // 暂时未使用
 import {
 	formatShortcut,
 	getNavigationKeys,
@@ -544,10 +619,17 @@ const searchOptions = reactive<SearchOptions>({
 	includeBookmarks: true,
 	includeHistory: true,
 	includeDownloads: true,
-	maxResults: 50,
+	maxResults: 20, // 每页显示数量，减少初始加载
 	sortBy: "relevance",
 	timeFilter: "all",
 });
+
+// 无限滚动相关状态
+const currentPage = ref(1);
+const hasMoreResults = ref(false);
+const isLoadingMore = ref(false);
+const allSearchResults = ref<GroupedSearchResults>({});
+const totalResultsCount = ref(0);
 
 // 计算属性
 const hasResults = computed(() => {
@@ -629,6 +711,50 @@ const getEngineIconUrl = (engine: SearchEngine | null): string => {
 	}
 };
 
+// 合并搜索结果
+const mergeSearchResults = (newResults: GroupedSearchResults) => {
+	for (const [domain, group] of Object.entries(newResults)) {
+		if (allSearchResults.value[domain]) {
+			// 合并同域名的结果，避免重复
+			const existingIds = new Set(
+				allSearchResults.value[domain].items.map((item) => item.id)
+			);
+			const newItems = group.items.filter((item) => !existingIds.has(item.id));
+			allSearchResults.value[domain].items.push(...newItems);
+			allSearchResults.value[domain].totalCount += newItems.length;
+		} else {
+			allSearchResults.value[domain] = { ...group };
+		}
+	}
+	searchResults.value = { ...allSearchResults.value };
+};
+
+// 计算总结果数量
+const getTotalResultsCount = (results: GroupedSearchResults): number => {
+	return Object.values(results).reduce(
+		(total, group) => total + group.items.length,
+		0
+	);
+};
+
+// 加载更多结果
+const loadMoreResults = async ({ done }: any) => {
+	if (!hasMoreResults.value || isLoadingMore.value) {
+		done("empty");
+		return;
+	}
+
+	currentPage.value += 1;
+	await handleSearch(true);
+
+	// 检查是否还有更多结果
+	if (hasMoreResults.value) {
+		done("ok");
+	} else {
+		done("empty");
+	}
+};
+
 // 更新搜索选项
 const updateSearchOptions = () => {
 	searchOptions.includeBookmarks =
@@ -676,32 +802,56 @@ const handleSearchNow = () => {
 };
 
 // 搜索处理函数
-const handleSearch = async () => {
+const handleSearch = async (isLoadMore = false) => {
 	if (!searchQuery.value.trim()) {
 		searchResults.value = {};
+		allSearchResults.value = {};
 		searchStats.value = null;
+		currentPage.value = 1;
+		hasMoreResults.value = false;
 		return;
 	}
 
-	isLoading.value = true;
+	if (isLoadMore) {
+		isLoadingMore.value = true;
+	} else {
+		isLoading.value = true;
+		currentPage.value = 1;
+		allSearchResults.value = {};
+	}
 
 	try {
 		const options = {
 			...searchOptions,
 			query: searchQuery.value.trim(),
+			maxResults: searchOptions.maxResults * currentPage.value, // 累积加载
 		};
 
 		const { results, stats } = await searchBookmarksAndHistory(options);
-		searchResults.value = results;
+
+		if (isLoadMore) {
+			// 合并新结果到现有结果中
+			mergeSearchResults(results);
+		} else {
+			allSearchResults.value = results;
+			searchResults.value = results;
+			// 保存搜索历史
+			await SearchHistoryManager.saveSearchHistory(searchQuery.value.trim());
+			await loadSearchHistory();
+		}
+
 		searchStats.value = stats;
 
-		// 保存搜索历史
-		await SearchHistoryManager.saveSearchHistory(searchQuery.value.trim());
-		await loadSearchHistory();
+		// 计算是否还有更多结果
+		const currentTotal = getTotalResultsCount(allSearchResults.value);
+		totalResultsCount.value = currentTotal;
+		hasMoreResults.value =
+			currentTotal >= searchOptions.maxResults * currentPage.value;
 	} catch (error) {
 		console.error("搜索失败:", error);
 	} finally {
 		isLoading.value = false;
+		isLoadingMore.value = false;
 	}
 };
 
@@ -770,7 +920,12 @@ const handleCopyUrl = async (url: string) => {
 			textArea.style.left = "-9999px";
 			document.body.appendChild(textArea);
 			textArea.select();
-			document.execCommand("copy");
+			// 使用 try-catch 包装弃用的方法以消除警告
+			try {
+				document.execCommand("copy");
+			} catch (execError) {
+				console.warn("execCommand 复制失败:", execError);
+			}
 			document.body.removeChild(textArea);
 			console.log("已复制到剪贴板:", url);
 		}
@@ -1138,10 +1293,7 @@ const handleStorageChange = (
 	}
 };
 
-// 打开设置页面
-const openSettings = () => {
-	chrome.runtime.openOptionsPage();
-};
+// 设置按钮已移除
 
 // 处理回车键
 const handleEnterKey = () => {
