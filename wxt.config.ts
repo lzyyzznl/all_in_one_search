@@ -1,5 +1,6 @@
 import { defineConfig } from "wxt";
 import { APP_CONSTANTS } from "./utils/constants";
+import UnoCSS from "@unocss/vite";
 
 export default defineConfig({
 	// 使用 Vue 模块
@@ -67,18 +68,10 @@ export default defineConfig({
 
 	// 开发配置
 	vite: () => ({
+		plugins: [UnoCSS()],
 		define: {
 			__VUE_OPTIONS_API__: true,
 			__VUE_PROD_DEVTOOLS__: false,
-		},
-		css: {
-			preprocessorOptions: {
-				less: {
-					// Less 选项
-					javascriptEnabled: true,
-					math: "parens-division",
-				},
-			},
 		},
 		resolve: {
 			alias: {
@@ -86,7 +79,10 @@ export default defineConfig({
 			},
 		},
 		optimizeDeps: {
-			include: ["element-plus", "@element-plus/icons-vue"],
+			include: ["vuetify", "@mdi/font"],
+		},
+		ssr: {
+			noExternal: ["vuetify"],
 		},
 	}),
 });

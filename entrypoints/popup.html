@@ -1,27 +1,100 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>浏览器收藏夹历史记录搜索器</title>
-  </head>
-  <body style="margin: 0;">
-    <div id="app"></div> 
-    
-    <script type="module">
-      import "./styles/element-popup.less";
-      import { createApp } from "vue";
-      import PopupApp from "../components/PopupApp.vue";
-      import { setupElementPlus } from "../utils/element-plus.ts";
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>浏览器收藏夹历史记录搜索器</title>
+		<link
+			href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css"
+			rel="stylesheet"
+		/>
+		<style>
+			/* 强制固定popup尺寸，防止子元素影响 */
+			html {
+				width: 1000px !important;
+				height: 1000px !important;
+				overflow: hidden !important;
+				margin: 0 !important;
+				padding: 0 !important;
+			}
 
-      // 创建Vue应用实例
-      const app = createApp(PopupApp);
-      
-      // 设置Element Plus
-      setupElementPlus(app);
+			body {
+				margin: 0 !important;
+				padding: 0 !important;
+				width: 1000px !important;
+				height: 1000px !important;
+				min-width: 1000px !important;
+				min-height: 1000px !important;
+				max-width: 1000px !important;
+				max-height: 1000px !important;
+				overflow: hidden !important;
+				position: fixed !important;
+				top: 0 !important;
+				left: 0 !important;
+			}
 
-      // 挂载到DOM
-      app.mount("#app");
-    </script>
-  </body>
+			#app {
+				width: 1000px !important;
+				height: 1000px !important;
+				min-width: 1000px !important;
+				min-height: 1000px !important;
+				max-width: 1000px !important;
+				max-height: 1000px !important;
+				margin: 0 !important;
+				padding: 0 !important;
+				border: none !important;
+				overflow: hidden !important;
+				position: relative !important;
+			}
+		</style>
+	</head>
+	<body
+		style="
+			margin: 0 !important;
+			padding: 0 !important;
+			width: 1000px !important;
+			height: 1000px !important;
+			min-width: 1000px !important;
+			min-height: 1000px !important;
+			max-width: 1000px !important;
+			max-height: 1000px !important;
+			overflow: hidden !important;
+			position: fixed !important;
+			top: 0 !important;
+			left: 0 !important;
+		"
+	>
+		<div
+			id="app"
+			style="
+				width: 1000px !important;
+				height: 1000px !important;
+				min-width: 1000px !important;
+				min-height: 1000px !important;
+				max-width: 1000px !important;
+				max-height: 1000px !important;
+				margin: 0 !important;
+				padding: 0 !important;
+				border: none !important;
+				overflow: hidden !important;
+				position: relative !important;
+			"
+		></div>
+
+		<script type="module">
+			import "virtual:uno.css";
+			import { createApp } from "vue";
+			import PopupApp from "../components/PopupApp.vue";
+			import { setupVuetify } from "../utils/vuetify.ts";
+
+			// 创建Vue应用实例
+			const app = createApp(PopupApp);
+
+			// 设置Vuetify
+			setupVuetify(app);
+
+			// 挂载到DOM
+			app.mount("#app");
+		</script>
+	</body>
 </html>

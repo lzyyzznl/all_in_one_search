@@ -1,11 +1,20 @@
 import { createApp } from "vue";
-import ElementPlus from "element-plus";
-import "element-plus/dist/index.css";
+import "virtual:uno.css";
 import FloatingSearch from "../components/FloatingSearch.vue";
+import { setupVuetify } from "../utils/vuetify";
 
 export default defineContentScript({
 	matches: ["<all_urls>"],
+	excludeMatches: [
+		"chrome://*/*",
+		"chrome-extension://*/*",
+		"moz-extension://*/*",
+		"edge://*/*",
+		"about:*",
+	],
+	runAt: "document_end",
 	main() {
+		console.log("Content script 开始初始化，当前URL:", window.location.href);
 		let floatingSearchApp: any = null;
 
 		// 创建浮动搜索应用
@@ -43,8 +52,8 @@ export default defineContentScript({
 			// 创建Vue应用
 			floatingSearchApp = createApp(FloatingSearch);
 
-			// 注册Element Plus
-			floatingSearchApp.use(ElementPlus);
+			// 设置Vuetify
+			setupVuetify(floatingSearchApp);
 
 			// 挂载应用
 			floatingSearchApp.mount(container);

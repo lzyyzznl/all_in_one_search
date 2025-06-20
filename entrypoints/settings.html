@@ -1,26 +1,30 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>浏览器收藏夹历史记录搜索器 - 设置</title>
-</head>
-<body>
-  <div id="app"></div>
-  <script type="module">
-    import "./styles/element-settings.less";
-    import { createApp } from "vue";
-    import SettingsPage from "../components/SettingsPage.vue";
-    import { setupElementPlus } from "../utils/element-plus.ts";
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>浏览器收藏夹历史记录搜索器 - 设置</title>
+		<link
+			href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css"
+			rel="stylesheet"
+		/>
+	</head>
+	<body>
+		<div id="app"></div>
+		<script type="module">
+			import "virtual:uno.css";
+			import { createApp } from "vue";
+			import SettingsPage from "../components/SettingsPage.vue";
+			import { setupVuetify } from "../utils/vuetify.ts";
 
-    // 创建Vue应用实例
-    const app = createApp(SettingsPage);
-    
-    // 设置Element Plus
-    setupElementPlus(app);
-    
-    // 挂载到DOM
-    app.mount("#app");
-  </script>
-</body>
+			// 创建Vue应用实例
+			const app = createApp(SettingsPage);
+
+			// 设置Vuetify
+			setupVuetify(app);
+
+			// 挂载到DOM
+			app.mount("#app");
+		</script>
+	</body>
 </html>

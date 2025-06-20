@@ -1,26 +1,34 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>浏览器收藏夹历史记录搜索器 - 新标签页</title>
-  </head>
-  <body>
-    <div id="app" class="newtab-container" style="height:100vh;width:100%"></div>
-    <script type="module">
-      import "./styles/element-popup.less";
-      import { createApp } from "vue";
-      import PopupApp from "../components/PopupApp.vue";
-      import { setupElementPlus } from "../utils/element-plus.ts";
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>浏览器收藏夹历史记录搜索器 - 新标签页</title>
+		<link
+			href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css"
+			rel="stylesheet"
+		/>
+	</head>
+	<body>
+		<div
+			id="app"
+			class="newtab-container"
+			style="height: 100vh; width: 100%"
+		></div>
+		<script type="module">
+			import "virtual:uno.css";
+			import { createApp } from "vue";
+			import SingleTabApp from "../components/SingleTabApp.vue";
+			import { setupVuetify } from "../utils/vuetify.ts";
 
-      // 创建Vue应用实例
-      const app = createApp(PopupApp);
-      
-      // 设置Element Plus
-      setupElementPlus(app);
+			// 创建Vue应用实例
+			const app = createApp(SingleTabApp);
 
-      // 挂载到DOM
-      app.mount("#app");
-    </script>
-  </body>
+			// 设置Vuetify
+			setupVuetify(app);
+
+			// 挂载到DOM
+			app.mount("#app");
+		</script>
+	</body>
 </html>
