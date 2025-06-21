@@ -4,6 +4,7 @@ import * as components from "vuetify/components";
 import * as directives from "vuetify/directives";
 import { aliases, mdi } from "vuetify/iconsets/mdi";
 import { zhHans } from "vuetify/locale";
+import { VTreeview } from "vuetify/labs/VTreeview";
 
 // 导入Vuetify样式
 import "vuetify/styles";
@@ -35,7 +36,10 @@ const customTheme = {
 
 export function setupVuetify(app: App) {
 	const vuetify = createVuetify({
-		components,
+		components: {
+			...components,
+			VTreeview,
+		},
 		directives,
 		theme: {
 			defaultTheme: "customTheme",

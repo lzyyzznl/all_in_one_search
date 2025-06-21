@@ -15,8 +15,8 @@ async function getBookmarkTreeViaMessage(): Promise<
 		chrome.runtime.sendMessage({ action: "getBookmarkTree" }, (response) => {
 			if (chrome.runtime.lastError) {
 				reject(chrome.runtime.lastError);
-			} else if (response.error) {
-				reject(new Error(response.error));
+			} else if (!response || !response.success) {
+				reject(new Error(response?.error || "获取书签树失败"));
 			} else {
 				resolve(response.data);
 			}

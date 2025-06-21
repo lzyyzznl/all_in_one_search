@@ -1,512 +1,561 @@
 <template>
-	<v-app
-		class="w-screen h-screen min-h-screen min-w-screen bg-gray-50 overflow-hidden flex flex-col"
-	>
-		<!-- 固定头部区域 -->
-		<v-container
-			fluid
-			class="flex-shrink-0 bg-white border-b border-gray-200 pa-0"
-		>
-			<!-- 搜索头部 -->
-			<v-card class="rounded-0 shadow-none pa-4">
-				<!-- 搜索输入框 -->
-				<v-row no-gutters class="align-center">
-					<v-col>
-						<v-text-field
-							v-model="searchQuery"
-							placeholder="搜索本地文件，或按 Ctrl+Enter 进行网络搜索"
-							variant="outlined"
-							density="comfortable"
-							clearable
-							@input="handleSearchInput"
-							@keydown.enter.prevent="handleEnterKey"
-							@keydown.ctrl.enter.prevent="performWebSearch"
-							ref="searchInput"
-						>
-							<template #prepend-inner>
-								<v-icon>mdi-magnify</v-icon>
-							</template>
-						</v-text-field>
-					</v-col>
-				</v-row>
+	<v-app class="modern-search-app">
+		<v-container fluid class="pa-0 h-screen d-flex flex-column">
+			<!-- 现代化头部区域 -->
+			<v-sheet class="modern-header flex-shrink-0" elevation="2">
+				<v-container fluid class="py-6">
+					<!-- 品牌标题区域 -->
+					<v-row no-gutters class="align-center mb-6">
+						<v-col>
+							<div class="d-flex align-center ga-4">
+								<v-avatar size="40" class="brand-avatar">
+									<v-icon color="white" size="24">mdi-magnify</v-icon>
+								</v-avatar>
+								<div>
+									<h1 class="brand-title">智能搜索</h1>
+									<p class="brand-subtitle">
+										快速查找您的书签、历史记录和下载文件
+									</p>
+								</div>
+							</div>
+						</v-col>
+					</v-row>
 
-				<!-- 搜索历史气泡 -->
-				<v-row v-if="searchHistory.length > 0" no-gutters class="mt-3">
-					<v-col>
-						<v-chip-group>
-							<v-chip
-								v-for="item in searchHistory"
-								:key="item.timestamp"
-								color="info"
-								variant="outlined"
-								size="small"
-								class="history-tag"
-								@click="selectHistoryItem(item.query)"
+					<!-- 现代化搜索输入框 -->
+					<v-row no-gutters class="align-center">
+						<v-col>
+							<v-text-field
+								v-model="searchQuery"
+								placeholder="搜索本地文件，或按 Ctrl+Enter 进行网络搜索"
+								variant="solo"
+								density="comfortable"
+								clearable
+								rounded="xl"
+								class="modern-search-input"
+								@input="handleSearchInput"
+								@keydown.enter.prevent="handleEnterKey"
+								@keydown.ctrl.enter.prevent="performWebSearch"
+								ref="searchInput"
 							>
-								{{ item.query }}
-							</v-chip>
-						</v-chip-group>
-					</v-col>
-				</v-row>
+								<template #append-inner>
+									<v-chip
+										v-if="!searchQuery"
+										size="x-small"
+										color="primary"
+										variant="tonal"
+										class="shortcut-hint"
+									>
+										Ctrl+Enter 网络搜索
+									</v-chip>
+								</template>
+							</v-text-field>
+						</v-col>
+					</v-row>
 
-				<!-- 搜索选项 - 水平对齐 -->
-				<v-divider class="mt-3 mb-3" />
-				<v-row class="controls-row align-center" justify="space-between">
-					<!-- 数据源多选 -->
-					<v-col cols="4" class="filter-control">
-						<v-row no-gutters class="align-center ga-2">
-							<v-col cols="auto">
-								<v-label class="text-body-2">搜索项:</v-label>
-							</v-col>
-							<v-col>
-								<v-select
-									v-model="selectedDataSources"
-									multiple
-									chips
-									variant="outlined"
-									density="compact"
-									:items="[
-										{ value: 'bookmarks', title: '书签' },
-										{ value: 'history', title: '历史记录' },
-										{ value: 'downloads', title: '下载文件' },
-									]"
-									@update:model-value="updateSearchOptions"
-								/>
-							</v-col>
-						</v-row>
-					</v-col>
-					<!-- 时间筛选 -->
-					<v-col cols="4" class="filter-control">
-						<v-row no-gutters class="align-center ga-2">
-							<v-col cols="auto">
-								<v-label class="text-body-2">时间:</v-label>
-							</v-col>
-							<v-col>
-								<v-select
-									v-model="searchOptions.timeFilter"
-									variant="outlined"
-									density="compact"
-									:items="[
-										{ value: 'all', title: '全部时间' },
-										{ value: 'today', title: '今天' },
-										{ value: 'week', title: '本周' },
-										{ value: 'month', title: '本月' },
-									]"
-								/>
-							</v-col>
-						</v-row>
-					</v-col>
+					<!-- 现代化搜索历史 -->
+					<v-row v-if="searchHistory.length > 0" no-gutters class="mt-6">
+						<v-col>
+							<div class="mb-3">
+								<v-chip
+									size="small"
+									color="grey-lighten-1"
+									variant="text"
+									prepend-icon="mdi-history"
+									class="history-label"
+								>
+									最近搜索
+								</v-chip>
+							</div>
+							<v-chip-group class="modern-history-chips">
+								<v-chip
+									v-for="item in searchHistory"
+									:key="item.timestamp"
+									color="primary"
+									variant="tonal"
+									size="small"
+									class="history-chip"
+									@click="selectHistoryItem(item.query)"
+								>
+									{{ item.query }}
+								</v-chip>
+							</v-chip-group>
+						</v-col>
+					</v-row>
 
-					<!-- 排序选择 -->
-					<v-col cols="4" class="filter-control">
-						<v-row no-gutters class="align-center ga-2">
-							<v-col cols="auto">
-								<v-label class="text-body-2">排序:</v-label>
-							</v-col>
-							<v-col>
-								<v-select
-									v-model="searchOptions.sortBy"
-									variant="outlined"
-									density="compact"
-									:items="[
-										{ value: 'relevance', title: '相关性' },
-										{ value: 'recent', title: '最近访问' },
-										{ value: 'frequency', title: '访问频率' },
-									]"
-								/>
-							</v-col>
-						</v-row>
-					</v-col>
-				</v-row>
-			</v-card>
+					<!-- 现代化搜索选项 -->
+					<v-divider class="my-6" />
+					<v-row class="modern-controls" justify="space-between">
+						<!-- 数据源多选 -->
+						<v-col cols="12" md="4" class="filter-section">
+							<v-select
+								v-model="selectedDataSources"
+								multiple
+								chips
+								variant="solo"
+								density="compact"
+								rounded="lg"
+								label="搜索范围"
+								prepend-inner-icon="mdi-database"
+								class="modern-select"
+								:items="[
+									{ value: 'bookmarks', title: '📚 书签' },
+									{ value: 'history', title: '🕐 历史记录' },
+									{ value: 'downloads', title: '📥 下载文件' },
+								]"
+								@update:model-value="updateSearchOptions"
+							/>
+						</v-col>
+						<!-- 时间筛选 -->
+						<v-col cols="12" md="4" class="filter-section">
+							<v-select
+								v-model="searchOptions.timeFilter"
+								variant="solo"
+								density="compact"
+								rounded="lg"
+								label="时间范围"
+								prepend-inner-icon="mdi-calendar"
+								class="modern-select"
+								:items="[
+									{ value: 'all', title: '全部时间' },
+									{ value: 'today', title: '今天' },
+									{ value: 'week', title: '本周' },
+									{ value: 'month', title: '本月' },
+								]"
+							/>
+						</v-col>
 
-			<!-- 搜索统计 -->
+						<!-- 排序选择 -->
+						<v-col cols="12" md="4" class="filter-section">
+							<v-select
+								v-model="searchOptions.sortBy"
+								variant="solo"
+								density="compact"
+								rounded="lg"
+								label="排序方式"
+								prepend-inner-icon="mdi-sort"
+								class="modern-select"
+								:items="[
+									{ value: 'relevance', title: '相关性' },
+									{ value: 'recent', title: '最近访问' },
+									{ value: 'frequency', title: '访问频率' },
+								]"
+							/>
+						</v-col>
+					</v-row>
+				</v-container>
+			</v-sheet>
+
+			<!-- 现代化搜索统计 -->
 			<v-sheet
 				v-if="searchStats"
-				class="bg-gray-50 border-b border-gray-200 pa-2"
+				class="search-stats-bar flex-shrink-0"
+				elevation="1"
 			>
-				<v-chip-group>
-					<v-chip size="small" color="info" variant="outlined">
-						找到 {{ searchStats.totalResults }} 个结果
-					</v-chip>
-					<v-chip
-						v-if="searchStats.bookmarkCount > 0"
-						size="small"
-						color="success"
-						variant="outlined"
+				<v-container fluid>
+					<v-row no-gutters class="align-center justify-space-between py-3">
+						<v-col>
+							<div class="d-flex align-center ga-4 flex-wrap">
+								<v-chip
+									size="small"
+									color="primary"
+									variant="elevated"
+									prepend-icon="mdi-magnify"
+									class="stats-chip-main"
+								>
+									{{ searchStats.totalResults }} 个结果
+								</v-chip>
+								<v-chip
+									v-if="searchStats.bookmarkCount > 0"
+									size="small"
+									color="success"
+									variant="tonal"
+									prepend-icon="mdi-bookmark"
+									class="stats-chip"
+								>
+									{{ searchStats.bookmarkCount }}
+								</v-chip>
+								<v-chip
+									v-if="searchStats.historyCount > 0"
+									size="small"
+									color="warning"
+									variant="tonal"
+									prepend-icon="mdi-history"
+									class="stats-chip"
+								>
+									{{ searchStats.historyCount }}
+								</v-chip>
+								<v-chip
+									v-if="searchStats.downloadCount > 0"
+									size="small"
+									color="info"
+									variant="tonal"
+									prepend-icon="mdi-download"
+									class="stats-chip"
+								>
+									{{ searchStats.downloadCount }}
+								</v-chip>
+							</div>
+						</v-col>
+						<v-col cols="auto">
+							<div class="d-flex align-center ga-2">
+								<v-chip
+									size="small"
+									variant="text"
+									prepend-icon="mdi-domain"
+									class="stats-meta"
+								>
+									{{ searchStats.uniqueDomains }} 域名
+								</v-chip>
+								<v-chip
+									size="small"
+									variant="text"
+									prepend-icon="mdi-clock-fast"
+									class="stats-meta"
+								>
+									{{ searchStats.searchTime }}ms
+								</v-chip>
+							</div>
+						</v-col>
+					</v-row>
+				</v-container>
+			</v-sheet>
+
+			<!-- 现代化主内容区域 -->
+			<div class="modern-main-content flex-1 overflow-y-auto">
+				<!-- 优雅的加载状态 -->
+				<v-container v-if="isLoading" fluid class="loading-container">
+					<v-row
+						no-gutters
+						class="justify-center align-center"
+						style="min-height: 300px"
 					>
-						书签 {{ searchStats.bookmarkCount }}
-					</v-chip>
-					<v-chip
-						v-if="searchStats.historyCount > 0"
-						size="small"
-						color="warning"
-						variant="outlined"
+						<v-col cols="auto" class="text-center">
+							<div class="loading-animation">
+								<v-progress-circular
+									indeterminate
+									color="primary"
+									size="64"
+									width="4"
+									class="mb-6"
+								/>
+								<h3 class="text-h6 text-primary mb-2">正在搜索</h3>
+								<p class="text-body-2 text-medium-emphasis">
+									为您查找最相关的结果...
+								</p>
+							</div>
+						</v-col>
+					</v-row>
+				</v-container>
+
+				<!-- 现代化搜索结果 -->
+				<v-container
+					v-else-if="hasResults"
+					fluid
+					class="results-container pa-6"
+				>
+					<v-infinite-scroll
+						@load="loadMoreResults"
+						mode="intersect"
+						side="end"
+						:empty-text="hasMoreResults ? '' : '没有更多结果了'"
 					>
-						历史 {{ searchStats.historyCount }}
-					</v-chip>
-					<v-chip
-						v-if="searchStats.downloadCount > 0"
-						size="small"
-						color="info"
-						variant="outlined"
-					>
-						下载 {{ searchStats.downloadCount }}
-					</v-chip>
-					<v-chip size="small" variant="outlined">
-						{{ searchStats.uniqueDomains }} 个域名
-					</v-chip>
-					<v-chip size="small" variant="outlined">
-						{{ searchStats.searchTime }}ms
-					</v-chip>
-				</v-chip-group>
+						<template
+							v-for="[domain, group] in Object.entries(searchResults)"
+							:key="domain"
+						>
+							<v-card class="modern-domain-card mb-6" elevation="3">
+								<v-card-title class="domain-header">
+									<div class="d-flex align-center ga-3">
+										<v-avatar size="28" class="domain-avatar">
+											<v-img
+												:src="getFaviconUrl(String(domain))"
+												:alt="String(domain)"
+											/>
+										</v-avatar>
+										<span class="domain-name">{{ domain }}</span>
+										<v-spacer />
+										<v-chip
+											size="small"
+											color="primary"
+											variant="tonal"
+											class="result-count-chip"
+										>
+											{{ group.totalCount }} 项
+										</v-chip>
+									</div>
+								</v-card-title>
+
+								<v-divider />
+								<v-list class="result-list pa-0">
+									<SearchResultItemComponent
+										v-for="item in group.items"
+										:key="item.id"
+										:item="item"
+										:isSelected="selectedItem === item.id"
+										:isFloating="false"
+										:isBookmarked="bookmarkedUrls.has(item.url)"
+										:data-id="item.id"
+										class="result-item"
+										:class="{
+											'result-item--selected': selectedItem === item.id,
+										}"
+										@select="selectAndOpenItem"
+										@bookmark="showBookmarkDialog"
+										@showFile="showDownloadFile"
+										@copy="handleCopyUrl"
+									/>
+								</v-list>
+							</v-card>
+						</template>
+
+						<!-- 加载更多状态 -->
+						<template #loading>
+							<v-row no-gutters class="justify-center pa-4">
+								<v-col cols="auto" class="text-center">
+									<v-progress-circular
+										indeterminate
+										color="primary"
+										size="40"
+									/>
+									<v-card-text class="mt-2 text-body-2"
+										>加载更多结果...</v-card-text
+									>
+								</v-col>
+							</v-row>
+						</template>
+					</v-infinite-scroll>
+				</v-container>
+
+				<!-- 网络搜索建议 -->
+				<v-container
+					v-if="searchQuery && !isLoading && defaultSearchEngine"
+					fluid
+					class="web-search-suggestion pa-4"
+				>
+					<v-card class="web-search-card ma-2" elevation="2">
+						<v-card-text class="pa-4">
+							<v-row no-gutters class="align-center ga-2 mb-3">
+								<v-col cols="auto">
+									<v-img
+										:src="getEngineIconUrl(defaultSearchEngine)"
+										alt="icon"
+										width="18"
+										height="18"
+										class="search-engine-icon"
+									/>
+								</v-col>
+								<v-col>
+									<v-card-text class="suggestion-text pa-0"
+										>在{{ defaultSearchEngine.name }}中搜索</v-card-text
+									>
+								</v-col>
+							</v-row>
+							<v-row no-gutters class="align-center justify-space-between">
+								<v-col>
+									<v-card-text class="query-text text-body-1 pa-0"
+										>"{{ searchQuery }}"</v-card-text
+									>
+								</v-col>
+								<v-col cols="auto">
+									<v-btn
+										color="primary"
+										size="small"
+										prepend-icon="mdi-open-in-new"
+										@click="performWebSearch"
+									>
+										搜索
+									</v-btn>
+								</v-col>
+							</v-row>
+						</v-card-text>
+					</v-card>
+				</v-container>
+
+				<!-- 空状态 -->
+				<v-container
+					v-else-if="searchQuery && !isLoading"
+					fluid
+					class="empty-state"
+				>
+					<v-row no-gutters class="justify-center pa-8">
+						<v-col cols="auto" class="text-center">
+							<v-icon size="80" color="grey-lighten-1"
+								>mdi-magnify-close</v-icon
+							>
+							<v-card-title class="text-h6 mt-4 mb-2"
+								>未找到匹配的结果</v-card-title
+							>
+							<v-card-text class="text-body-2 text-medium-emphasis">
+								可尝试
+								<v-chip size="small" color="primary" variant="outlined"
+									>Ctrl+Enter</v-chip
+								>
+								进行网络搜索
+							</v-card-text>
+						</v-col>
+					</v-row>
+				</v-container>
+
+				<!-- 初始状态 - 显示推荐内容 -->
+				<v-container
+					v-else-if="showRecommended"
+					fluid
+					class="recommended-content pa-4"
+				>
+					<v-row>
+						<v-col
+							v-for="group in recommendedGroups"
+							:key="group.type"
+							cols="12"
+							class="mb-4"
+						>
+							<v-card class="recommended-group" elevation="2">
+								<v-card-title
+									class="group-header d-flex align-center justify-center pa-3 position-relative"
+								>
+									<v-icon
+										class="group-icon text-h6 position-absolute"
+										style="left: 16px"
+									>
+										{{
+											group.type === "history"
+												? "🕐"
+												: group.type === "bookmarks"
+												? "📚"
+												: "📥"
+										}}
+									</v-icon>
+									<v-card-text class="group-title text-h6 pa-0 text-center">{{
+										group.title
+									}}</v-card-text>
+									<v-chip
+										size="small"
+										variant="outlined"
+										class="position-absolute"
+										style="right: 16px"
+										>{{ group.items.length }}</v-chip
+									>
+								</v-card-title>
+								<v-card-text class="group-items pa-4">
+									<SearchResultItemComponent
+										v-for="item in group.items.slice(0, 6)"
+										:key="item.id"
+										:item="item"
+										:isSelected="selectedItem === item.id"
+										:isFloating="false"
+										:isBookmarked="bookmarkedUrls.has(item.url)"
+										@select="openItem"
+										@bookmark="showBookmarkDialog"
+										@showFile="showDownloadFile"
+										@copy="handleCopyUrl"
+									/>
+								</v-card-text>
+							</v-card>
+						</v-col>
+					</v-row>
+				</v-container>
+
+				<!-- 推荐内容加载状态 -->
+				<v-container
+					v-else-if="isLoadingRecommended"
+					fluid
+					class="loading-state pa-8"
+				>
+					<v-row no-gutters class="justify-center">
+						<v-col cols="auto" class="text-center">
+							<v-progress-circular indeterminate color="primary" size="40" />
+							<v-card-text class="mt-4 text-body-1"
+								>正在加载推荐内容...</v-card-text
+							>
+						</v-col>
+					</v-row>
+				</v-container>
+
+				<!-- 初始状态 - 功能说明（作为后备） -->
+				<v-container v-else fluid class="initial-state pa-4">
+					<v-card class="welcome-card ma-2" elevation="2">
+						<v-card-text class="text-center pa-8">
+							<v-list class="welcome-tips">
+								<v-list-item class="tip-item mb-3">
+									<template #prepend>
+										<v-icon color="primary">mdi-auto-fix</v-icon>
+									</template>
+									<v-list-item-title>支持模糊搜索</v-list-item-title>
+								</v-list-item>
+								<v-list-item class="tip-item mb-3">
+									<template #prepend>
+										<v-icon color="primary">mdi-folder-multiple</v-icon>
+									</template>
+									<v-list-item-title>结果按域名分组显示</v-list-item-title>
+								</v-list-item>
+								<v-list-item class="tip-item mb-3">
+									<template #prepend>
+										<v-icon color="primary">mdi-cursor-default-click</v-icon>
+									</template>
+									<v-list-item-title>单击直接打开链接</v-list-item-title>
+								</v-list-item>
+								<v-list-item class="tip-item mb-3">
+									<template #prepend>
+										<v-icon color="primary">mdi-star</v-icon>
+									</template>
+									<v-list-item-title>历史记录可添加到书签</v-list-item-title>
+								</v-list-item>
+								<v-list-item class="tip-item mb-3">
+									<template #prepend>
+										<v-icon color="primary">mdi-download</v-icon>
+									</template>
+									<v-list-item-title>支持搜索下载文件</v-list-item-title>
+								</v-list-item>
+								<v-list-item v-if="mainShortcut" class="tip-item mb-3">
+									<template #prepend>
+										<v-icon color="primary">mdi-tools</v-icon>
+									</template>
+									<v-list-item-title
+										>快捷键: {{ mainShortcut }}</v-list-item-title
+									>
+								</v-list-item>
+							</v-list>
+						</v-card-text>
+					</v-card>
+				</v-container>
+			</div>
+
+			<!-- 现代化快捷键提示 -->
+			<v-sheet class="modern-footer flex-shrink-0" elevation="2">
+				<v-container fluid>
+					<v-row no-gutters class="justify-center align-center py-3">
+						<v-col cols="auto">
+							<div class="d-flex align-center ga-3">
+								<v-chip
+									size="small"
+									variant="tonal"
+									color="primary"
+									prepend-icon="mdi-keyboard-return"
+								>
+									{{ navigationKeys.open }} 打开
+								</v-chip>
+								<v-chip
+									size="small"
+									variant="tonal"
+									color="primary"
+									prepend-icon="mdi-arrow-up-down"
+								>
+									{{ navigationKeys.up }}{{ navigationKeys.down }} 选择
+								</v-chip>
+								<v-chip
+									size="small"
+									variant="tonal"
+									color="primary"
+									prepend-icon="mdi-keyboard-esc"
+								>
+									Esc 关闭
+								</v-chip>
+							</div>
+						</v-col>
+					</v-row>
+				</v-container>
 			</v-sheet>
 		</v-container>
-
-		<!-- 可滚动内容区域 -->
-		<v-container fluid class="flex-1 overflow-y-auto overflow-x-hidden pa-0">
-			<!-- 加载状态 -->
-			<v-row
-				v-if="isLoading"
-				no-gutters
-				class="justify-center align-center pa-8"
-				style="min-height: 200px"
-			>
-				<v-col cols="auto" class="text-center">
-					<v-progress-circular indeterminate color="primary" size="60" />
-					<v-card-text class="mt-4 text-body-1">搜索中...</v-card-text>
-				</v-col>
-			</v-row>
-
-			<!-- 搜索结果 -->
-			<v-container v-else-if="hasResults" fluid class="results-container pa-4">
-				<v-infinite-scroll
-					@load="loadMoreResults"
-					mode="intersect"
-					side="end"
-					:empty-text="hasMoreResults ? '' : '没有更多结果了'"
-				>
-					<template
-						v-for="[domain, group] in Object.entries(searchResults)"
-						:key="domain"
-					>
-						<v-card class="domain-group-card ma-2" elevation="2">
-							<v-card-title class="domain-header d-flex align-center ga-3 pa-3">
-								<img
-									:src="getFaviconUrl(String(domain))"
-									:alt="String(domain)"
-									class="domain-favicon"
-								/>
-								<span class="domain-name flex-grow-1">{{ domain }}</span>
-								<v-chip size="small" color="primary" variant="outlined">{{
-									group.totalCount
-								}}</v-chip>
-							</v-card-title>
-
-							<v-card-text class="result-items pa-3">
-								<v-card
-									v-for="item in group.items"
-									:key="item.id"
-									class="result-item-card mb-2"
-									:class="{ selected: selectedItem === item.id }"
-									:data-id="item.id"
-									elevation="1"
-									@click="selectAndOpenItem(item)"
-								>
-									<v-card-text
-										class="result-item-content d-flex align-center ga-3 pa-3"
-									>
-										<div class="item-icon text-h6">
-											{{ getItemIcon(item.type) }}
-										</div>
-										<div class="item-content flex-grow-1">
-											<div
-												class="item-title text-body-1 font-weight-medium"
-												:title="item.title"
-											>
-												{{ item.title }}
-											</div>
-											<div
-												class="item-url text-body-2 text-medium-emphasis"
-												:title="item.url"
-											>
-												{{ item.url }}
-											</div>
-											<div class="item-meta d-flex flex-wrap ga-1 mt-1">
-												<v-chip
-													v-if="item.folderName"
-													size="x-small"
-													color="warning"
-													variant="outlined"
-												>
-													📁 {{ item.folderName }}
-												</v-chip>
-												<v-chip
-													v-if="item.visitCount && item.type !== 'download'"
-													size="x-small"
-													color="info"
-													variant="outlined"
-												>
-													{{ item.visitCount }} 次访问
-												</v-chip>
-												<v-chip
-													v-if="item.fileSize && item.type === 'download'"
-													size="x-small"
-													color="success"
-													variant="outlined"
-												>
-													{{ formatFileSize(item.fileSize) }}
-												</v-chip>
-												<span
-													v-if="item.lastVisited"
-													class="last-visited text-caption text-medium-emphasis"
-												>
-													{{ formatDate(item.lastVisited) }}
-												</span>
-												<v-chip
-													v-if="item.type === 'download' && !item.exists"
-													size="x-small"
-													color="error"
-													variant="flat"
-												>
-													⚠️ 文件不存在
-												</v-chip>
-											</div>
-										</div>
-										<div class="item-actions d-flex flex-column ga-1">
-											<v-btn
-												v-if="item.type === 'history'"
-												size="small"
-												color="primary"
-												prepend-icon="mdi-star"
-												@click.stop="showBookmarkDialog(item)"
-											>
-												收藏
-											</v-btn>
-											<v-btn
-												v-if="item.type === 'download'"
-												size="small"
-												color="success"
-												prepend-icon="mdi-folder-open"
-												@click.stop="showDownloadFile(item)"
-											>
-												显示文件目录
-											</v-btn>
-										</div>
-									</v-card-text>
-								</v-card>
-							</v-card-text>
-						</v-card>
-					</template>
-
-					<!-- 加载更多状态 -->
-					<template #loading>
-						<v-row no-gutters class="justify-center pa-4">
-							<v-col cols="auto" class="text-center">
-								<v-progress-circular indeterminate color="primary" size="40" />
-								<v-card-text class="mt-2 text-body-2"
-									>加载更多结果...</v-card-text
-								>
-							</v-col>
-						</v-row>
-					</template>
-				</v-infinite-scroll>
-			</v-container>
-
-			<!-- 网络搜索建议 -->
-			<v-container
-				v-if="searchQuery && !isLoading && defaultSearchEngine"
-				fluid
-				class="web-search-suggestion pa-4"
-			>
-				<v-card class="web-search-card ma-2" elevation="2">
-					<v-card-text class="pa-4">
-						<v-row no-gutters class="align-center ga-2 mb-3">
-							<v-col cols="auto">
-								<v-img
-									:src="getEngineIconUrl(defaultSearchEngine)"
-									alt="icon"
-									width="18"
-									height="18"
-									class="search-engine-icon"
-								/>
-							</v-col>
-							<v-col>
-								<v-card-text class="suggestion-text pa-0"
-									>在{{ defaultSearchEngine.name }}中搜索</v-card-text
-								>
-							</v-col>
-						</v-row>
-						<v-row no-gutters class="align-center justify-space-between">
-							<v-col>
-								<v-card-text class="query-text text-body-1 pa-0"
-									>"{{ searchQuery }}"</v-card-text
-								>
-							</v-col>
-							<v-col cols="auto">
-								<v-btn
-									color="primary"
-									size="small"
-									prepend-icon="mdi-open-in-new"
-									@click="performWebSearch"
-								>
-									搜索
-								</v-btn>
-							</v-col>
-						</v-row>
-					</v-card-text>
-				</v-card>
-			</v-container>
-
-			<!-- 空状态 -->
-			<v-container
-				v-else-if="searchQuery && !isLoading"
-				fluid
-				class="empty-state"
-			>
-				<v-row no-gutters class="justify-center pa-8">
-					<v-col cols="auto" class="text-center">
-						<v-icon size="80" color="grey-lighten-1">mdi-magnify-close</v-icon>
-						<v-card-title class="text-h6 mt-4 mb-2"
-							>未找到匹配的结果</v-card-title
-						>
-						<v-card-text class="text-body-2 text-medium-emphasis">
-							可尝试
-							<v-chip size="small" color="primary" variant="outlined"
-								>Ctrl+Enter</v-chip
-							>
-							进行网络搜索
-						</v-card-text>
-					</v-col>
-				</v-row>
-			</v-container>
-
-			<!-- 初始状态 - 显示推荐内容 -->
-			<v-container
-				v-else-if="showRecommended"
-				fluid
-				class="recommended-content pa-4"
-			>
-				<v-row>
-					<v-col
-						v-for="group in recommendedGroups"
-						:key="group.type"
-						cols="12"
-						class="mb-4"
-					>
-						<v-card class="recommended-group" elevation="2">
-							<v-card-title class="group-header d-flex align-center ga-2 pa-3">
-								<v-icon class="group-icon text-h6">
-									{{
-										group.type === "history"
-											? "🕐"
-											: group.type === "bookmarks"
-											? "📚"
-											: "📥"
-									}}
-								</v-icon>
-								<v-spacer />
-								<v-card-text class="group-title text-h6 pa-0">{{
-									group.title
-								}}</v-card-text>
-								<v-spacer />
-								<v-chip size="small" variant="outlined">{{
-									group.items.length
-								}}</v-chip>
-							</v-card-title>
-							<v-card-text class="group-items pa-4">
-								<SearchResultItemComponent
-									v-for="item in group.items.slice(0, 6)"
-									:key="item.id"
-									:item="item"
-									:isSelected="selectedItem === item.id"
-									:isFloating="false"
-									@select="openItem"
-									@bookmark="showBookmarkDialog"
-									@showFile="showDownloadFile"
-									@copy="handleCopyUrl"
-								/>
-							</v-card-text>
-						</v-card>
-					</v-col>
-				</v-row>
-			</v-container>
-
-			<!-- 推荐内容加载状态 -->
-			<v-container
-				v-else-if="isLoadingRecommended"
-				fluid
-				class="loading-state pa-8"
-			>
-				<v-row no-gutters class="justify-center">
-					<v-col cols="auto" class="text-center">
-						<v-progress-circular indeterminate color="primary" size="40" />
-						<v-card-text class="mt-4 text-body-1"
-							>正在加载推荐内容...</v-card-text
-						>
-					</v-col>
-				</v-row>
-			</v-container>
-
-			<!-- 初始状态 - 功能说明（作为后备） -->
-			<v-container v-else fluid class="initial-state pa-4">
-				<v-card class="welcome-card ma-2" elevation="2">
-					<v-card-text class="text-center pa-8">
-						<v-list class="welcome-tips">
-							<v-list-item class="tip-item mb-3">
-								<template #prepend>
-									<v-icon color="primary">mdi-auto-fix</v-icon>
-								</template>
-								<v-list-item-title>支持模糊搜索</v-list-item-title>
-							</v-list-item>
-							<v-list-item class="tip-item mb-3">
-								<template #prepend>
-									<v-icon color="primary">mdi-folder-multiple</v-icon>
-								</template>
-								<v-list-item-title>结果按域名分组显示</v-list-item-title>
-							</v-list-item>
-							<v-list-item class="tip-item mb-3">
-								<template #prepend>
-									<v-icon color="primary">mdi-cursor-default-click</v-icon>
-								</template>
-								<v-list-item-title>单击直接打开链接</v-list-item-title>
-							</v-list-item>
-							<v-list-item class="tip-item mb-3">
-								<template #prepend>
-									<v-icon color="primary">mdi-star</v-icon>
-								</template>
-								<v-list-item-title>历史记录可添加到书签</v-list-item-title>
-							</v-list-item>
-							<v-list-item class="tip-item mb-3">
-								<template #prepend>
-									<v-icon color="primary">mdi-download</v-icon>
-								</template>
-								<v-list-item-title>支持搜索下载文件</v-list-item-title>
-							</v-list-item>
-							<v-list-item v-if="mainShortcut" class="tip-item mb-3">
-								<template #prepend>
-									<v-icon color="primary">mdi-tools</v-icon>
-								</template>
-								<v-list-item-title
-									>快捷键: {{ mainShortcut }}</v-list-item-title
-								>
-							</v-list-item>
-						</v-list>
-					</v-card-text>
-				</v-card>
-			</v-container>
-		</v-container>
-
-		<!-- 快捷键提示 -->
-		<v-footer class="shortcuts justify-center ga-2 pa-2">
-			<v-chip size="small" variant="outlined"
-				>{{ navigationKeys.open }} 打开</v-chip
-			>
-			<v-chip size="small" variant="outlined"
-				>{{ navigationKeys.up }}{{ navigationKeys.down }} 选择</v-chip
-			>
-			<v-chip size="small" variant="outlined">Esc 关闭</v-chip>
-		</v-footer>
 
 		<!-- 书签对话框 -->
 		<BookmarkDialog
@@ -539,6 +588,9 @@ import {
 	searchBookmarksAndHistory,
 	SearchHistoryManager,
 	showDownloadFile as showDownloadFileInExplorer,
+	getAllBookmarks,
+	findBookmarkByUrl,
+	removeBookmark,
 } from "../utils/search";
 // import { getDefaultSearchEngine } from "../utils/searchEngines"; // 暂时未使用
 import {
@@ -588,6 +640,9 @@ const recommendedContent = ref<RecommendedContent>({
 const recommendedGroups = ref<RecommendedGroup[]>([]);
 const showRecommended = ref(false);
 const isLoadingRecommended = ref(false);
+
+// 书签URL集合，用于检查URL是否已经被收藏
+const bookmarkedUrls = ref<Set<string>>(new Set());
 
 // 快捷键显示
 const mainShortcut = ref("");
@@ -668,6 +723,17 @@ const updateRecommendedGroups = () => {
 	showRecommended.value = groups.length > 0;
 };
 
+// 加载书签URL集合
+const loadBookmarkedUrls = async (): Promise<void> => {
+	try {
+		const bookmarks = await getAllBookmarks();
+		bookmarkedUrls.value = new Set(bookmarks.map((bookmark) => bookmark.url));
+	} catch (error) {
+		console.error("加载书签URL失败:", error);
+		bookmarkedUrls.value = new Set();
+	}
+};
+
 // 加载推荐内容
 const loadRecommendedContent = async (): Promise<void> => {
 	try {
@@ -679,20 +745,6 @@ const loadRecommendedContent = async (): Promise<void> => {
 		console.error("加载推荐内容失败:", error);
 	} finally {
 		isLoadingRecommended.value = false;
-	}
-};
-
-// 获取项目图标
-const getItemIcon = (type: string): string => {
-	switch (type) {
-		case "bookmark":
-			return "🔖";
-		case "history":
-			return "🕒";
-		case "download":
-			return "📥";
-		default:
-			return "📄";
 	}
 };
 
@@ -756,7 +808,7 @@ const loadMoreResults = async ({ done }: any) => {
 };
 
 // 更新搜索选项
-const updateSearchOptions = () => {
+const updateSearchOptions = async () => {
 	searchOptions.includeBookmarks =
 		selectedDataSources.value.includes("bookmarks");
 	searchOptions.includeHistory = selectedDataSources.value.includes("history");
@@ -766,6 +818,10 @@ const updateSearchOptions = () => {
 	// 如果当前有搜索查询，重新搜索
 	if (searchQuery.value.trim()) {
 		handleSearchNow();
+	} else {
+		// 重新加载书签URL和推荐内容
+		await loadBookmarkedUrls();
+		await loadRecommendedContent();
 	}
 };
 
@@ -1010,6 +1066,10 @@ const handleBookmarkSave = async (data: {
 		}
 
 		await chrome.bookmarks.create(bookmarkData);
+
+		// 更新书签URL集合
+		bookmarkedUrls.value.add(data.url);
+
 		closeBookmarkDialog();
 		console.log("书签添加成功！");
 	} catch (error) {
@@ -1018,8 +1078,30 @@ const handleBookmarkSave = async (data: {
 	}
 };
 
-// 显示书签对话框
+// 处理删除书签
+const handleRemoveBookmark = async (item: SearchResultItem) => {
+	try {
+		const bookmarkId = await findBookmarkByUrl(item.url);
+		if (bookmarkId) {
+			await chrome.bookmarks.remove(bookmarkId);
+			// 从集合中移除URL
+			bookmarkedUrls.value.delete(item.url);
+			console.log("书签删除成功！");
+		}
+	} catch (error) {
+		console.error("删除书签失败:", error);
+	}
+};
+
+// 显示书签对话框或处理收藏切换
 const showBookmarkDialog = async (item: SearchResultItem) => {
+	// 检查是否已收藏，如果已收藏则直接取消收藏
+	if (bookmarkedUrls.value.has(item.url)) {
+		await handleRemoveBookmark(item);
+		return;
+	}
+
+	// 如果未收藏，则显示添加书签对话框
 	bookmarkDialog.item = item;
 	bookmarkDialog.title = item.title;
 	bookmarkDialog.url = item.url;
@@ -1321,6 +1403,7 @@ onMounted(async () => {
 	await loadNavigationSettings();
 	await loadDefaultSearchEngine();
 	await loadSearchHistory();
+	await loadBookmarkedUrls();
 
 	// 加载推荐内容
 	if (!searchQuery.value.trim()) {
@@ -1342,171 +1425,303 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* 搜索历史样式 */
-.search-history {
-	max-height: 100px;
-	overflow-y: auto;
-}
-
-.history-tag {
-	cursor: pointer;
-	transition: all 0.2s ease;
-}
-
-.history-tag:hover {
-	transform: scale(1.05);
-}
-
-/* 搜索选项样式 */
-.search-options {
-	border-top: 1px solid #e0e0e0;
-	padding-top: 16px;
-}
-
-/* 结果容器样式 */
-.results-container {
-	padding: 16px;
-}
-
-.domain-group-card {
-	margin-bottom: 16px;
-	border-radius: 12px;
+/* 现代化应用样式 */
+.modern-search-app {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	min-height: 100vh;
 	overflow: hidden;
 }
 
-.domain-header {
-	background: #f8fafc;
-	border-bottom: 1px solid #e2e8f0;
+/* 现代化头部样式 */
+.modern-header {
+	background: rgba(255, 255, 255, 0.95) !important;
+	backdrop-filter: blur(20px);
+	border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+	z-index: 10;
 }
 
-.domain-favicon {
-	width: 20px;
-	height: 20px;
-	border-radius: 4px;
+.brand-avatar {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.brand-title {
+	font-size: 1.75rem;
+	font-weight: 700;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	background-clip: text;
+	margin-bottom: 0;
+}
+
+.brand-subtitle {
+	color: #64748b;
+	font-size: 0.875rem;
+	margin-bottom: 0;
+	font-weight: 500;
+}
+
+/* 现代化搜索输入框 */
+.modern-search-input :deep(.v-field) {
+	background: rgba(255, 255, 255, 0.9);
+	backdrop-filter: blur(10px);
+	border-radius: 24px;
+	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	transition: all 0.3s ease;
+}
+
+.modern-search-input :deep(.v-field:hover) {
+	box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+	transform: translateY(-2px);
+}
+
+.modern-search-input :deep(.v-field--focused) {
+	box-shadow: 0 12px 40px rgba(102, 126, 234, 0.2);
+	border-color: #667eea;
+}
+
+.shortcut-hint {
+	font-size: 0.75rem;
+	font-weight: 500;
+}
+
+/* 现代化历史记录 */
+.history-label {
+	font-weight: 600;
+	color: #64748b;
+}
+
+.modern-history-chips .history-chip {
+	transition: all 0.3s ease;
+	cursor: pointer;
+}
+
+.modern-history-chips .history-chip:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+/* 现代化控制选项 */
+.modern-controls .modern-select :deep(.v-field) {
+	background: rgba(255, 255, 255, 0.8);
+	backdrop-filter: blur(10px);
+	border-radius: 16px;
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	transition: all 0.3s ease;
+}
+
+.modern-controls .modern-select :deep(.v-field:hover) {
+	background: rgba(255, 255, 255, 0.9);
+	transform: translateY(-1px);
+}
+
+/* 搜索统计栏 */
+.search-stats-bar {
+	background: rgba(255, 255, 255, 0.95);
+	backdrop-filter: blur(20px);
+	border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+	z-index: 9;
+}
+
+.stats-chip-main {
+	font-weight: 600;
+	box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+}
+
+.stats-chip {
+	font-weight: 500;
+}
+
+.stats-meta {
+	color: #64748b;
+	font-size: 0.75rem;
+}
+
+/* 现代化主内容区域 */
+.modern-main-content {
+	background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+	position: relative;
+	overflow-y: auto;
+	overflow-x: hidden;
+	padding: 1rem 0;
+}
+
+.loading-container {
+	background: rgba(255, 255, 255, 0.8);
+	backdrop-filter: blur(10px);
+	border-radius: 24px;
+	margin: 2rem;
+	min-height: 300px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.loading-animation {
+	padding: 2rem;
+}
+
+/* 现代化搜索结果 */
+.results-container {
+	background: transparent;
+	padding: 1.5rem !important;
+}
+
+.modern-domain-card {
+	background: rgba(255, 255, 255, 0.95);
+	backdrop-filter: blur(20px);
+	border-radius: 20px;
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	transition: all 0.3s ease;
+	overflow: hidden;
+	margin-bottom: 2rem !important;
+}
+
+.modern-domain-card:hover {
+	transform: translateY(-4px);
+	box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.domain-header {
+	background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+	padding: 1rem 1.5rem;
+	border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.domain-avatar {
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .domain-name {
 	font-weight: 600;
-	color: #2d3748;
+	color: #1e293b;
+	font-size: 1.1rem;
 }
 
-.result-items {
-	background: white;
-}
-
-.result-item-card {
-	border-radius: 8px;
-	transition: all 0.2s ease;
-	cursor: pointer;
-}
-
-.result-item-card:hover {
-	transform: translateY(-2px);
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.result-item-card.selected {
-	border: 2px solid #1976d2;
-	background: #e3f2fd;
-}
-
-.item-icon {
-	font-size: 20px;
-	width: 24px;
-	text-align: center;
-}
-
-.item-title {
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-	margin-bottom: 4px;
-}
-
-.item-url {
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-	margin-bottom: 8px;
-}
-
-.last-visited {
-	margin-left: auto;
-}
-
-/* 网络搜索建议样式 */
-.web-search-suggestion {
-	padding: 16px;
-}
-
-.web-search-card {
-	border-radius: 12px;
-	border: 2px dashed #e0e0e0;
-}
-
-.search-engine-icon {
-	border-radius: 4px;
-}
-
-.query-text {
-	font-style: italic;
-	color: #1976d2;
-}
-
-/* 推荐内容样式 */
-.recommended-content {
-	padding: 16px;
-}
-
-.recommended-group {
-	background: white;
-	border-radius: 12px;
-	overflow: hidden;
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.group-header {
-	background: #f8fafc;
-	border-bottom: 1px solid #e2e8f0;
-}
-
-.group-icon {
-	font-size: 24px;
-}
-
-.group-title {
-	color: #2d3748;
+.result-count-chip {
 	font-weight: 600;
 }
 
-.group-items {
-	padding: 16px;
+/* 现代化结果列表 */
+.result-list .result-item {
+	transition: all 0.3s ease;
+	cursor: pointer;
+	border-radius: 12px;
+	margin: 0.5rem;
 }
 
-/* 响应式调整 */
+.result-list .result-item:hover {
+	background: rgba(102, 126, 234, 0.05);
+	transform: translateX(8px);
+}
+
+.result-list .result-item--selected {
+	background: linear-gradient(
+		135deg,
+		rgba(102, 126, 234, 0.1) 0%,
+		rgba(118, 75, 162, 0.1) 100%
+	);
+	border-left: 4px solid #667eea;
+}
+
+.item-type-avatar {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	color: white;
+	font-weight: bold;
+}
+
+.item-title {
+	font-weight: 600;
+	color: #1e293b;
+	font-size: 1rem;
+}
+
+.item-url {
+	color: #64748b;
+	font-size: 0.875rem;
+}
+
+.item-meta {
+	margin-top: 0.5rem;
+}
+
+.item-actions .v-btn {
+	transition: all 0.3s ease;
+}
+
+.item-actions .v-btn:hover {
+	transform: scale(1.1);
+}
+
+/* 现代化底部 */
+.modern-footer {
+	background: rgba(255, 255, 255, 0.95);
+	backdrop-filter: blur(20px);
+	border-top: 1px solid rgba(0, 0, 0, 0.05);
+	z-index: 10;
+}
+
+/* 响应式设计 */
 @media (max-width: 768px) {
-	.v-row {
-		flex-direction: column;
-		gap: 16px;
+	.brand-title {
+		font-size: 1.5rem;
 	}
 
-	.px-2 {
-		padding-left: 0 !important;
-		padding-right: 0 !important;
+	.modern-controls {
+		gap: 1rem;
 	}
 
-	.d-flex.align-center.ga-2 {
-		flex-direction: column;
-		align-items: flex-start;
-		gap: 8px;
+	.modern-controls .v-col {
+		margin-bottom: 1rem;
 	}
 
-	.min-w-15 {
-		min-width: auto !important;
+	.modern-domain-card {
+		margin: 0.5rem;
 	}
 
-	.flex-1 {
-		width: 100%;
+	.result-list .result-item:hover {
+		transform: none;
 	}
+}
+
+/* 动画效果 */
+@keyframes fadeInUp {
+	from {
+		opacity: 0;
+		transform: translateY(20px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.modern-domain-card {
+	animation: fadeInUp 0.5s ease-out;
+}
+
+/* 滚动条样式 */
+:deep(.v-main) {
+	scrollbar-width: thin;
+	scrollbar-color: rgba(102, 126, 234, 0.3) transparent;
+}
+
+:deep(.v-main::-webkit-scrollbar) {
+	width: 6px;
+}
+
+:deep(.v-main::-webkit-scrollbar-track) {
+	background: transparent;
+}
+
+:deep(.v-main::-webkit-scrollbar-thumb) {
+	background: rgba(102, 126, 234, 0.3);
+	border-radius: 3px;
+}
+
+:deep(.v-main::-webkit-scrollbar-thumb:hover) {
+	background: rgba(102, 126, 234, 0.5);
 }
 </style>

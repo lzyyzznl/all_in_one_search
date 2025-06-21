@@ -176,6 +176,45 @@ export class ContentSearchService {
 	}
 
 	/**
+	 * 删除书签
+	 */
+	static async removeBookmark(bookmarkId: string): Promise<void> {
+		try {
+			const response = await chrome.runtime.sendMessage({
+				action: "remove-bookmark",
+				bookmarkId,
+			});
+
+			if (!response || !response.success) {
+				throw new Error(response?.error || "删除书签失败");
+			}
+		} catch (error) {
+			console.error("删除书签失败:", error);
+			throw error;
+		}
+	}
+
+	/**
+	 * 根据URL查找书签ID
+	 */
+	static async findBookmarkByUrl(url: string): Promise<string | null> {
+		try {
+			const response = await chrome.runtime.sendMessage({
+				action: "find-bookmark-by-url",
+				url,
+			});
+
+			if (response && response.success) {
+				return response.bookmarkId || null;
+			}
+			return null;
+		} catch (error) {
+			console.error("查找书签失败:", error);
+			return null;
+		}
+	}
+
+	/**
 	 * 获取推荐内容
 	 */
 	static async getRecommendedContent(): Promise<RecommendedContent> {

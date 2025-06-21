@@ -77,10 +77,10 @@ export function fuzzyMatch(text: string, query: string): boolean {
 	}
 
 	// 2. 分词匹配 - 支持多个关键词用空格分隔
-	const queryWords = queryLower.split(/\s+/).filter(word => word.length > 0);
+	const queryWords = queryLower.split(/\s+/).filter((word) => word.length > 0);
 	if (queryWords.length > 1) {
 		// 所有关键词都要在文本中找到
-		return queryWords.every(word => textLower.includes(word));
+		return queryWords.every((word) => textLower.includes(word));
 	}
 
 	// 3. 字符顺序匹配（不需要连续）
@@ -636,5 +636,44 @@ export class SearchHistoryManager {
 		} catch (error) {
 			console.error("清空搜索历史失败:", error);
 		}
+	}
+}
+
+/**
+ * 检查URL是否已经存在于书签中
+ */
+export async function isUrlBookmarked(url: string): Promise<boolean> {
+	try {
+		const bookmarks = await getAllBookmarks();
+		return bookmarks.some((bookmark) => bookmark.url === url);
+	} catch (error) {
+		console.error("检查书签状态失败:", error);
+		return false;
+	}
+}
+
+/**
+ * 根据URL查找书签ID
+ */
+export async function findBookmarkByUrl(url: string): Promise<string | null> {
+	try {
+		const bookmarks = await getAllBookmarks();
+		const bookmark = bookmarks.find((bookmark) => bookmark.url === url);
+		return bookmark ? bookmark.id : null;
+	} catch (error) {
+		console.error("查找书签失败:", error);
+		return null;
+	}
+}
+
+/**
+ * 删除书签
+ */
+export async function removeBookmark(bookmarkId: string): Promise<void> {
+	try {
+		await browser.bookmarks.remove(bookmarkId);
+	} catch (error) {
+		console.error("删除书签失败:", error);
+		throw error;
 	}
 }

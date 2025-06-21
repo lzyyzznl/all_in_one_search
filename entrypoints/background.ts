@@ -252,6 +252,53 @@ export default defineBackground({
 						break;
 					}
 
+					case "remove-bookmark": {
+						console.log("删除书签:", message.bookmarkId);
+						try {
+							await chrome.bookmarks.remove(message.bookmarkId);
+							sendResponse({ success: true });
+						} catch (error) {
+							console.error("删除书签失败:", error);
+							sendResponse({
+								success: false,
+								error: error instanceof Error ? error.message : "删除书签失败",
+							});
+						}
+						break;
+					}
+
+					case "find-bookmark-by-url": {
+						console.log("查找书签:", message.url);
+						try {
+							const bookmarks = await chrome.bookmarks.getTree();
+							let foundBookmarkId: string | null = null;
+
+							const findBookmark = (
+								nodes: chrome.bookmarks.BookmarkTreeNode[]
+							) => {
+								for (const node of nodes) {
+									if (node.url === message.url) {
+										foundBookmarkId = node.id;
+										return;
+									}
+									if (node.children) {
+										findBookmark(node.children);
+									}
+								}
+							};
+
+							findBookmark(bookmarks);
+							sendResponse({ success: true, bookmarkId: foundBookmarkId });
+						} catch (error) {
+							console.error("查找书签失败:", error);
+							sendResponse({
+								success: false,
+								error: error instanceof Error ? error.message : "查找书签失败",
+							});
+						}
+						break;
+					}
+
 					case "toggle-floating-search": {
 						console.log("切换浮动搜索");
 						sendResponse({ success: true });

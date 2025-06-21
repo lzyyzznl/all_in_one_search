@@ -75,17 +75,27 @@
 
 		<template #append v-if="showActions">
 			<div
-				class="d-flex ga-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-				:class="{ 'opacity-100': isFloating }"
+				class="d-flex ga-1 action-buttons"
+				:class="{
+					'opacity-100': isFloating,
+				}"
 			>
 				<v-btn
 					v-if="item.type === 'history'"
 					size="small"
 					variant="text"
-					icon="mdi-star"
+					:icon="isBookmarked ? 'mdi-star' : 'mdi-star-outline'"
 					@click.stop="handleBookmark"
-					:title="isFloating ? '收藏' : '添加到书签'"
-					class="text-warning"
+					:title="
+						isFloating
+							? isBookmarked
+								? '取消收藏'
+								: '收藏'
+							: isBookmarked
+							? '从书签中移除'
+							: '添加到书签'
+					"
+					:class="isBookmarked ? 'text-warning' : 'text-grey-lighten-1'"
 				/>
 				<v-btn
 					v-if="item.type === 'download'"
@@ -119,6 +129,7 @@ interface Props {
 	isSelected?: boolean;
 	isFloating?: boolean; // 是否在浮动搜索中使用
 	showActions?: boolean; // 是否显示操作按钮
+	isBookmarked?: boolean; // URL是否已经被收藏
 }
 
 interface Emits {
@@ -132,6 +143,7 @@ const props = withDefaults(defineProps<Props>(), {
 	isSelected: false,
 	isFloating: false,
 	showActions: true,
+	isBookmarked: false,
 });
 
 const emit = defineEmits<Emits>();
@@ -166,14 +178,25 @@ function handleCopy(): void {
 </script>
 
 <style scoped>
-/* 使用CSS变量保持与Vuetify主题的兼容性 */
-.v-list-item:hover .opacity-0 {
-	opacity: 1;
+/* 操作按钮hover效果 */
+.v-list-item:hover .action-buttons {
+	opacity: 1 !important;
 }
 
 /* 浮动搜索模式下选中状态的特殊处理 */
 .bg-white\/95.bg-primary\/12 {
 	background: rgba(var(--v-theme-primary), 0.1) !important;
 	border-color: rgb(var(--v-theme-primary)) !important;
+}
+
+/* 确保操作按钮在非浮动模式下也能显示 */
+.action-buttons {
+	opacity: 0.7;
+	transition: opacity 0.2s ease;
+}
+
+.action-buttons:hover,
+.v-list-item:hover .action-buttons {
+	opacity: 1 !important;
 }
 </style>

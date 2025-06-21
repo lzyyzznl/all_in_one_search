@@ -1,254 +1,251 @@
 <template>
-	<v-dialog
+	<v-overlay
 		v-model="isVisible"
-		fullscreen
-		transition="dialog-bottom-transition"
-		:scrim="true"
-		:persistent="false"
-		@click:outside="closeFloatingSearch"
+		class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[999999]"
+		@click="closeFloatingSearch"
 	>
-		<v-card class="flex flex-col h-full">
-			<v-toolbar color="primary" density="compact">
-				<v-autocomplete
+		<div
+			class="w-[600px] max-w-[90vw] min-h-[400px] max-h-[80vh] bg-white rounded-3xl p-6 shadow-xl border border-gray-200 flex flex-col"
+			@click.stop
+		>
+			<!-- 简洁搜索框 -->
+			<div class="shrink-0 mb-4">
+				<v-text-field
 					ref="searchInputEl"
-					:model-value="rawSearchQuery"
-					@update:model-value="(val: string | number) => rawSearchQuery.value = String(val)"
+					v-model="searchInput"
+					placeholder="🔍 搜索本地文件，或按 Ctrl+Enter 进行网络搜索"
+					variant="solo"
+					density="comfortable"
+					clearable
+					rounded="xl"
 					:loading="isLoading"
-					:items="searchItems"
-					:search-input="searchInput"
-					@update:search-input="(val: string | number | null) => { searchInput = val ? String(val) : ''; debouncedSearch(); }"
-					placeholder="搜索本地文件，或按 Ctrl+Enter 进行网络搜索"
-					hide-no-data
-					hide-selected
-					item-title="title"
-					item-value="id"
-					:return-object="false"
-					class="flex-1 mr-4"
+					@input="debouncedSearch"
 					@keydown.esc="forceCloseAll"
 					@keydown.ctrl.enter="performWebSearch"
+					@keydown.enter="handleEnterKey"
+					@keydown.up="handleArrowKey('up')"
+					@keydown.down="handleArrowKey('down')"
 				>
-					<!-- 自定义搜索结果项的展示 -->
-					<template v-slot:item="{ item, props }">
-						<v-list-item
-							v-bind="props"
-							:title="item.raw.title"
-							:subtitle="item.raw.url"
-							@click="handleSelectItem(item.raw)"
+					<template #prepend-inner>
+						<v-icon color="primary" size="20">mdi-magnify</v-icon>
+					</template>
+					<template #append-inner>
+						<v-btn
+							icon
+							size="small"
+							variant="text"
+							@click="toggleAdvancedSearch"
+							class="opacity-70 hover:opacity-100 transition-opacity"
 						>
-							<template v-slot:prepend>
-								<v-avatar size="small" class="mr-2">
-									<v-img
-										:src="getSiteFaviconUrl(item.raw.domain)"
-										:alt="item.raw.domain"
-									></v-img>
-								</v-avatar>
-							</template>
-							<template v-slot:append>
-								<v-btn
-									v-if="item.raw.type === 'history'"
-									icon="mdi-bookmark-outline"
-									size="small"
-									variant="text"
-									@click.stop="handleBookmarkItem(item.raw)"
-								></v-btn>
-								<v-btn
-									v-if="item.raw.type === 'download'"
-									icon="mdi-folder-open"
-									size="small"
-									variant="text"
-									@click.stop="handleShowFileItem(item.raw)"
-								></v-btn>
-								<v-btn
-									icon="mdi-content-copy"
-									size="small"
-									variant="text"
-									@click.stop="handleCopyItem(item.raw.url)"
-								></v-btn>
-							</template>
-						</v-list-item>
+							<v-icon size="18">{{
+								showAdvanced ? "mdi-chevron-up" : "mdi-tune"
+							}}</v-icon>
+						</v-btn>
 					</template>
-				</v-autocomplete>
+				</v-text-field>
 
-				<v-btn icon="mdi-close" @click="closeFloatingSearch"></v-btn>
-			</v-toolbar>
-
-			<!-- 搜索选项 -->
-			<v-card-text>
-				<v-chip-group v-model="selectedDataSources" multiple>
-					<v-chip filter value="bookmarks" label> 书签 </v-chip>
-					<v-chip filter value="history" label> 历史记录 </v-chip>
-					<v-chip filter value="downloads" label> 下载文件 </v-chip>
-				</v-chip-group>
-			</v-card-text>
-
-			<!-- 搜索结果 -->
-			<v-card-text
-				v-if="Object.keys(searchResults).length > 0"
-				class="search-results"
-			>
-				<v-expansion-panels>
-					<v-expansion-panel
-						v-for="(group, domain) in searchResults"
-						:key="domain"
+				<!-- 高级搜索选项 - 可折叠 -->
+				<v-expand-transition>
+					<div
+						v-if="showAdvanced"
+						class="bg-gray-50 rounded-xl p-3 border border-gray-200 mt-3"
 					>
-						<v-expansion-panel-title>
-							<div class="d-flex align-center">
-								<v-avatar size="small" class="mr-2">
-									<v-img :src="getSiteFaviconUrl(domain)" :alt="domain"></v-img>
-								</v-avatar>
-								<span>{{ domain }}</span>
-								<span class="ml-2">({{ group.totalCount }})</span>
-							</div>
-						</v-expansion-panel-title>
-						<v-expansion-panel-text>
-							<v-list>
-								<v-list-item
-									v-for="item in group.items.slice(0, 5)"
-									:key="item.id"
-									:title="item.title"
-									:subtitle="item.url"
-									@click="handleSelectItem(item)"
+						<div class="flex gap-2 flex-wrap">
+							<v-chip-group v-model="selectedDataSources" multiple>
+								<v-chip
+									filter
+									value="bookmarks"
+									color="success"
+									variant="tonal"
+									size="small"
 								>
-									<template v-slot:append>
-										<v-btn
-											v-if="item.type === 'history'"
-											icon="mdi-bookmark-outline"
-											size="small"
-											variant="text"
-											@click.stop="handleBookmarkItem(item)"
-										></v-btn>
-										<v-btn
-											v-if="item.type === 'download'"
-											icon="mdi-folder-open"
-											size="small"
-											variant="text"
-											@click.stop="handleShowFileItem(item)"
-										></v-btn>
-										<v-btn
-											icon="mdi-content-copy"
-											size="small"
-											variant="text"
-											@click.stop="handleCopyItem(item.url)"
-										></v-btn>
-									</template>
-								</v-list-item>
-							</v-list>
-						</v-expansion-panel-text>
-					</v-expansion-panel>
-				</v-expansion-panels>
-			</v-card-text>
+									📚 书签
+								</v-chip>
+								<v-chip
+									filter
+									value="history"
+									color="warning"
+									variant="tonal"
+									size="small"
+								>
+									🕐 历史
+								</v-chip>
+								<v-chip
+									filter
+									value="downloads"
+									color="info"
+									variant="tonal"
+									size="small"
+								>
+									📥 下载
+								</v-chip>
+							</v-chip-group>
+						</div>
+					</div>
+				</v-expand-transition>
+			</div>
 
-			<!-- 网络搜索建议 -->
-			<v-card-text
-				v-else-if="rawSearchQuery && !isLoading && defaultSearchEngine"
-				class="web-search-suggestion"
+			<!-- 搜索结果/推荐内容 - 紧贴搜索框 -->
+			<div
+				v-if="isLoading"
+				class="flex-1 flex items-center justify-center text-slate-500"
 			>
-				<v-list-item
-					:title="
-						'在 ' + defaultSearchEngine.name + ' 中搜索 ' + rawSearchQuery
-					"
-					prepend-icon="$magnify"
-					@click="performWebSearch"
-				>
-					<template v-slot:append>
-						<v-chip color="primary" size="small">Ctrl + Enter</v-chip>
-					</template>
-				</v-list-item>
-			</v-card-text>
-
-			<!-- 推荐内容 -->
-			<v-card-text v-else-if="showRecommended" class="recommended-content">
-				<v-expansion-panels>
-					<v-expansion-panel
-						v-for="group in recommendedGroups"
-						:key="group.type"
-						:title="group.title"
-						:text="String(group.items.length) + ' 个项目'"
-					>
-						<template v-slot:title>
-							<div class="d-flex align-center">
-								<v-icon class="mr-2">
-									{{
-										group.type === "history"
-											? "mdi-clock"
-											: group.type === "bookmarks"
-											? "mdi-bookmark"
-											: "mdi-download"
-									}}
-								</v-icon>
-								<span>{{ group.title }}</span>
-							</div>
-						</template>
-						<v-expansion-panel-text>
-							<v-list>
-								<v-list-item
-									v-for="item in group.items.slice(0, 6)"
-									:key="item.id"
-									:title="item.title"
-									:subtitle="item.url"
-									@click="handleSelectItem(item)"
-								>
-									<template v-slot:append>
-										<v-btn
-											v-if="item.type === 'history'"
-											icon="mdi-bookmark-outline"
-											size="small"
-											variant="text"
-											@click.stop="handleBookmarkItem(item)"
-										></v-btn>
-										<v-btn
-											v-if="item.type === 'download'"
-											icon="mdi-folder-open"
-											size="small"
-											variant="text"
-											@click.stop="handleShowFileItem(item)"
-										></v-btn>
-										<v-btn
-											icon="mdi-content-copy"
-											size="small"
-											variant="text"
-											@click.stop="handleCopyItem(item.url)"
-										></v-btn>
-									</template>
-								</v-list-item>
-							</v-list>
-						</v-expansion-panel-text>
-					</v-expansion-panel>
-				</v-expansion-panels>
-			</v-card-text>
-
-			<!-- 加载状态 -->
-			<v-card-text v-else-if="isLoadingRecommended" class="loading-state">
 				<v-progress-circular
 					indeterminate
 					color="primary"
-				></v-progress-circular>
-				<div class="text-body-1 mt-2">正在加载推荐内容...</div>
-			</v-card-text>
+					size="32"
+					width="3"
+				/>
+				<span class="ml-3 text-sm">搜索中...</span>
+			</div>
+
+			<!-- 搜索结果 -->
+			<div v-else-if="hasResults" class="flex-1 overflow-y-auto mt-2">
+				<template
+					v-for="[domain, group] in Object.entries(searchResults)"
+					:key="domain"
+				>
+					<div
+						class="bg-white rounded-xl p-3 border border-gray-200 hover:shadow-md transition-all mb-4"
+					>
+						<div
+							class="flex items-center mb-2 text-sm font-semibold text-gray-600"
+						>
+							<v-avatar size="16" class="mr-2">
+								<v-img
+									:src="getSiteFaviconUrl(String(domain))"
+									:alt="String(domain)"
+								/>
+							</v-avatar>
+							<span class="flex-1 ml-2">{{ domain }}</span>
+							<v-chip
+								size="x-small"
+								color="primary"
+								variant="text"
+								class="ml-2"
+							>
+								{{ group.totalCount }}
+							</v-chip>
+						</div>
+
+						<v-list class="bg-transparent" density="compact">
+							<v-list-item
+								v-for="item in group.items.slice(0, 5)"
+								:key="item.id"
+								class="rounded-lg my-1 transition-all hover:bg-blue-50"
+								:class="{
+									'bg-blue-100 border-l-3 border-blue-500':
+										selectedItem === item.id,
+								}"
+								@click="selectAndOpenItem(item)"
+							>
+								<template #prepend>
+									<span class="text-base mr-2 w-5 text-center">{{
+										getItemIcon(item.type)
+									}}</span>
+								</template>
+
+								<v-list-item-title class="text-sm font-medium text-gray-800">
+									{{ item.title }}
+								</v-list-item-title>
+
+								<v-list-item-subtitle class="text-xs text-gray-500">
+									{{ item.url }}
+								</v-list-item-subtitle>
+
+								<template #append>
+									<div class="flex gap-1.5 items-center">
+										<v-btn
+											v-if="item.type === 'history'"
+											size="small"
+											color="orange"
+											variant="tonal"
+											icon="mdi-star"
+											@click.stop="handleShowBookmarkDialog(item)"
+											class="w-8 h-8"
+										/>
+										<v-btn
+											v-if="item.type === 'download'"
+											size="small"
+											color="green"
+											variant="tonal"
+											icon="mdi-folder"
+											@click.stop="showDownloadFile(item)"
+											class="w-8 h-8"
+										/>
+										<v-btn
+											size="small"
+											color="blue"
+											variant="tonal"
+											icon="mdi-content-copy"
+											@click.stop="handleCopyUrl(item.url)"
+											class="w-8 h-8"
+										/>
+									</div>
+								</template>
+							</v-list-item>
+						</v-list>
+					</div>
+				</template>
+			</div>
+
+			<!-- 推荐内容 -->
+			<div v-else-if="showRecommended" class="flex-1 overflow-y-auto mt-2">
+				<div
+					v-for="group in recommendedGroups"
+					:key="group.type"
+					class="bg-gray-50 rounded-xl p-3 border border-gray-200 mb-3"
+				>
+					<div
+						class="flex items-center mb-2 text-sm font-semibold text-gray-600"
+					>
+						<v-icon size="16" class="mr-2">
+							{{
+								group.type === "history"
+									? "mdi-history"
+									: group.type === "bookmarks"
+									? "mdi-bookmark"
+									: "mdi-download"
+							}}
+						</v-icon>
+						<span class="ml-2">{{ group.title }}</span>
+					</div>
+
+					<v-list class="bg-transparent" density="compact">
+						<v-list-item
+							v-for="item in group.items.slice(0, 3)"
+							:key="item.id"
+							class="rounded-md my-1 transition-colors hover:bg-blue-50"
+							@click="selectAndOpenItem(item)"
+						>
+							<template #prepend>
+								<span class="text-base mr-2 w-5 text-center">{{
+									getItemIcon(item.type)
+								}}</span>
+							</template>
+
+							<v-list-item-title class="text-sm font-medium text-gray-800">
+								{{ item.title }}
+							</v-list-item-title>
+
+							<v-list-item-subtitle class="text-xs text-gray-500">
+								{{ item.url }}
+							</v-list-item-subtitle>
+						</v-list-item>
+					</v-list>
+				</div>
+			</div>
 
 			<!-- 空状态 -->
-			<v-card-text
-				v-else-if="rawSearchQuery && !isLoading"
-				class="empty-state text-center"
+			<div
+				v-else-if="searchInput && !isLoading"
+				class="flex-1 flex flex-col items-center justify-center text-center text-gray-500"
 			>
-				<v-icon size="x-large" color="grey">mdi-magnify-off</v-icon>
-				<div class="text-body-1 mt-2">未找到匹配的结果</div>
-				<div class="text-caption mt-1">
-					可尝试 <v-chip size="x-small" color="primary">Ctrl</v-chip> +
-					<v-chip size="x-small" color="primary">Enter</v-chip> 进行网络搜索
-				</div>
-			</v-card-text>
-
-			<!-- 使用提示 -->
-			<v-footer app class="pa-4">
-				<v-row justify="center" align="center">
-					<v-chip size="small" class="mx-1">↑↓ 选择</v-chip>
-					<v-chip size="small" class="mx-1">Enter 打开</v-chip>
-					<v-chip size="small" class="mx-1">Esc 关闭</v-chip>
-				</v-row>
-			</v-footer>
-		</v-card>
-	</v-dialog>
+				<v-icon size="48" color="grey-lighten-2">mdi-magnify-close</v-icon>
+				<p class="text-sm text-medium-emphasis mt-2">未找到匹配的结果</p>
+			</div>
+		</div>
+	</v-overlay>
 
 	<!-- 书签对话框 -->
 	<BookmarkDialog
@@ -267,6 +264,7 @@ import { useNotification } from "../utils/composables/useNotification";
 import { APP_CONSTANTS } from "../utils/constants";
 import type { SearchResultItem, SearchEngine } from "../utils/types";
 import BookmarkDialog from "./BookmarkDialog.vue";
+// 移除未使用的 SearchResultItemComponent 导入
 
 const { getSiteFaviconUrl } = useUI();
 const { success, error: showError } = useNotification();
@@ -283,7 +281,6 @@ const {
 	recommendedGroups,
 	showRecommended,
 	loadRecommendedContent,
-	isLoadingRecommended,
 } = useContentSearch();
 
 const isVisible = ref(false);
@@ -291,6 +288,36 @@ const searchInputEl = ref<HTMLInputElement | null>(null);
 const searchInput = ref<string>("");
 const searchTimeout = ref<number | null>(null);
 const defaultSearchEngine = ref<SearchEngine | null>(null);
+const selectedItem = ref<string>("");
+const showAdvanced = ref<boolean>(false);
+
+// 计算是否有搜索结果
+const hasResults = computed(() => {
+	return Object.keys(searchResults.value).length > 0;
+});
+
+// 切换高级搜索选项
+const toggleAdvancedSearch = () => {
+	showAdvanced.value = !showAdvanced.value;
+};
+
+// 选择并打开项目
+const selectAndOpenItem = (item: SearchResultItem) => {
+	selectedItem.value = item.id;
+	handleSelectItem(item);
+};
+
+// 显示书签对话框的处理函数
+const handleShowBookmarkDialog = (item: SearchResultItem) => {
+	handleBookmarkItem(item);
+};
+
+// 显示下载文件
+const showDownloadFile = (item: SearchResultItem) => {
+	handleShowFileItem(item);
+};
+
+// updateSearchOptions 已从 useContentSearch 导入
 
 // 书签对话框相关状态
 const showBookmarkDialog = ref(false);
@@ -302,26 +329,7 @@ const bookmarkDialogState = ref({
 	item: null as SearchResultItem | null,
 });
 
-interface AutocompleteItem {
-	title: string;
-	id: string;
-	raw: SearchResultItem;
-}
-
-// 计算搜索结果项
-const searchItems = computed<AutocompleteItem[]>(() => {
-	const items: AutocompleteItem[] = [];
-	Object.values(searchResults.value).forEach((group) => {
-		items.push(
-			...group.items.slice(0, 5).map((item) => ({
-				title: item.title,
-				id: item.id,
-				raw: item,
-			}))
-		);
-	});
-	return items;
-});
+// 移除未使用的接口和计算属性
 
 // 搜索查询计算属性
 const searchQuery = computed({
@@ -353,6 +361,33 @@ const debouncedSearch = () => {
 			performSearch(String(searchInput.value));
 		}
 	}, APP_CONSTANTS.SEARCH.DEBOUNCE_DELAY);
+};
+
+// 获取项目图标
+const getItemIcon = (type: string) => {
+	switch (type) {
+		case "bookmark":
+			return "📚";
+		case "history":
+			return "🕐";
+		case "download":
+			return "📥";
+		default:
+			return "📄";
+	}
+};
+
+// 处理回车键
+const handleEnterKey = () => {
+	if (searchInput.value.trim()) {
+		performSearch(searchInput.value);
+	}
+};
+
+// 处理方向键
+const handleArrowKey = (direction: "up" | "down") => {
+	// 简单的键盘导航实现
+	console.log("Arrow key pressed:", direction);
 };
 
 // 监听数据源变化
@@ -442,7 +477,7 @@ const handleShowFileItem = async (item: SearchResultItem) => {
 	}
 };
 
-const handleCopyItem = async (url: string) => {
+const handleCopyUrl = async (url: string) => {
 	try {
 		await navigator.clipboard.writeText(url);
 		success("已复制到剪贴板");
@@ -572,22 +607,3 @@ const closeBookmarkDialog = () => {
 	showBookmarkDialog.value = false;
 };
 </script>
-
-<style scoped>
-.loading-state,
-.empty-state {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	padding: 48px 0;
-}
-
-.web-search-suggestion {
-	cursor: pointer;
-}
-
-.web-search-suggestion:hover {
-	background-color: rgba(var(--v-theme-primary), 0.04);
-}
-</style>

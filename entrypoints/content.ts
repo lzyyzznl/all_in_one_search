@@ -1,6 +1,6 @@
 import { createApp } from "vue";
 import "virtual:uno.css";
-import FloatingSearch from "../components/FloatingSearch.vue";
+import VuetifyFloatingSearch from "../components/VuetifyFloatingSearch.vue";
 import { setupVuetify } from "../utils/vuetify";
 
 export default defineContentScript({
@@ -51,7 +51,7 @@ export default defineContentScript({
 			document.body.appendChild(container);
 
 			// 创建Vue应用
-			floatingSearchApp = createApp(FloatingSearch);
+			floatingSearchApp = createApp(VuetifyFloatingSearch);
 
 			// 设置Vuetify
 			setupVuetify(floatingSearchApp);
