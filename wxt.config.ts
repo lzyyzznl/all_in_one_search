@@ -5,6 +5,11 @@ export default defineConfig({
 	// 使用 Vue 模块
 	modules: ["@wxt-dev/module-vue"],
 
+	runner: {
+		// 启动配置
+		startUrls: ["https://baidu.com"], // 可选：启动时打开的页面
+	},
+
 	// 插件基本信息
 	manifest: {
 		name: "浏览器收藏夹历史记录搜索器",
