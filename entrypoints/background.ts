@@ -1,5 +1,3 @@
-/// <reference types="chrome" />
-/// <reference types="wxt" />
 import { APP_CONSTANTS } from "../utils/constants";
 import {
 	searchBookmarksAndHistory,
