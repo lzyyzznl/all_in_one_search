@@ -72,54 +72,11 @@ export default defineBackground({
 		 */
 		function handleCommand(command: string): void {
 			console.log("收到快捷键命令:", command);
-			console.log(
-				"FLOATING_SEARCH 常量值:",
-				APP_CONSTANTS.SHORTCUTS.FLOATING_SEARCH
-			);
 
 			if (command === APP_CONSTANTS.SHORTCUTS.EXECUTE_ACTION) {
 				console.log("处理默认动作快捷键");
 				chrome.action.openPopup().catch((error) => {
 					console.error("打开popup失败:", error);
-				});
-			} else if (command === APP_CONSTANTS.SHORTCUTS.FLOATING_SEARCH) {
-				console.log("处理浮动搜索快捷键");
-				// 向当前活动标签页发送消息显示浮动搜索框
-				chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-					console.log("查询到的标签页:", tabs.length);
-					if (tabs.length > 0 && typeof tabs[0]?.id === "number") {
-						const tab = tabs[0];
-						const url = tab.url || "";
-						const isRestricted =
-							url.startsWith("chrome://") ||
-							url.startsWith("edge://") ||
-							url.startsWith("about:") ||
-							url.includes("newtab");
-						if (isRestricted) {
-							// 特殊页面，弹出popup.html
-							chrome.tabs.create({ url: chrome.runtime.getURL("popup.html") });
-						} else {
-							// 正常向content-script发送消息
-							chrome.tabs.sendMessage(
-								tab.id as number,
-								{
-									action: "toggle-floating-search",
-								},
-								(response) => {
-									if (chrome.runtime.lastError) {
-										console.error(
-											"发送浮动搜索消息失败:",
-											chrome.runtime.lastError.message
-										);
-									} else {
-										console.log("消息发送成功，响应:", response);
-									}
-								}
-							);
-						}
-					} else {
-						console.warn("没有找到活动标签页");
-					}
 				});
 			} else {
 				console.warn("未知的快捷键命令:", command);
@@ -222,7 +179,7 @@ export default defineBackground({
 						try {
 							const bookmarks = await chrome.bookmarks.getTree();
 							sendResponse({ success: true, data: bookmarks });
-						} catch (error) {
+						} catch (error: any) {
 							console.error("获取书签树失败:", error);
 							sendResponse({ success: false, error: error.message });
 						}
@@ -234,7 +191,7 @@ export default defineBackground({
 						try {
 							const bookmark = await chrome.bookmarks.create(message.data);
 							sendResponse({ success: true, data: bookmark });
-						} catch (error) {
+						} catch (error: any) {
 							console.error("创建书签失败:", error);
 							sendResponse({ success: false, error: error.message });
 						}
@@ -244,12 +201,6 @@ export default defineBackground({
 					case "create-bookmark": {
 						console.log("创建书签:", message.bookmarkData);
 						await createBookmark(message.bookmarkData);
-						sendResponse({ success: true });
-						break;
-					}
-
-					case "toggle-floating-search": {
-						console.log("切换浮动搜索");
 						sendResponse({ success: true });
 						break;
 					}
@@ -292,7 +243,7 @@ export default defineBackground({
 						console.warn("未知的消息类型:", message.action);
 						sendResponse({ success: false, error: "未知的消息类型" });
 				}
-			} catch (error) {
+			} catch (error: any) {
 				console.error("处理消息失败:", error);
 				sendResponse({ success: false, error: String(error) });
 			}

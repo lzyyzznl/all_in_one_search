@@ -38,13 +38,6 @@ export default defineConfig({
 				},
 				description: "默认打开收藏夹历史记录搜索器",
 			},
-			[APP_CONSTANTS.SHORTCUTS.FLOATING_SEARCH]: {
-				suggested_key: {
-					default: APP_CONSTANTS.SHORTCUTS.FLOATING_DEFAULT_KEY,
-					mac: APP_CONSTANTS.SHORTCUTS.FLOATING_MAC_KEY,
-				},
-				description: "在页面中央显示浮动搜索框",
-			},
 		},
 
 		// 操作按钮配置

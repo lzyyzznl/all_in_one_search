@@ -34,11 +34,8 @@ export const APP_CONSTANTS = {
 	// 快捷键
 	SHORTCUTS: {
 		EXECUTE_ACTION: "_execute_action",
-		FLOATING_SEARCH: "floating_search",
 		DEFAULT_KEY: "Ctrl+Shift+S",
 		MAC_KEY: "Command+Shift+S",
-		FLOATING_DEFAULT_KEY: "Ctrl+Shift+F",
-		FLOATING_MAC_KEY: "Command+Shift+F",
 	},
 
 	// 文件类型图标
