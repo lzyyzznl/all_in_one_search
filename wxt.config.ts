@@ -7,7 +7,7 @@ export default defineConfig({
 
 	runner: {
 		// 启动配置
-		startUrls: ["https://baidu.com"], // 可选：启动时打开的页面
+		startUrls: ["https://www.bing.com/search?q=wxt", "https://www.bing.com"], // 可选：启动时打开的页面
 	},
 
 	// 插件基本信息
