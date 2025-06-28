@@ -75,3 +75,79 @@ export async function createBookmark(
 		return await createBookmarkViaMessage(bookmarkData);
 	}
 }
+
+/**
+ * 检查URL是否已被收藏
+ */
+export async function isUrlBookmarked(url: string): Promise<boolean> {
+	try {
+		const bookmarkTree = await getBookmarkTree();
+
+		function searchBookmarks(
+			nodes: chrome.bookmarks.BookmarkTreeNode[]
+		): boolean {
+			for (const node of nodes) {
+				if (node.url && node.url === url) {
+					return true;
+				}
+				if (node.children && searchBookmarks(node.children)) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		return searchBookmarks(bookmarkTree);
+	} catch (error) {
+		console.error("检查书签失败:", error);
+		return false;
+	}
+}
+
+/**
+ * 根据URL查找书签节点
+ */
+export async function findBookmarkByUrl(
+	url: string
+): Promise<chrome.bookmarks.BookmarkTreeNode | null> {
+	try {
+		const bookmarkTree = await getBookmarkTree();
+
+		function searchBookmarks(
+			nodes: chrome.bookmarks.BookmarkTreeNode[]
+		): chrome.bookmarks.BookmarkTreeNode | null {
+			for (const node of nodes) {
+				if (node.url && node.url === url) {
+					return node;
+				}
+				if (node.children) {
+					const found = searchBookmarks(node.children);
+					if (found) return found;
+				}
+			}
+			return null;
+		}
+
+		return searchBookmarks(bookmarkTree);
+	} catch (error) {
+		console.error("查找书签失败:", error);
+		return null;
+	}
+}
+
+/**
+ * 根据URL删除书签
+ */
+export async function removeBookmarkByUrl(url: string): Promise<boolean> {
+	try {
+		const bookmark = await findBookmarkByUrl(url);
+		if (bookmark && bookmark.id) {
+			await chrome.bookmarks.remove(bookmark.id);
+			return true;
+		}
+		return false;
+	} catch (error) {
+		console.error("删除书签失败:", error);
+		return false;
+	}
+}

@@ -158,10 +158,10 @@
 				<el-empty description="搜索中..." :image-size="60" />
 			</div>
 
-			<!-- 搜索结果 -->
-			<div v-else-if="hasResults" class="results-container">
+			<!-- 搜索结果或推荐内容 -->
+			<div v-else-if="hasCurrentResults" class="results-container">
 				<el-card
-					v-for="(group, domain) in searchResults"
+					v-for="(group, domain) in currentResults"
 					:key="domain"
 					class="domain-group-card"
 					:body-style="{ padding: '12px' }"
@@ -243,11 +243,11 @@
 									<el-button
 										v-if="item.type === 'history'"
 										size="small"
-										type="primary"
+										:type="isItemBookmarked(item) ? 'warning' : 'primary'"
 										:icon="Star"
-										@click.stop="showBookmarkDialog(item)"
+										@click.stop="handleBookmarkAction(item)"
 									>
-										收藏
+										{{ isItemBookmarked(item) ? "取消收藏" : "收藏" }}
 									</el-button>
 									<el-button
 										v-if="item.type === 'download'"
@@ -314,43 +314,6 @@
 						</p>
 					</template>
 				</el-empty>
-			</div>
-
-			<!-- 初始状态 - 显示推荐内容 -->
-			<div v-else-if="showRecommended" class="recommended-content">
-				<div class="recommended-container">
-					<div
-						v-for="group in recommendedGroups"
-						:key="group.type"
-						class="recommended-group"
-					>
-						<div class="group-header">
-							<span class="group-icon">
-								{{
-									group.type === "history"
-										? "🕐"
-										: group.type === "bookmarks"
-										? "📚"
-										: "📥"
-								}}
-							</span>
-							<span class="group-title">{{ group.title }}</span>
-							<span class="item-count">{{ group.items.length }}</span>
-						</div>
-						<div class="group-items">
-							<SearchResultItemComponent
-								v-for="item in group.items.slice(0, 6)"
-								:key="item.id"
-								:item="item"
-								:isSelected="selectedItem === item.id"
-								@select="openItem"
-								@bookmark="showBookmarkDialog"
-								@showFile="showDownloadFile"
-								@copy="handleCopyUrl"
-							/>
-						</div>
-					</div>
-				</div>
 			</div>
 
 			<!-- 推荐内容加载状态 -->
@@ -452,6 +415,10 @@ import {
 	showDownloadFile as showDownloadFileInExplorer,
 } from "../utils/search";
 import {
+	isUrlBookmarked,
+	removeBookmarkByUrl,
+} from "../utils/bookmarksApiWrapper";
+import {
 	getDefaultSearchEngine,
 	SearchEngineManager,
 } from "../utils/searchEngines";
@@ -468,7 +435,6 @@ import type {
 	SearchResultItem,
 	SearchStats,
 	RecommendedContent,
-	RecommendedGroup,
 	SearchEngine,
 } from "../utils/types";
 import SearchResultItemComponent from "./SearchResultItem.vue";
@@ -504,9 +470,10 @@ const recommendedContent = ref<RecommendedContent>({
 	frequentBookmarks: [],
 	latestDownloads: [],
 });
-const recommendedGroups = ref<RecommendedGroup[]>([]);
-const showRecommended = ref(false);
 const isLoadingRecommended = ref(false);
+
+// 收藏状态跟踪
+const bookmarkedUrls = ref<Set<string>>(new Set());
 
 // 快捷键显示
 const mainShortcut = ref("");
@@ -551,12 +518,40 @@ const handleBookmarkSave = async (data: {
 		}
 
 		await chrome.bookmarks.create(bookmarkData);
+
+		// 更新收藏状态
+		bookmarkedUrls.value.add(data.url);
+
 		closeBookmarkDialog();
-		// 可以选择显示成功消息
 		console.log("书签添加成功！");
 	} catch (error) {
 		console.error("添加书签失败:", error);
 		throw error; // 重新抛出错误，让对话框处理
+	}
+};
+
+// 处理收藏/取消收藏操作
+const handleBookmarkAction = async (item: SearchResultItem) => {
+	if (item.type !== "history") return;
+
+	try {
+		const isBookmarked = isItemBookmarked(item);
+
+		if (isBookmarked) {
+			// 取消收藏
+			const success = await removeBookmarkByUrl(item.url);
+			if (success) {
+				bookmarkedUrls.value.delete(item.url);
+				console.log("取消收藏成功！");
+			} else {
+				console.error("取消收藏失败");
+			}
+		} else {
+			// 收藏
+			await showBookmarkDialog(item);
+		}
+	} catch (error) {
+		console.error("收藏操作失败:", error);
 	}
 };
 
@@ -576,37 +571,70 @@ const hasResults = computed(() => {
 	return Object.keys(searchResults.value).length > 0;
 });
 
-// 处理推荐内容分组
-const updateRecommendedGroups = () => {
-	const groups: RecommendedGroup[] = [];
+// 将推荐内容转换为与查询结果相同的格式
+const recommendedResults = computed<GroupedSearchResults>(() => {
+	const results: GroupedSearchResults = {};
 
-	if (recommendedContent.value.recentHistory.length > 0) {
-		groups.push({
-			type: "history",
-			title: "最近访问",
-			items: recommendedContent.value.recentHistory,
-		});
+	// 根据选中的数据源过滤并分组推荐内容
+	let allItems: SearchResultItem[] = [];
+
+	// 收集所有选中的数据源（书签优先）
+	if (selectedDataSources.value.includes("bookmarks")) {
+		allItems.push(...recommendedContent.value.frequentBookmarks);
 	}
 
-	if (recommendedContent.value.frequentBookmarks.length > 0) {
-		groups.push({
-			type: "bookmarks",
-			title: "常用书签",
-			items: recommendedContent.value.frequentBookmarks,
-		});
+	if (selectedDataSources.value.includes("history")) {
+		allItems.push(...recommendedContent.value.recentHistory);
 	}
 
-	if (recommendedContent.value.latestDownloads.length > 0) {
-		groups.push({
-			type: "downloads",
-			title: "最近下载",
-			items: recommendedContent.value.latestDownloads,
-		});
+	if (selectedDataSources.value.includes("downloads")) {
+		allItems.push(...recommendedContent.value.latestDownloads);
 	}
 
-	recommendedGroups.value = groups;
-	showRecommended.value = groups.length > 0;
-};
+	// URL去重：如果书签和历史记录有相同URL，只保留书签
+	const bookmarkUrls = new Set(
+		allItems.filter((item) => item.type === "bookmark").map((item) => item.url)
+	);
+
+	// 过滤掉已有书签的历史记录
+	const deduplicatedItems = allItems.filter((item) => {
+		if (item.type === "history" && bookmarkUrls.has(item.url)) {
+			return false;
+		}
+		return true;
+	});
+
+	// 按域名分组，与查询结果保持相同格式
+	deduplicatedItems.forEach((item) => {
+		const domain = item.domain;
+		if (!results[domain]) {
+			results[domain] = {
+				domain,
+				items: [],
+				totalCount: 0,
+			};
+		}
+		results[domain].items.push(item);
+		results[domain].totalCount++;
+	});
+
+	return results;
+});
+
+// 显示推荐内容的条件
+const showRecommended = computed(() => {
+	return !searchQuery.value && Object.keys(recommendedResults.value).length > 0;
+});
+
+// 当前显示的搜索结果（查询结果或推荐内容）
+const currentResults = computed(() => {
+	return searchQuery.value ? searchResults.value : recommendedResults.value;
+});
+
+// 当前是否有结果
+const hasCurrentResults = computed(() => {
+	return Object.keys(currentResults.value).length > 0;
+});
 
 // 加载推荐内容
 const loadRecommendedContent = async (): Promise<void> => {
@@ -614,12 +642,48 @@ const loadRecommendedContent = async (): Promise<void> => {
 		isLoadingRecommended.value = true;
 		const content = await ContentSearchService.getRecommendedContent();
 		recommendedContent.value = content;
-		updateRecommendedGroups();
+
+		// 加载完推荐内容后更新收藏状态
+		await updateBookmarkedUrls();
 	} catch (error) {
 		console.error("加载推荐内容失败:", error);
 	} finally {
 		isLoadingRecommended.value = false;
 	}
+};
+
+// 更新收藏状态
+const updateBookmarkedUrls = async (): Promise<void> => {
+	try {
+		const allUrls = new Set<string>();
+
+		// 收集当前显示的所有历史记录URL
+		Object.values(currentResults.value).forEach((group) => {
+			group.items.forEach((item) => {
+				if (item.type === "history") {
+					allUrls.add(item.url);
+				}
+			});
+		});
+
+		// 检查每个URL的收藏状态
+		const newBookmarkedUrls = new Set<string>();
+		for (const url of allUrls) {
+			const isBookmarked = await isUrlBookmarked(url);
+			if (isBookmarked) {
+				newBookmarkedUrls.add(url);
+			}
+		}
+
+		bookmarkedUrls.value = newBookmarkedUrls;
+	} catch (error) {
+		console.error("更新收藏状态失败:", error);
+	}
+};
+
+// 检查某个项目是否已被收藏
+const isItemBookmarked = (item: SearchResultItem): boolean => {
+	return item.type === "history" && bookmarkedUrls.value.has(item.url);
 };
 
 // 获取项目图标
@@ -657,6 +721,9 @@ const updateSearchOptions = () => {
 	// 如果当前有搜索查询，重新搜索
 	if (searchQuery.value.trim()) {
 		handleSearchNow();
+	} else {
+		// 如果没有搜索查询，更新推荐内容的收藏状态
+		updateBookmarkedUrls();
 	}
 };
 
@@ -715,6 +782,9 @@ const handleSearch = async () => {
 		// 保存搜索历史
 		await SearchHistoryManager.saveSearchHistory(searchQuery.value.trim());
 		await loadSearchHistory();
+
+		// 更新收藏状态
+		await updateBookmarkedUrls();
 	} catch (error) {
 		console.error("搜索失败:", error);
 	} finally {
@@ -1257,53 +1327,6 @@ const getEngineIconUrl = (engine: SearchEngine | null) => {
 
 <style lang="less" scoped>
 @import "../entrypoints/styles/element-popup.less";
-
-/* 推荐内容样式 */
-.recommended-content {
-	padding: 16px;
-
-	.recommended-container {
-		display: flex;
-		flex-direction: column;
-		gap: 16px;
-	}
-
-	.recommended-group {
-		.group-header {
-			display: flex;
-			align-items: center;
-			padding: 8px 12px;
-			background: var(--el-bg-color-page);
-			border-radius: 6px;
-			margin-bottom: 8px;
-
-			.group-icon {
-				font-size: 16px;
-				margin-right: 8px;
-			}
-
-			.group-title {
-				font-weight: 500;
-				color: var(--el-text-color-primary);
-				flex: 1;
-			}
-
-			.item-count {
-				font-size: 12px;
-				color: var(--el-text-color-secondary);
-				background: var(--el-color-info-light-9);
-				padding: 2px 6px;
-				border-radius: 10px;
-			}
-		}
-
-		.group-items {
-			display: flex;
-			flex-direction: column;
-			gap: 2px;
-		}
-	}
-}
 
 .loading-state {
 	display: flex;
