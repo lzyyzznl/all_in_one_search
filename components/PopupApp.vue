@@ -258,6 +258,16 @@
 									>
 										显示文件目录
 									</el-button>
+									<el-button
+										v-if="item.type === 'history' || item.type === 'bookmark'"
+										size="small"
+										type="info"
+										:icon="DocumentCopy"
+										@click.stop="copyUrl(item.url)"
+										title="复制链接"
+									>
+										复制
+									</el-button>
 								</div>
 							</div>
 						</el-card>
@@ -385,6 +395,7 @@
 /// <reference types="chrome" />
 import {
 	Collection,
+	DocumentCopy,
 	Download,
 	FolderOpened,
 	MagicStick,
@@ -575,48 +586,22 @@ const hasResults = computed(() => {
 const recommendedResults = computed<GroupedSearchResults>(() => {
 	const results: GroupedSearchResults = {};
 
-	// 根据选中的数据源过滤并分组推荐内容
-	let allItems: SearchResultItem[] = [];
-
-	// 收集所有选中的数据源（书签优先）
-	if (selectedDataSources.value.includes("bookmarks")) {
-		allItems.push(...recommendedContent.value.frequentBookmarks);
-	}
-
+	// 只显示历史记录，并且必须是选中的数据源
 	if (selectedDataSources.value.includes("history")) {
-		allItems.push(...recommendedContent.value.recentHistory);
-	}
+		// 按访问时间排序，最近访问的在前面
+		const sortedHistory = [...recommendedContent.value.recentHistory].sort(
+			(a, b) => (b.lastVisited || 0) - (a.lastVisited || 0)
+		);
 
-	if (selectedDataSources.value.includes("downloads")) {
-		allItems.push(...recommendedContent.value.latestDownloads);
-	}
-
-	// URL去重：如果书签和历史记录有相同URL，只保留书签
-	const bookmarkUrls = new Set(
-		allItems.filter((item) => item.type === "bookmark").map((item) => item.url)
-	);
-
-	// 过滤掉已有书签的历史记录
-	const deduplicatedItems = allItems.filter((item) => {
-		if (item.type === "history" && bookmarkUrls.has(item.url)) {
-			return false;
-		}
-		return true;
-	});
-
-	// 按域名分组，与查询结果保持相同格式
-	deduplicatedItems.forEach((item) => {
-		const domain = item.domain;
-		if (!results[domain]) {
-			results[domain] = {
-				domain,
-				items: [],
-				totalCount: 0,
+		// 创建一个虚拟的"推荐内容"组，平铺显示所有项目
+		if (sortedHistory.length > 0) {
+			results["最近访问"] = {
+				domain: "最近访问",
+				items: sortedHistory,
+				totalCount: sortedHistory.length,
 			};
 		}
-		results[domain].items.push(item);
-		results[domain].totalCount++;
-	});
+	}
 
 	return results;
 });
@@ -845,7 +830,7 @@ const showDownloadFile = async (item: SearchResultItem) => {
 };
 
 // 复制URL到剪贴板
-const handleCopyUrl = async (url: string) => {
+const copyUrl = async (url: string) => {
 	try {
 		if (navigator.clipboard && navigator.clipboard.writeText) {
 			await navigator.clipboard.writeText(url);
@@ -869,7 +854,7 @@ const handleCopyUrl = async (url: string) => {
 
 // 根据ID查找项目
 const findItemById = (itemId: string): SearchResultItem | null => {
-	for (const group of Object.values(searchResults.value)) {
+	for (const group of Object.values(currentResults.value)) {
 		const item = group.items.find((item) => item.id === itemId);
 		if (item) return item;
 	}
@@ -1034,9 +1019,9 @@ const loadNavigationSettings = async () => {
 
 // 键盘导航
 const handleKeyDown = (event: KeyboardEvent) => {
-	if (!hasResults.value) return;
+	if (!hasCurrentResults.value) return;
 
-	const allItems = Object.values(searchResults.value).flatMap(
+	const allItems = Object.values(currentResults.value).flatMap(
 		(group) => group.items
 	);
 
@@ -1110,6 +1095,8 @@ const handleKeyDown = (event: KeyboardEvent) => {
 			}
 			break;
 		case navigationConfig.open:
+			event.preventDefault();
+			event.stopPropagation();
 			if (selectedItem.value) {
 				const item = findItemById(selectedItem.value);
 				if (item) openItem(item);
@@ -1117,6 +1104,15 @@ const handleKeyDown = (event: KeyboardEvent) => {
 			break;
 		case navigationConfig.close:
 			window.close();
+			break;
+		case "KeyC":
+			if (event.ctrlKey && selectedItem.value) {
+				event.preventDefault();
+				const item = findItemById(selectedItem.value);
+				if (item && (item.type === "history" || item.type === "bookmark")) {
+					copyUrl(item.url);
+				}
+			}
 			break;
 	}
 };
@@ -1291,13 +1287,10 @@ defineExpose({
 });
 
 const handleEnterKey = () => {
-	if (selectedItem.value) {
-		const item = findItemById(selectedItem.value);
-		if (item) {
-			openItem(item);
-		}
-	} else {
-		const firstGroup = Object.values(searchResults.value)[0];
+	// 只处理搜索相关的逻辑，不处理已选中项的打开
+	if (!selectedItem.value) {
+		// 如果没有选中项，尝试打开第一个结果或执行搜索
+		const firstGroup = Object.values(currentResults.value)[0];
 		if (firstGroup && firstGroup.items.length > 0) {
 			const firstItem = firstGroup.items[0];
 			if (firstItem) {
@@ -1307,6 +1300,7 @@ const handleEnterKey = () => {
 			handleSearchNow();
 		}
 	}
+	// 如果有选中项，让键盘导航处理器处理
 };
 
 // 获取搜索引擎图标URL
