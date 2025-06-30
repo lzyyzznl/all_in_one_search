@@ -149,6 +149,50 @@
 					</el-tag>
 				</el-space>
 			</div>
+
+			<!-- 域名过滤 -->
+			<div
+				v-if="searchQuery && availableDomains.length > 1"
+				class="domain-filter"
+			>
+				<div class="filter-header">
+					<span class="filter-label">过滤域名:</span>
+					<el-button
+						size="small"
+						type="text"
+						@click="resetDomainFilter"
+						title="全选所有域名"
+					>
+						全选
+					</el-button>
+				</div>
+				<el-select
+					v-model="selectedDomains"
+					multiple
+					collapse-tags
+					collapse-tags-tooltip
+					size="small"
+					placeholder="选择要显示的域名"
+					style="width: 100%"
+					@change="handleDomainFilterChange"
+				>
+					<el-option
+						v-for="domain in availableDomains"
+						:key="domain"
+						:label="domain"
+						:value="domain"
+					>
+						<div style="display: flex; align-items: center; gap: 8px">
+							<img
+								:src="getFaviconUrl(domain)"
+								:alt="domain"
+								style="width: 16px; height: 16px"
+							/>
+							<span>{{ domain }}</span>
+						</div>
+					</el-option>
+				</el-select>
+			</div>
 		</div>
 
 		<!-- 可滚动内容区域 -->
@@ -486,6 +530,9 @@ const isLoadingRecommended = ref(false);
 // 收藏状态跟踪
 const bookmarkedUrls = ref<Set<string>>(new Set());
 
+// 域名过滤
+const selectedDomains = ref<string[]>([]);
+
 // 快捷键显示
 const mainShortcut = ref("");
 const navigationKeys = ref(getNavigationKeys());
@@ -582,6 +629,27 @@ const hasResults = computed(() => {
 	return Object.keys(searchResults.value).length > 0;
 });
 
+// 获取搜索结果中的可用域名
+const availableDomains = computed(() => {
+	if (!searchQuery.value) return [];
+	return Object.keys(searchResults.value);
+});
+
+// 根据选中域名过滤搜索结果
+const filteredSearchResults = computed<GroupedSearchResults>(() => {
+	if (!searchQuery.value || selectedDomains.value.length === 0) {
+		return searchResults.value;
+	}
+
+	const filtered: GroupedSearchResults = {};
+	selectedDomains.value.forEach((domain) => {
+		if (searchResults.value[domain]) {
+			filtered[domain] = searchResults.value[domain];
+		}
+	});
+	return filtered;
+});
+
 // 将推荐内容转换为与查询结果相同的格式
 const recommendedResults = computed<GroupedSearchResults>(() => {
 	const results: GroupedSearchResults = {};
@@ -613,7 +681,9 @@ const showRecommended = computed(() => {
 
 // 当前显示的搜索结果（查询结果或推荐内容）
 const currentResults = computed(() => {
-	return searchQuery.value ? searchResults.value : recommendedResults.value;
+	return searchQuery.value
+		? filteredSearchResults.value
+		: recommendedResults.value;
 });
 
 // 当前是否有结果
@@ -693,6 +763,17 @@ const getSelectedText = (): string => {
 		downloads: "下载文件",
 	};
 	return selectedDataSources.value.map((key) => labels[key]).join("、");
+};
+
+// 处理域名过滤变化
+const handleDomainFilterChange = () => {
+	// 域名过滤变化时不需要重新搜索，因为已经通过计算属性处理
+	console.log("域名过滤已更新:", selectedDomains.value);
+};
+
+// 重置域名过滤（全选）
+const resetDomainFilter = () => {
+	selectedDomains.value = [...availableDomains.value];
 };
 
 // 更新搜索选项
@@ -801,6 +882,17 @@ watch(
 		}
 	},
 	{ deep: true }
+);
+
+// 监听搜索结果变化，自动全选所有域名
+watch(
+	() => availableDomains.value,
+	(newDomains) => {
+		if (newDomains.length > 0) {
+			selectedDomains.value = [...newDomains];
+		}
+	},
+	{ immediate: true }
 );
 
 // 选择并打开项目（单击）
@@ -1397,6 +1489,26 @@ const getEngineIconUrl = (engine: SearchEngine | null) => {
 		&:hover {
 			border-color: var(--el-color-primary-light-3);
 			background-color: var(--el-color-primary-light-9);
+		}
+	}
+}
+
+/* 域名过滤器样式 */
+.domain-filter {
+	padding: 12px 16px;
+	background-color: var(--el-fill-color-lighter);
+	border-top: 1px solid var(--el-border-color-light);
+
+	.filter-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 8px;
+
+		.filter-label {
+			font-size: 13px;
+			color: var(--el-text-color-regular);
+			font-weight: 500;
 		}
 	}
 }
