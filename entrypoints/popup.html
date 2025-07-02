@@ -1,27 +1,27 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>浏览器收藏夹历史记录搜索器</title>
-  </head>
-  <body style="margin: 0;">
-    <div id="app"></div> 
-    
-    <script type="module">
-      import "./styles/element-popup.less";
-      import { createApp } from "vue";
-      import PopupApp from "../components/PopupApp.vue";
-      import { setupElementPlus } from "../utils/element-plus.ts";
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>浏览器收藏夹历史记录搜索器</title>
+	</head>
+	<body style="margin: 0">
+		<div id="app"></div>
 
-      // 创建Vue应用实例
-      const app = createApp(PopupApp);
-      
-      // 设置Element Plus
-      setupElementPlus(app);
+		<script type="module">
+			import "virtual:uno.css";
+			import { createApp } from "vue";
+			import PopupApp from "../components/PopupApp.vue";
+			import { setupElementPlus } from "../utils/element-plus.ts";
 
-      // 挂载到DOM
-      app.mount("#app");
-    </script>
-  </body>
+			// 创建Vue应用实例
+			const app = createApp(PopupApp);
+
+			// 设置Element Plus
+			setupElementPlus(app);
+
+			// 挂载到DOM
+			app.mount("#app");
+		</script>
+	</body>
 </html>

@@ -49,7 +49,7 @@
 		</el-form>
 
 		<template #footer>
-			<div class="dialog-footer">
+			<div class="flex gap-3 justify-end pt-2">
 				<el-button @click="handleClose"> 取消 </el-button>
 				<el-button
 					type="primary"
@@ -197,84 +197,3 @@ onMounted(() => {
 	loadBookmarkFolders();
 });
 </script>
-
-<style scoped>
-.bookmark-dialog :deep(.el-dialog) {
-	border-radius: 12px;
-	box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-}
-
-.bookmark-dialog :deep(.el-dialog__header) {
-	background: #f8fafc;
-	border-bottom: 1px solid #e2e8f0;
-	padding: 20px;
-}
-
-.bookmark-dialog :deep(.el-dialog__title) {
-	font-size: 18px;
-	font-weight: 600;
-	color: #2d3748;
-}
-
-.bookmark-dialog :deep(.el-dialog__body) {
-	padding: 20px;
-}
-
-.bookmark-dialog :deep(.el-form-item__label) {
-	font-weight: 500;
-	color: #4a5568;
-}
-
-.dialog-footer {
-	display: flex;
-	gap: 12px;
-	justify-content: flex-end;
-	padding-top: 8px;
-}
-
-.bookmark-dialog :deep(.el-dialog__footer) {
-	padding: 20px;
-	background: #f8fafc;
-	border-top: 1px solid #e2e8f0;
-}
-
-/* 动画效果 */
-.bookmark-dialog :deep(.el-overlay) {
-	backdrop-filter: blur(4px);
-}
-
-/* 确保树形选择器的下拉菜单在正确的层级 */
-:global(.bookmark-dialog-tree-select) {
-	z-index: 10001 !important;
-}
-
-/* 树形选择器下拉面板样式优化 */
-:global(.bookmark-dialog-tree-select .el-tree-select-dropdown__wrap) {
-	max-height: 300px;
-}
-
-:global(.bookmark-dialog-tree-select .el-tree-node__content) {
-	padding: 4px 8px;
-	border-radius: 4px;
-	transition: background-color 0.2s ease;
-}
-
-:global(.bookmark-dialog-tree-select .el-tree-node__content:hover) {
-	background-color: #f5f7fa;
-}
-</style>
-
-<style>
-/* 全局样式 - 确保书签对话框的树形选择器下拉菜单层级正确 */
-.bookmark-dialog-tree-select {
-	z-index: 10001 !important;
-}
-
-.bookmark-dialog-tree-select .el-popper {
-	z-index: 10001 !important;
-}
-
-.bookmark-dialog-tree-select .el-tree-select__popper {
-	z-index: 10001 !important;
-}
-</style>

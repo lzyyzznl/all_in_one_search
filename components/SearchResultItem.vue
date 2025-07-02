@@ -1,55 +1,74 @@
 <template>
 	<div
-		class="result-item"
-		:class="{ selected: isSelected }"
+		class="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-base outline-none relative hover:bg-primary-50 dark:hover:bg-gray-700/50 focus:bg-primary-50 dark:focus:bg-gray-700/50"
+		:class="{
+			'bg-primary-100 dark:bg-gray-600/60 shadow-sm transform translate-x-1':
+				isSelected,
+		}"
 		:data-id="item.id"
 		@click="handleSelect"
 		@keydown.enter="handleSelect"
 		tabindex="0"
 	>
-		<div class="item-icon">
+		<div class="text-base flex-shrink-0">
 			{{ itemIcon }}
 		</div>
-		<div class="item-content">
-			<div class="item-title" :title="item.title">{{ item.title }}</div>
-			<div class="item-url" :title="item.url">{{ item.url }}</div>
-			<div class="item-meta">
-				<span v-if="item.folderName" class="folder-tag">
+		<div class="flex-1 min-w-0">
+			<div
+				class="font-medium text-primary text-ellipsis mb-0.5"
+				:title="item.title"
+			>
+				{{ item.title }}
+			</div>
+			<div
+				class="text-xs text-secondary text-ellipsis mb-0.5"
+				:title="item.url"
+			>
+				{{ item.url }}
+			</div>
+			<div class="flex gap-2 text-xs text-muted flex-wrap">
+				<span
+					v-if="item.folderName"
+					class="text-warning-600 dark:text-warning-400 font-medium"
+				>
 					📁 {{ item.folderName }}
 				</span>
 				<span
 					v-if="item.visitCount && item.type !== 'download'"
-					class="visit-count"
+					class="text-primary-600 dark:text-primary-400"
 				>
 					{{ item.visitCount }} 次访问
 				</span>
 				<span
 					v-if="item.fileSize && item.type === 'download'"
-					class="file-size"
+					class="text-success-600 dark:text-success-400 font-medium"
 				>
 					{{ formattedFileSize }}
 				</span>
-				<span v-if="item.lastVisited" class="last-visited">
+				<span v-if="item.lastVisited" class="text-gray-500 dark:text-gray-400">
 					{{ formattedDate }}
 				</span>
 				<span
 					v-if="item.type === 'download' && !item.exists"
-					class="file-missing"
+					class="text-danger-600 dark:text-danger-400 font-medium"
 				>
 					⚠️ 文件不存在
 				</span>
 			</div>
 		</div>
-		<div class="item-actions" v-if="showActions">
+		<div
+			class="flex gap-1.5 opacity-0 hover:opacity-100 transition-opacity duration-200"
+			v-if="showActions"
+		>
 			<button
 				v-if="item.type === 'history'"
-				class="action-button bookmark-button"
+				class="flex items-center gap-1 px-2 py-1 border-none rounded bg-transparent text-gray-500 dark:text-gray-400 cursor-pointer transition-colors duration-200 text-xs hover:bg-success-100 dark:hover:bg-success-900/20 hover:text-success-600 dark:hover:text-success-400"
 				@click.stop="handleBookmark"
 				title="添加到书签"
 			>
 				<svg
-					width="16"
-					height="16"
+					width="12"
+					height="12"
 					viewBox="0 0 24 24"
 					fill="none"
 					stroke="currentColor"
@@ -63,13 +82,13 @@
 			</button>
 			<button
 				v-if="item.type === 'download'"
-				class="action-button folder-button"
+				class="flex items-center gap-1 px-2 py-1 border-none rounded bg-transparent text-gray-500 dark:text-gray-400 cursor-pointer transition-colors duration-200 text-xs hover:bg-success-100 dark:hover:bg-success-900/20 hover:text-success-600 dark:hover:text-success-400"
 				@click.stop="handleShowFile"
 				title="在文件管理器中显示"
 			>
 				<svg
-					width="16"
-					height="16"
+					width="12"
+					height="12"
 					viewBox="0 0 24 24"
 					fill="none"
 					stroke="currentColor"
@@ -82,13 +101,13 @@
 				<span>显示</span>
 			</button>
 			<button
-				class="action-button copy-button"
+				class="flex items-center gap-1 px-2 py-1 border-none rounded bg-transparent text-gray-500 dark:text-gray-400 cursor-pointer transition-colors duration-200 text-xs hover:bg-primary-100 dark:hover:bg-primary-900/20 hover:text-primary-600 dark:hover:text-primary-400"
 				@click.stop="handleCopy"
 				title="复制URL"
 			>
 				<svg
-					width="16"
-					height="16"
+					width="12"
+					height="12"
 					viewBox="0 0 24 24"
 					fill="none"
 					stroke="currentColor"
@@ -158,133 +177,3 @@ function handleCopy(): void {
 	emit("copy", props.item.url);
 }
 </script>
-
-<style scoped>
-.result-item {
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	padding: 8px 12px;
-	border-radius: 6px;
-	cursor: pointer;
-	transition: all 0.2s ease;
-	outline: none;
-	position: relative;
-}
-
-.result-item:hover,
-.result-item:focus,
-.result-item.selected {
-	background: rgba(102, 126, 234, 0.1);
-	transform: translateX(4px);
-}
-
-.result-item.selected {
-	background: rgba(102, 126, 234, 0.2);
-	box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-}
-
-.item-icon {
-	font-size: 16px;
-	flex-shrink: 0;
-}
-
-.item-content {
-	flex: 1;
-	min-width: 0;
-}
-
-.item-title {
-	font-weight: 500;
-	color: #2d3748;
-	margin-bottom: 2px;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-.item-url {
-	font-size: 12px;
-	color: #718096;
-	margin-bottom: 2px;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-.item-meta {
-	display: flex;
-	gap: 8px;
-	font-size: 11px;
-	color: #a0aec0;
-	flex-wrap: wrap;
-}
-
-.folder-tag {
-	color: #d69e2e;
-	font-weight: 500;
-}
-
-.visit-count {
-	color: #3182ce;
-}
-
-.file-size {
-	color: #38a169;
-	font-weight: 500;
-}
-
-.last-visited {
-	color: #718096;
-}
-
-.file-missing {
-	color: #e53e3e;
-	font-weight: 500;
-}
-
-.item-actions {
-	display: flex;
-	gap: 6px;
-	opacity: 0;
-	transition: opacity 0.2s ease;
-}
-
-.result-item:hover .item-actions {
-	opacity: 1;
-}
-
-.action-button {
-	display: flex;
-	align-items: center;
-	gap: 4px;
-	padding: 4px 8px;
-	border: none;
-	border-radius: 4px;
-	background: transparent;
-	color: #718096;
-	cursor: pointer;
-	transition: all 0.2s ease;
-	font-size: 12px;
-}
-
-.action-button:hover {
-	background: rgba(0, 0, 0, 0.05);
-	color: #2d3748;
-}
-
-.bookmark-button:hover {
-	background: rgba(56, 178, 172, 0.1);
-	color: #319795;
-}
-
-.folder-button:hover {
-	background: rgba(56, 161, 105, 0.1);
-	color: #38a169;
-}
-
-.copy-button:hover {
-	background: rgba(49, 130, 206, 0.1);
-	color: #3182ce;
-}
-</style>

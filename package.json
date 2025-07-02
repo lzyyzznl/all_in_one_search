@@ -31,6 +31,7 @@
 		"@wxt-dev/module-vue": "1.0.2",
 		"less": "^4.3.0",
 		"typescript": "5.8.3",
+		"unocss": "^66.3.2",
 		"vite": "7.0.0",
 		"wxt": "0.20.7"
 	}

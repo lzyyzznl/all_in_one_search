@@ -1,127 +1,144 @@
 <template>
-	<div class="element-popup-container" :class="{ 'newtab-mode': isNewTabMode }">
+	<div
+		class="w-[780px] max-h-[550px] p-0 overflow-hidden bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-800 text-slate-900 dark:text-slate-100 rounded-xl shadow-2xl border border-slate-200/60 dark:border-slate-700/60 flex flex-col backdrop-blur-sm"
+		:class="{
+			'w-full h-screen max-w-none max-h-none m-0 rounded-none shadow-none border-none':
+				isNewTabMode,
+		}"
+	>
 		<!-- 固定头部区域 -->
-		<div class="fixed-header">
+		<div
+			class="flex-shrink-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/60 dark:border-slate-700/60 z-10"
+		>
 			<!-- 搜索头部 -->
-			<el-card class="search-header-card" :body-style="{ padding: '16px' }">
+			<div class="p-4">
 				<!-- 搜索输入框 -->
-				<div
-					class="search-input-container"
-					style="display: flex; gap: 8px; align-items: center"
-				>
-					<el-input
-						v-model="searchQuery"
-						placeholder="搜索本地文件，或按 Ctrl+Enter 进行网络搜索"
-						size="large"
-						clearable
-						@input="handleSearchInput"
-						@keydown.enter.prevent="handleEnterKey"
-						@keydown.ctrl.enter.prevent="performWebSearch"
-						ref="searchInput"
-						style="flex: 1"
-					>
-						<template #prefix>
-							<el-icon><Search /></el-icon>
-						</template>
-					</el-input>
+				<div class="flex items-center gap-3 mb-4">
+					<div class="relative flex-1">
+						<el-input
+							v-model="searchQuery"
+							placeholder="搜索本地文件，或按 Ctrl+Enter 进行网络搜索"
+							size="large"
+							clearable
+							@input="handleSearchInput"
+							@keydown.enter.prevent="handleEnterKey"
+							@keydown.ctrl.enter.prevent="performWebSearch"
+							ref="searchInput"
+							class="bg-white/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-600 rounded-xl shadow-sm backdrop-blur-sm transition-all duration-300"
+						>
+							<template #prefix>
+								<el-icon class="text-slate-400 dark:text-slate-500"
+									><Search
+								/></el-icon>
+							</template>
+						</el-input>
+					</div>
+
 					<el-button
 						size="large"
 						:icon="Setting"
 						circle
 						@click="openSettings"
 						title="打开设置"
+						class="bg-white/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-500 transition-all duration-200 backdrop-blur-sm"
 					/>
 				</div>
 
+				<!-- 搜索选项 -->
+				<div class="flex items-center justify-between gap-4 flex-wrap">
+					<!-- 数据源多选 -->
+					<div class="flex items-center gap-3 flex-1 min-w-[210px]">
+						<span
+							class="text-sm font-medium text-slate-600 dark:text-slate-400 flex-shrink-0"
+							>搜索项:</span
+						>
+						<el-select
+							v-model="selectedDataSources"
+							multiple
+							collapse-tags
+							collapse-tags-tooltip
+							size="small"
+							class="w-full"
+							@change="updateSearchOptions"
+						>
+							<el-option label="书签" value="bookmarks" />
+							<el-option label="历史记录" value="history" />
+							<el-option label="下载文件" value="downloads" />
+						</el-select>
+					</div>
+
+					<!-- 时间筛选 -->
+					<div class="flex items-center gap-3 flex-1 min-w-[150px]">
+						<span
+							class="text-sm font-medium text-slate-600 dark:text-slate-400 flex-shrink-0"
+							>时间:</span
+						>
+						<el-select
+							v-model="searchOptions.timeFilter"
+							size="small"
+							class="w-full"
+						>
+							<el-option label="全部时间" value="all" />
+							<el-option label="今天" value="today" />
+							<el-option label="本周" value="week" />
+							<el-option label="本月" value="month" />
+						</el-select>
+					</div>
+
+					<!-- 排序选择 -->
+					<div class="flex items-center gap-3 flex-1 min-w-[150px]">
+						<span
+							class="text-sm font-medium text-slate-600 dark:text-slate-400 flex-shrink-0"
+							>排序:</span
+						>
+						<el-select
+							v-model="searchOptions.sortBy"
+							size="small"
+							class="w-full"
+						>
+							<el-option label="相关性" value="relevance" />
+							<el-option label="最近访问" value="recent" />
+							<el-option label="访问频率" value="frequency" />
+						</el-select>
+					</div>
+				</div>
+
 				<!-- 搜索历史气泡 -->
-				<div v-if="searchHistory.length > 0" class="search-history">
+				<div v-if="searchHistory.length > 0" class="mt-3 flex flex-wrap gap-2">
 					<el-tag
 						v-for="item in searchHistory"
 						:key="item.timestamp"
 						type="info"
 						effect="plain"
 						size="small"
-						class="history-tag"
+						class="cursor-pointer rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 transform hover:scale-105"
 						@click="selectHistoryItem(item.query)"
 					>
 						{{ item.query }}
 					</el-tag>
 				</div>
-
-				<!-- 搜索选项 - 水平对齐 -->
-				<div class="search-options">
-					<el-row
-						:gutter="4"
-						align="middle"
-						class="controls-row"
-						justify="space-between"
-					>
-						<!-- 数据源多选 -->
-						<el-col :span="10" class="filter-control">
-							<div class="control-item">
-								<span class="control-label">搜索项:</span>
-								<el-select
-									v-model="selectedDataSources"
-									multiple
-									collapse-tags
-									collapse-tags-tooltip
-									size="small"
-									class="control-select"
-									@change="updateSearchOptions"
-								>
-									<el-option label="书签" value="bookmarks" />
-									<el-option label="历史记录" value="history" />
-									<el-option label="下载文件" value="downloads" />
-								</el-select>
-							</div>
-						</el-col>
-						<!-- 时间筛选 -->
-						<el-col :span="10" class="filter-control">
-							<div class="control-item">
-								<span class="control-label">时间:</span>
-								<el-select
-									v-model="searchOptions.timeFilter"
-									size="small"
-									class="control-select"
-								>
-									<el-option label="全部时间" value="all" />
-									<el-option label="今天" value="today" />
-									<el-option label="本周" value="week" />
-									<el-option label="本月" value="month" />
-								</el-select>
-							</div>
-						</el-col>
-
-						<!-- 排序选择 -->
-						<el-col :span="10" class="filter-control">
-							<div class="control-item">
-								<span class="control-label">排序:</span>
-								<el-select
-									v-model="searchOptions.sortBy"
-									size="small"
-									class="control-select"
-								>
-									<el-option label="相关性" value="relevance" />
-									<el-option label="最近访问" value="recent" />
-									<el-option label="访问频率" value="frequency" />
-								</el-select>
-							</div>
-						</el-col>
-					</el-row>
-				</div>
-			</el-card>
+			</div>
 
 			<!-- 搜索统计 -->
-			<div v-if="searchStats" class="search-stats">
+			<div
+				v-if="searchStats"
+				class="px-4 py-2 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-900/20 dark:to-indigo-900/20 border-t border-slate-200/60 dark:border-slate-700/60"
+			>
 				<el-space :size="8" wrap>
-					<el-tag size="small" type="info" effect="plain">
+					<el-tag
+						size="small"
+						type="primary"
+						effect="light"
+						class="bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
+					>
 						找到 {{ searchStats.totalResults }} 个结果
 					</el-tag>
 					<el-tag
 						v-if="searchStats.bookmarkCount > 0"
 						size="small"
 						type="success"
-						effect="plain"
+						effect="light"
+						class="bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
 					>
 						书签 {{ searchStats.bookmarkCount }}
 					</el-tag>
@@ -129,7 +146,8 @@
 						v-if="searchStats.historyCount > 0"
 						size="small"
 						type="warning"
-						effect="plain"
+						effect="light"
+						class="bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
 					>
 						历史 {{ searchStats.historyCount }}
 					</el-tag>
@@ -137,14 +155,23 @@
 						v-if="searchStats.downloadCount > 0"
 						size="small"
 						type="info"
-						effect="plain"
+						effect="light"
+						class="bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
 					>
 						下载 {{ searchStats.downloadCount }}
 					</el-tag>
-					<el-tag size="small" effect="plain">
+					<el-tag
+						size="small"
+						effect="light"
+						class="bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
+					>
 						{{ searchStats.uniqueDomains }} 个域名
 					</el-tag>
-					<el-tag size="small" effect="plain">
+					<el-tag
+						size="small"
+						effect="light"
+						class="bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
+					>
 						{{ searchStats.searchTime }}ms
 					</el-tag>
 				</el-space>
@@ -153,17 +180,20 @@
 			<!-- 域名过滤 -->
 			<div
 				v-if="searchQuery && availableDomains.length > 1"
-				class="domain-filter"
+				class="px-4 py-3 bg-gradient-to-r from-slate-50/80 to-gray-50/80 dark:from-slate-800/80 dark:to-gray-800/80 border-t border-slate-200/60 dark:border-slate-700/60"
 			>
-				<div class="filter-header">
-					<span class="filter-label">过滤域名:</span>
+				<div class="flex items-center justify-between mb-3">
+					<span class="text-sm font-semibold text-slate-700 dark:text-slate-300"
+						>过滤域名:</span
+					>
 					<el-button
 						size="small"
 						type="text"
 						@click="resetDomainFilter"
-						title="全选所有域名"
+						title="显示全部域名"
+						class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
 					>
-						全选
+						显示全部
 					</el-button>
 				</div>
 				<el-select
@@ -173,7 +203,7 @@
 					collapse-tags-tooltip
 					size="small"
 					placeholder="选择要显示的域名"
-					style="width: 100%"
+					class="w-full"
 					@change="handleDomainFilterChange"
 				>
 					<el-option
@@ -182,11 +212,11 @@
 						:label="domain"
 						:value="domain"
 					>
-						<div style="display: flex; align-items: center; gap: 8px">
+						<div class="flex items-center gap-2">
 							<img
 								:src="getFaviconUrl(domain)"
 								:alt="domain"
-								style="width: 16px; height: 16px"
+								class="w-4 h-4 rounded-sm"
 							/>
 							<span>{{ domain }}</span>
 						</div>
@@ -196,61 +226,76 @@
 		</div>
 
 		<!-- 可滚动内容区域 -->
-		<div class="scrollable-content">
+		<div
+			class="flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-white/50 to-slate-50/50 dark:from-slate-900/50 dark:to-slate-800/50 scrollable-content"
+		>
 			<!-- 加载状态 -->
-			<div v-if="isLoading" v-loading="true" class="loading-container">
+			<div v-if="isLoading" v-loading="true" class="p-8">
 				<el-empty description="搜索中..." :image-size="60" />
 			</div>
 
 			<!-- 搜索结果或推荐内容 -->
-			<div v-else-if="hasCurrentResults" class="results-container">
-				<el-card
+			<div v-else-if="hasCurrentResults" class="p-4 space-y-4">
+				<div
 					v-for="(group, domain) in currentResults"
 					:key="domain"
-					class="domain-group-card"
-					:body-style="{ padding: '12px' }"
-					shadow="hover"
+					class="bg-white/60 dark:bg-slate-800/60 rounded-xl p-4 border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-sm"
 				>
-					<template #header>
-						<div class="domain-header">
-							<img
-								:src="getFaviconUrl(String(domain))"
-								:alt="String(domain)"
-								class="domain-favicon"
-							/>
-							<span class="domain-name">{{ domain }}</span>
-							<el-tag size="small" type="primary" effect="plain">{{
-								group.totalCount
-							}}</el-tag>
-						</div>
-					</template>
+					<!-- 域名组头部 -->
+					<div
+						class="flex items-center gap-3 mb-3 pb-2 border-b border-slate-200/60 dark:border-slate-700/60"
+					>
+						<img
+							:src="getFaviconUrl(String(domain))"
+							:alt="String(domain)"
+							class="w-5 h-5 rounded-sm shadow-sm"
+						/>
+						<span
+							class="font-semibold text-slate-800 dark:text-slate-200 text-lg"
+							>{{ domain }}</span
+						>
+						<el-tag size="small" type="primary" effect="light" class="ml-auto">
+							{{ group.totalCount }}
+						</el-tag>
+					</div>
 
-					<div class="result-items">
-						<el-card
+					<!-- 结果项目 -->
+					<div class="space-y-2">
+						<div
 							v-for="item in group.items"
 							:key="item.id"
-							class="result-item-card"
-							:class="{ selected: selectedItem === item.id }"
+							class="bg-white/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60 hover:bg-white dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-lg backdrop-blur-sm group cursor-pointer transition-all duration-300 ease-out"
+							:class="{
+								'ring-2 ring-blue-400/60 dark:ring-blue-500/60 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-900/30 dark:to-indigo-900/30 shadow-lg transform scale-[1.02]':
+									selectedItem === item.id,
+							}"
 							:data-id="item.id"
-							:body-style="{ padding: '12px' }"
-							shadow="hover"
 							@click="selectAndOpenItem(item)"
 						>
-							<div class="result-item-content">
-								<div class="item-icon">
+							<div class="flex items-center gap-4 p-3">
+								<div class="text-2xl flex-shrink-0 opacity-80">
 									{{ getItemIcon(item.type) }}
 								</div>
-								<div class="item-content">
-									<div class="item-title" :title="item.title">
+								<div class="flex-1 min-w-0">
+									<div
+										class="font-semibold text-slate-800 dark:text-slate-200 text-base leading-tight mb-1 truncate"
+										:title="item.title"
+									>
 										{{ item.title }}
 									</div>
-									<div class="item-url" :title="item.url">{{ item.url }}</div>
-									<div class="item-meta">
+									<div
+										class="text-sm text-slate-500 dark:text-slate-400 mb-2 truncate"
+										:title="item.url"
+									>
+										{{ item.url }}
+									</div>
+									<div class="flex gap-2 text-xs flex-wrap">
 										<el-tag
 											v-if="item.folderName"
 											size="small"
 											type="warning"
-											effect="plain"
+											effect="light"
+											class="bg-slate-100/80 dark:bg-slate-700/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
 										>
 											📁 {{ item.folderName }}
 										</el-tag>
@@ -258,7 +303,8 @@
 											v-if="item.visitCount && item.type !== 'download'"
 											size="small"
 											type="info"
-											effect="plain"
+											effect="light"
+											class="bg-slate-100/80 dark:bg-slate-700/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
 										>
 											{{ item.visitCount }} 次访问
 										</el-tag>
@@ -266,11 +312,15 @@
 											v-if="item.fileSize && item.type === 'download'"
 											size="small"
 											type="success"
-											effect="plain"
+											effect="light"
+											class="bg-slate-100/80 dark:bg-slate-700/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
 										>
 											{{ formatFileSize(item.fileSize) }}
 										</el-tag>
-										<span v-if="item.lastVisited" class="last-visited">
+										<span
+											v-if="item.lastVisited"
+											class="text-slate-400 dark:text-slate-500 font-medium"
+										>
 											{{ formatDate(item.lastVisited) }}
 										</span>
 										<el-tag
@@ -278,18 +328,22 @@
 											size="small"
 											type="danger"
 											effect="dark"
+											class="bg-slate-100/80 dark:bg-slate-700/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
 										>
 											⚠️ 文件不存在
 										</el-tag>
 									</div>
 								</div>
-								<div class="item-actions">
+								<div
+									class="flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0"
+								>
 									<el-button
 										v-if="item.type === 'history'"
 										size="small"
 										:type="isItemBookmarked(item) ? 'warning' : 'primary'"
 										:icon="Star"
 										@click.stop="handleBookmarkAction(item)"
+										class="bg-white/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-600 hover:shadow-md backdrop-blur-sm"
 									>
 										{{ isItemBookmarked(item) ? "取消收藏" : "收藏" }}
 									</el-button>
@@ -299,6 +353,7 @@
 										type="success"
 										:icon="FolderOpened"
 										@click.stop="showDownloadFile(item)"
+										class="bg-white/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-600 hover:shadow-md backdrop-blur-sm"
 									>
 										显示文件目录
 									</el-button>
@@ -309,120 +364,115 @@
 										:icon="DocumentCopy"
 										@click.stop="copyUrl(item.url)"
 										title="复制链接"
+										class="bg-white/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-600 hover:shadow-md backdrop-blur-sm"
 									>
 										复制
 									</el-button>
 								</div>
 							</div>
-						</el-card>
+						</div>
 					</div>
-				</el-card>
+				</div>
 			</div>
 
 			<!-- 网络搜索建议 -->
 			<div
 				v-if="searchQuery && !isLoading && defaultSearchEngine"
-				class="web-search-suggestion"
+				class="px-4 pb-4"
 			>
-				<el-card
-					class="web-search-card"
-					:body-style="{ padding: '16px' }"
-					shadow="hover"
+				<div
+					class="shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-dashed border-blue-300 dark:border-blue-600 hover:border-blue-400 dark:hover:border-blue-500 bg-gradient-to-r from-blue-50/60 to-indigo-50/60 dark:from-blue-900/20 dark:to-indigo-900/20 hover:from-blue-100/80 hover:to-indigo-100/80 dark:hover:from-blue-900/30 dark:hover:to-indigo-900/30 cursor-pointer transform hover:scale-[1.01] rounded-xl p-4"
+					@click="performWebSearch"
 				>
-					<div class="web-search-header">
+					<div class="flex items-center gap-3 mb-3">
 						<img
 							:src="getEngineIconUrl(defaultSearchEngine)"
 							alt="icon"
-							class="search-engine-icon"
-							style="width: 18px; height: 18px; vertical-align: middle"
+							class="w-6 h-6 rounded-md shadow-sm"
 						/>
-						<span class="suggestion-text"
-							>在{{ defaultSearchEngine.name }}中搜索</span
+						<span
+							class="font-semibold text-slate-800 dark:text-slate-200 text-lg"
 						>
+							在{{ defaultSearchEngine.name }}中搜索
+						</span>
 					</div>
-					<div class="web-search-query">
-						<span class="query-text">"{{ searchQuery }}"</span>
+					<div class="flex items-center justify-between gap-4">
+						<span
+							class="italic text-blue-700 dark:text-blue-300 font-semibold flex-1 truncate text-lg"
+						>
+							"{{ searchQuery }}"
+						</span>
 						<el-button
 							type="primary"
-							size="small"
+							size="default"
 							:icon="TopRight"
-							@click="performWebSearch"
+							class="bg-blue-500 hover:bg-blue-600 border border-blue-500 hover:border-blue-600 shadow-md hover:shadow-lg"
 						>
 							搜索
 						</el-button>
 					</div>
-				</el-card>
+				</div>
 			</div>
 
 			<!-- 空状态 -->
-			<div v-else-if="searchQuery && !isLoading" class="empty-state">
-				<el-empty description="未找到匹配的结果" :image-size="80">
+			<div v-else-if="searchQuery && !isLoading" class="p-8">
+				<el-empty description="未找到匹配的结果" :image-size="100">
 					<template #description>
-						<p>未找到匹配的结果</p>
-						<p>
-							可尝试
-							<el-tag size="small" type="primary" effect="light"
-								>Ctrl+Enter</el-tag
-							>
-							进行网络搜索
-						</p>
+						<div class="text-center space-y-3">
+							<p class="text-slate-600 dark:text-slate-400 text-lg font-medium">
+								未找到匹配的结果
+							</p>
+							<p class="text-slate-500 dark:text-slate-500">
+								可尝试
+								<el-tag size="small" type="primary" effect="light" class="mx-1">
+									Ctrl+Enter
+								</el-tag>
+								进行网络搜索
+							</p>
+						</div>
 					</template>
 				</el-empty>
 			</div>
 
 			<!-- 推荐内容加载状态 -->
-			<div v-else-if="isLoadingRecommended" class="loading-state">
-				<div class="loading-content">
-					<el-icon class="loading-icon"><Search /></el-icon>
-					<p>正在加载推荐内容...</p>
+			<div
+				v-else-if="isLoadingRecommended"
+				class="flex items-center justify-center p-8"
+			>
+				<div class="text-center text-slate-500 dark:text-slate-400">
+					<el-icon class="text-3xl mb-4 animate-spin text-blue-500"
+						><Search
+					/></el-icon>
+					<p class="m-0 text-base font-medium">正在加载推荐内容...</p>
 				</div>
-			</div>
-
-			<!-- 初始状态 - 功能说明（作为后备） -->
-			<div v-else class="initial-state">
-				<el-card
-					class="welcome-card"
-					:body-style="{ padding: '32px', textAlign: 'center' }"
-				>
-					<div class="welcome-tips">
-						<div class="tip-item">
-							<el-icon class="tip-icon"><MagicStick /></el-icon>
-							<span>支持模糊搜索</span>
-						</div>
-						<div class="tip-item">
-							<el-icon class="tip-icon"><Collection /></el-icon>
-							<span>结果按域名分组显示</span>
-						</div>
-						<div class="tip-item">
-							<el-icon class="tip-icon"><Mouse /></el-icon>
-							<span>单击直接打开链接</span>
-						</div>
-						<div class="tip-item">
-							<el-icon class="tip-icon"><Star /></el-icon>
-							<span>历史记录可添加到书签</span>
-						</div>
-						<div class="tip-item">
-							<el-icon class="tip-icon"><Download /></el-icon>
-							<span>支持搜索下载文件</span>
-						</div>
-						<div v-if="mainShortcut" class="tip-item">
-							<el-icon class="tip-icon"><Tools /></el-icon>
-							<span>快捷键: {{ mainShortcut }}</span>
-						</div>
-					</div>
-				</el-card>
 			</div>
 		</div>
 
 		<!-- 快捷键提示 -->
-		<div class="shortcuts">
-			<el-tag size="small" effect="plain"
-				>{{ navigationKeys.open }} 打开</el-tag
+		<div
+			class="flex gap-3 p-3 bg-gradient-to-r from-slate-100/80 to-gray-100/80 dark:from-slate-800/80 dark:to-gray-800/80 border-t border-slate-200/60 dark:border-slate-700/60"
+		>
+			<el-tag
+				size="small"
+				effect="light"
+				class="bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
 			>
-			<el-tag size="small" effect="plain"
-				>{{ navigationKeys.up }}{{ navigationKeys.down }} 选择</el-tag
+				{{ navigationKeys.open }} 打开
+			</el-tag>
+			<el-tag
+				size="small"
+				effect="light"
+				class="bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
 			>
-			<el-tag size="small" effect="plain">Esc 关闭</el-tag>
+				{{ navigationKeys.up }}{{ navigationKeys.down }} 选择
+			</el-tag>
+			<el-tag
+				size="small"
+				effect="light"
+				class="bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
+			>
+				Esc 关闭
+			</el-tag>
 		</div>
 	</div>
 
@@ -483,6 +533,7 @@ import {
 	getShortcut,
 } from "../utils/shortcuts";
 import { ContentSearchService } from "../utils/contentSearch";
+import { ThemeManager } from "../utils/theme";
 import type {
 	GroupedSearchResults,
 	SearchHistoryItem,
@@ -568,18 +619,14 @@ const handleBookmarkSave = async (data: {
 			title: data.title,
 			url: data.url,
 		};
-
 		if (data.parentId) {
 			bookmarkData.parentId = data.parentId;
 			// 保存用户选择的文件夹
 			await chrome.storage.local.set({ lastSelectedFolder: data.parentId });
 		}
-
 		await chrome.bookmarks.create(bookmarkData);
-
 		// 更新收藏状态
 		bookmarkedUrls.value.add(data.url);
-
 		closeBookmarkDialog();
 		console.log("书签添加成功！");
 	} catch (error) {
@@ -594,7 +641,6 @@ const handleBookmarkAction = async (item: SearchResultItem) => {
 
 	try {
 		const isBookmarked = isItemBookmarked(item);
-
 		if (isBookmarked) {
 			// 取消收藏
 			const success = await removeBookmarkByUrl(item.url);
@@ -640,7 +686,6 @@ const filteredSearchResults = computed<GroupedSearchResults>(() => {
 	if (!searchQuery.value || selectedDomains.value.length === 0) {
 		return searchResults.value;
 	}
-
 	const filtered: GroupedSearchResults = {};
 	selectedDomains.value.forEach((domain) => {
 		if (searchResults.value[domain]) {
@@ -653,14 +698,12 @@ const filteredSearchResults = computed<GroupedSearchResults>(() => {
 // 将推荐内容转换为与查询结果相同的格式
 const recommendedResults = computed<GroupedSearchResults>(() => {
 	const results: GroupedSearchResults = {};
-
 	// 只显示历史记录，并且必须是选中的数据源
 	if (selectedDataSources.value.includes("history")) {
 		// 按访问时间排序，最近访问的在前面
 		const sortedHistory = [...recommendedContent.value.recentHistory].sort(
 			(a, b) => (b.lastVisited || 0) - (a.lastVisited || 0)
 		);
-
 		// 创建一个虚拟的"推荐内容"组，平铺显示所有项目
 		if (sortedHistory.length > 0) {
 			results["最近访问"] = {
@@ -670,7 +713,6 @@ const recommendedResults = computed<GroupedSearchResults>(() => {
 			};
 		}
 	}
-
 	return results;
 });
 
@@ -697,7 +739,6 @@ const loadRecommendedContent = async (): Promise<void> => {
 		isLoadingRecommended.value = true;
 		const content = await ContentSearchService.getRecommendedContent();
 		recommendedContent.value = content;
-
 		// 加载完推荐内容后更新收藏状态
 		await updateBookmarkedUrls();
 	} catch (error) {
@@ -711,7 +752,6 @@ const loadRecommendedContent = async (): Promise<void> => {
 const updateBookmarkedUrls = async (): Promise<void> => {
 	try {
 		const allUrls = new Set<string>();
-
 		// 收集当前显示的所有历史记录URL
 		Object.values(currentResults.value).forEach((group) => {
 			group.items.forEach((item) => {
@@ -720,7 +760,6 @@ const updateBookmarkedUrls = async (): Promise<void> => {
 				}
 			});
 		});
-
 		// 检查每个URL的收藏状态
 		const newBookmarkedUrls = new Set<string>();
 		for (const url of allUrls) {
@@ -729,7 +768,6 @@ const updateBookmarkedUrls = async (): Promise<void> => {
 				newBookmarkedUrls.add(url);
 			}
 		}
-
 		bookmarkedUrls.value = newBookmarkedUrls;
 	} catch (error) {
 		console.error("更新收藏状态失败:", error);
@@ -771,9 +809,9 @@ const handleDomainFilterChange = () => {
 	console.log("域名过滤已更新:", selectedDomains.value);
 };
 
-// 重置域名过滤（全选）
+// 重置域名过滤（显示全部）
 const resetDomainFilter = () => {
-	selectedDomains.value = [...availableDomains.value];
+	selectedDomains.value = [];
 };
 
 // 更新搜索选项
@@ -783,7 +821,6 @@ const updateSearchOptions = () => {
 	searchOptions.includeHistory = selectedDataSources.value.includes("history");
 	searchOptions.includeDownloads =
 		selectedDataSources.value.includes("downloads");
-
 	// 如果当前有搜索查询，重新搜索
 	if (searchQuery.value.trim()) {
 		handleSearchNow();
@@ -800,14 +837,12 @@ const handleSearchInput = () => {
 		window.clearTimeout(searchTimeout.value);
 		searchTimeout.value = null;
 	}
-
 	// 如果输入为空，立即清空结果
 	if (!searchQuery.value.trim()) {
 		searchResults.value = {};
 		searchStats.value = null;
 		return;
 	}
-
 	// 设置新的防抖定时器
 	searchTimeout.value = window.setTimeout(() => {
 		handleSearch();
@@ -821,7 +856,6 @@ const handleSearchNow = () => {
 		window.clearTimeout(searchTimeout.value);
 		searchTimeout.value = null;
 	}
-
 	handleSearch();
 };
 
@@ -832,23 +866,18 @@ const handleSearch = async () => {
 		searchStats.value = null;
 		return;
 	}
-
 	isLoading.value = true;
-
 	try {
 		const options = {
 			...searchOptions,
 			query: searchQuery.value.trim(),
 		};
-
 		const { results, stats } = await searchBookmarksAndHistory(options);
 		searchResults.value = results;
 		searchStats.value = stats;
-
 		// 保存搜索历史
 		await SearchHistoryManager.saveSearchHistory(searchQuery.value.trim());
 		await loadSearchHistory();
-
 		// 更新收藏状态
 		await updateBookmarkedUrls();
 	} catch (error) {
@@ -882,17 +911,6 @@ watch(
 		}
 	},
 	{ deep: true }
-);
-
-// 监听搜索结果变化，自动全选所有域名
-watch(
-	() => availableDomains.value,
-	(newDomains) => {
-		if (newDomains.length > 0) {
-			selectedDomains.value = [...newDomains];
-		}
-	},
-	{ immediate: true }
 );
 
 // 选择并打开项目（单击）
@@ -1017,12 +1035,10 @@ const showBookmarkDialog = async (item: SearchResultItem) => {
 	bookmarkDialog.item = item;
 	bookmarkDialog.title = item.title;
 	bookmarkDialog.url = item.url;
-
 	// 恢复上次选择的文件夹，如果没有则默认选择书签栏
 	try {
 		const result = await chrome.storage.local.get(["lastSelectedFolder"]);
 		const lastFolder = result.lastSelectedFolder;
-
 		if (lastFolder) {
 			bookmarkDialog.parentId = lastFolder;
 		} else {
@@ -1043,7 +1059,6 @@ const showBookmarkDialog = async (item: SearchResultItem) => {
 			bookmarkDialog.parentId = "";
 		}
 	}
-
 	bookmarkDialog.show = true;
 };
 
@@ -1062,7 +1077,6 @@ const loadShortcutConfig = async () => {
 		// 加载主快捷键
 		const shortcut = await getShortcut("_execute_action");
 		mainShortcut.value = formatShortcut(shortcut);
-
 		// 可选：加载备用快捷键
 		const altShortcut = await getShortcut("open-search-alt");
 		if (altShortcut && !mainShortcut.value) {
@@ -1088,7 +1102,6 @@ const loadSearchSettings = async () => {
 			if (result.searchSettings.defaultSortBy) {
 				searchOptions.sortBy = result.searchSettings.defaultSortBy;
 			}
-
 			console.log("已加载搜索设置:", result.searchSettings);
 		}
 	} catch (error) {
@@ -1116,7 +1129,6 @@ const handleKeyDown = (event: KeyboardEvent) => {
 	const allItems = Object.values(currentResults.value).flatMap(
 		(group) => group.items
 	);
-
 	if (!allItems.length) return;
 
 	const currentIndex = selectedItem.value
@@ -1142,7 +1154,6 @@ const handleKeyDown = (event: KeyboardEvent) => {
 					if (scrollableContainer) {
 						const containerRect = scrollableContainer.getBoundingClientRect();
 						const elementRect = nextElement.getBoundingClientRect();
-
 						if (elementRect.bottom > containerRect.bottom) {
 							nextElement.scrollIntoView({ block: "end", behavior: "smooth" });
 						} else if (elementRect.top < containerRect.top) {
@@ -1173,7 +1184,6 @@ const handleKeyDown = (event: KeyboardEvent) => {
 					if (scrollableContainer) {
 						const containerRect = scrollableContainer.getBoundingClientRect();
 						const elementRect = prevElement.getBoundingClientRect();
-
 						if (elementRect.top < containerRect.top) {
 							prevElement.scrollIntoView({
 								block: "start",
@@ -1214,7 +1224,6 @@ const performWebSearch = async () => {
 	if (!searchQuery.value.trim() || !defaultSearchEngine.value) {
 		return;
 	}
-
 	try {
 		const response = await chrome.runtime.sendMessage({
 			action: "perform-web-search",
@@ -1222,7 +1231,6 @@ const performWebSearch = async () => {
 			query: searchQuery.value.trim(),
 			inNewTab: true,
 		});
-
 		if (response?.success) {
 			console.log("网络搜索成功");
 			// 可选：关闭弹窗
@@ -1296,7 +1304,6 @@ const handleStorageChange = (
 			}
 		}
 	}
-
 	// 监听导航设置变化
 	if (changes.navigationSettings) {
 		const newSettings = changes.navigationSettings.newValue;
@@ -1309,31 +1316,25 @@ const handleStorageChange = (
 
 // 组件挂载
 onMounted(async () => {
+	// 初始化主题
+	ThemeManager.init();
 	// 加载快捷键配置
 	await loadShortcutConfig();
-
 	// 加载搜索设置
 	await loadSearchSettings();
-
 	// 加载导航设置
 	await loadNavigationSettings();
-
 	// 加载搜索历史
 	await loadSearchHistory();
-
 	// 加载推荐内容
 	await loadRecommendedContent();
-
 	// 加载默认搜索引擎
 	await loadDefaultSearchEngine();
-
 	// 聚焦搜索框
 	await nextTick();
 	searchInput.value?.focus();
-
 	// 绑定键盘事件
 	document.addEventListener("keydown", handleKeyDown);
-
 	// 监听storage变化
 	chrome.storage.onChanged.addListener(handleStorageChange);
 });
@@ -1344,7 +1345,6 @@ onUnmounted(() => {
 	if (searchTimeout.value !== null) {
 		window.clearTimeout(searchTimeout.value);
 	}
-
 	document.removeEventListener("keydown", handleKeyDown);
 	chrome.storage.onChanged.removeListener(handleStorageChange);
 });
@@ -1365,7 +1365,6 @@ const openInNewTab = () => {
 	params.set("downloads", searchOptions.includeDownloads.toString());
 	params.set("sort", searchOptions.sortBy);
 	params.set("time", searchOptions.timeFilter);
-
 	chrome.tabs.create({
 		url: chrome.runtime.getURL(`single_tab.html?${params.toString()}`),
 	});
@@ -1410,106 +1409,3 @@ const getEngineIconUrl = (engine: SearchEngine | null) => {
 	}
 };
 </script>
-
-<style lang="less" scoped>
-@import "../entrypoints/styles/element-popup.less";
-
-.loading-state {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	padding: 40px;
-
-	.loading-content {
-		text-align: center;
-		color: var(--el-text-color-secondary);
-
-		.loading-icon {
-			font-size: 24px;
-			margin-bottom: 12px;
-			animation: rotation 2s infinite linear;
-		}
-
-		p {
-			margin: 0;
-			font-size: 14px;
-		}
-	}
-}
-
-@keyframes rotation {
-	from {
-		transform: rotate(0deg);
-	}
-	to {
-		transform: rotate(360deg);
-	}
-}
-
-/* 网络搜索建议样式 */
-.web-search-suggestion {
-	padding: 0 16px 16px;
-
-	.web-search-card {
-		border: 1px dashed var(--el-color-primary);
-
-		.web-search-header {
-			display: flex;
-			align-items: center;
-			gap: 8px;
-			margin-bottom: 12px;
-
-			.search-engine-icon {
-				font-size: 18px;
-			}
-
-			.suggestion-text {
-				font-weight: 500;
-				color: var(--el-text-color-primary);
-			}
-		}
-
-		.web-search-query {
-			display: flex;
-			align-items: center;
-			justify-content: space-between;
-			gap: 12px;
-
-			.query-text {
-				font-style: italic;
-				color: var(--el-color-primary);
-				font-weight: 500;
-				flex: 1;
-				overflow: hidden;
-				text-overflow: ellipsis;
-				white-space: nowrap;
-			}
-		}
-
-		&:hover {
-			border-color: var(--el-color-primary-light-3);
-			background-color: var(--el-color-primary-light-9);
-		}
-	}
-}
-
-/* 域名过滤器样式 */
-.domain-filter {
-	padding: 12px 16px;
-	background-color: var(--el-fill-color-lighter);
-	border-top: 1px solid var(--el-border-color-light);
-
-	.filter-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		margin-bottom: 8px;
-
-		.filter-label {
-			font-size: 13px;
-			color: var(--el-text-color-regular);
-			font-weight: 500;
-		}
-	}
-}
-</style>

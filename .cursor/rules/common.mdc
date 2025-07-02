@@ -1,0 +1,8 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+1. 请你每次执行任务之前都使用sequential-thinking的mcp服务来进行逻辑思考之后，再考虑下一步要怎么行动
+
+2. 当你需要使用某个框架的api或者技术栈时，优先考虑先使用context7来进行查询，查询之后再结合sequential-thinking服务进行逻辑思考下一步要怎么行为
