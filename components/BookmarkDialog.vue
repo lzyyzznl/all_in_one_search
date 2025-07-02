@@ -7,6 +7,7 @@
 		:before-close="handleClose"
 		:z-index="10000"
 		class="bookmark-dialog"
+		@keydown.esc.stop="handleClose"
 	>
 		<el-form
 			:model="localDialog"

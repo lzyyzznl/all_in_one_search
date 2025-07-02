@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="w-[780px] h-[1100px] p-0 overflow-hidden bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-800 text-slate-900 dark:text-slate-100 rounded-xl shadow-2xl border border-slate-200/60 dark:border-slate-700/60 flex flex-col backdrop-blur-sm"
+		class="w-[780px] h-[600px] p-0 overflow-hidden bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-800 text-slate-900 dark:text-slate-100 rounded-xl shadow-2xl border border-slate-200/60 dark:border-slate-700/60 flex flex-col backdrop-blur-sm"
 		:class="{
 			'w-full h-screen max-w-none max-h-none m-0 rounded-none shadow-none border-none':
 				isNewTabMode,
@@ -15,38 +15,26 @@
 				<!-- 搜索输入框 -->
 				<div class="flex items-center gap-3 mb-4">
 					<div class="relative flex-1">
-						<el-input
+						<el-autocomplete
 							v-model="searchQuery"
+							:fetch-suggestions="handleAutocompleteSuggestions"
 							placeholder="搜索本地文件，或按 Ctrl+Enter 进行网络搜索"
 							size="large"
 							clearable
 							@input="handleSearchInput"
+							@select="handleSuggestionSelect"
 							@keydown.enter.prevent="handleEnterKey"
 							@keydown.ctrl.enter.prevent="performWebSearch"
-							@keydown.tab.prevent="handleTabComplete"
 							ref="searchInput"
 							class="bg-white/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-600 rounded-xl shadow-sm backdrop-blur-sm transition-all duration-300"
+							:popper-class="'search-autocomplete-popper'"
 						>
 							<template #prefix>
 								<el-icon class="text-slate-400 dark:text-slate-500"
 									><Search
 								/></el-icon>
 							</template>
-						</el-input>
-
-						<!-- 内嵌式Tab补全提示 -->
-						<div
-							v-if="showAutocompleteSuggestion && autocompleteSuggestion"
-							class="absolute left-0 top-0 h-full flex items-center pointer-events-none"
-							:style="{ paddingLeft: getInputPadding() }"
-						>
-							<span
-								class="text-slate-400/60 dark:text-slate-500/60 text-base select-none"
-							>
-								<span class="invisible">{{ searchQuery }}</span
-								>{{ getCompletionSuffix() }}
-							</span>
-						</div>
+						</el-autocomplete>
 					</div>
 
 					<el-button
@@ -374,6 +362,16 @@
 								{{ isItemBookmarked(item) ? "取消收藏" : "收藏" }}
 							</el-button>
 							<el-button
+								v-if="item.type === 'bookmark'"
+								size="small"
+								type="warning"
+								:icon="Star"
+								@click.stop="handleRemoveBookmark(item)"
+								class="bg-white/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-600 hover:shadow-md backdrop-blur-sm"
+							>
+								取消收藏
+							</el-button>
+							<el-button
 								v-if="item.type === 'download'"
 								size="small"
 								type="success"
@@ -382,6 +380,17 @@
 								class="bg-white/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-600 hover:shadow-md backdrop-blur-sm"
 							>
 								显示文件目录
+							</el-button>
+							<el-button
+								v-if="item.type === 'history'"
+								size="small"
+								type="danger"
+								:icon="Delete"
+								@click.stop="handleRemoveHistory(item)"
+								title="删除历史记录"
+								class="bg-white/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-600 hover:shadow-md backdrop-blur-sm"
+							>
+								删除
 							</el-button>
 							<el-button
 								v-if="item.type === 'history' || item.type === 'bookmark'"
@@ -474,47 +483,61 @@
 
 		<!-- 快捷键提示 -->
 		<div
-			class="flex gap-2 p-3 bg-gradient-to-r from-slate-100/80 to-gray-100/80 dark:from-slate-800/80 dark:to-gray-800/80 border-t border-slate-200/60 dark:border-slate-700/60 flex-wrap"
+			class="flex-shrink-0 flex gap-2 p-3 bg-gradient-to-r from-slate-50/80 to-slate-100/80 dark:from-slate-900/80 dark:to-slate-800/80 border-t border-slate-200/60 dark:border-slate-700/60 flex-wrap"
 		>
 			<el-tag
 				size="small"
-				effect="light"
-				class="bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
+				type="info"
+				effect="plain"
+				class="bg-slate-50/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 backdrop-blur-sm"
 			>
 				{{ navigationKeys.open }} 打开
 			</el-tag>
 			<el-tag
 				size="small"
-				effect="light"
-				class="bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
+				type="info"
+				effect="plain"
+				class="bg-slate-50/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 backdrop-blur-sm"
 			>
 				{{ navigationKeys.up }}{{ navigationKeys.down }} 选择
 			</el-tag>
 			<el-tag
 				size="small"
-				effect="light"
-				class="bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
+				type="info"
+				effect="plain"
+				class="bg-slate-50/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 backdrop-blur-sm"
 			>
 				Ctrl+C 复制
 			</el-tag>
 			<el-tag
 				size="small"
-				effect="light"
-				class="bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
+				type="info"
+				effect="plain"
+				class="bg-slate-50/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 backdrop-blur-sm"
 			>
 				Ctrl+B 收藏
 			</el-tag>
 			<el-tag
 				size="small"
-				effect="light"
-				class="bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
+				type="info"
+				effect="plain"
+				class="bg-slate-50/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 backdrop-blur-sm"
 			>
 				Ctrl+F 显示文件
 			</el-tag>
 			<el-tag
 				size="small"
-				effect="light"
-				class="bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
+				type="info"
+				effect="plain"
+				class="bg-slate-50/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 backdrop-blur-sm"
+			>
+				Ctrl+D 删除历史
+			</el-tag>
+			<el-tag
+				size="small"
+				type="info"
+				effect="plain"
+				class="bg-slate-50/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 backdrop-blur-sm"
 			>
 				Esc 关闭
 			</el-tag>
@@ -545,6 +568,7 @@ import {
 	TopRight,
 	Setting,
 	ArrowDown,
+	Delete,
 } from "@element-plus/icons-vue";
 import BookmarkDialog from "./BookmarkDialog.vue";
 import {
@@ -637,9 +661,8 @@ const navigationKeys = ref(getNavigationKeys());
 // 默认搜索引擎
 const defaultSearchEngine = ref<SearchEngine | null>(null);
 
-// Tab键自动补全相关
-const autocompleteSuggestion = ref<string>("");
-const showAutocompleteSuggestion = ref<boolean>(false);
+// 自动补全建议列表
+const autocompleteSuggestions = ref<{ value: string }[]>([]);
 
 // 键盘导航配置（从设置中加载）
 const navigationConfig = reactive({
@@ -716,6 +739,53 @@ const handleBookmarkAction = async (item: SearchResultItem) => {
 		}
 	} catch (error) {
 		console.error("收藏操作失败:", error);
+	}
+};
+
+// 处理书签删除操作
+const handleRemoveBookmark = async (item: SearchResultItem) => {
+	if (item.type !== "bookmark") return;
+
+	try {
+		const success = await removeBookmarkByUrl(item.url);
+		if (success) {
+			console.log("书签删除成功！");
+			// 重新搜索以更新结果
+			if (searchQuery.value.trim()) {
+				handleSearchNow();
+			} else {
+				// 如果没有搜索查询，重新加载推荐内容
+				await loadRecommendedContent();
+			}
+		} else {
+			console.error("书签删除失败");
+		}
+	} catch (error) {
+		console.error("删除书签失败:", error);
+	}
+};
+
+// 处理历史记录删除操作
+const handleRemoveHistory = async (item: SearchResultItem) => {
+	if (item.type !== "history") return;
+
+	try {
+		// 调用Chrome API删除历史记录
+		await chrome.history.deleteUrl({ url: item.url });
+		console.log("历史记录删除成功！");
+
+		// 更新收藏状态（移除已删除的URL）
+		bookmarkedUrls.value.delete(item.url);
+
+		// 重新搜索以更新结果
+		if (searchQuery.value.trim()) {
+			handleSearchNow();
+		} else {
+			// 如果没有搜索查询，重新加载推荐内容
+			await loadRecommendedContent();
+		}
+	} catch (error) {
+		console.error("删除历史记录失败:", error);
 	}
 };
 
@@ -946,9 +1016,6 @@ const handleSearchInput = () => {
 		searchTimeout.value = null;
 	}
 
-	// 更新自动补全建议
-	updateAutocompleteSuggestion();
-
 	// 如果输入为空，立即清空结果
 	if (!searchQuery.value.trim()) {
 		searchResults.value = {};
@@ -961,29 +1028,30 @@ const handleSearchInput = () => {
 	}, DEBOUNCE_DELAY);
 };
 
-// 更新自动补全建议
-const updateAutocompleteSuggestion = () => {
-	const query = searchQuery.value.trim().toLowerCase();
-	if (!query) {
-		showAutocompleteSuggestion.value = false;
-		autocompleteSuggestion.value = "";
+// 处理自动补全建议
+const handleAutocompleteSuggestions = (
+	queryString: string,
+	callback: (suggestions: { value: string }[]) => void
+) => {
+	if (!queryString) {
+		callback([]);
 		return;
 	}
 
-	// 在搜索历史中查找匹配的项目
-	const matchingHistory = searchHistory.value.find(
-		(item) =>
-			item.query.toLowerCase().startsWith(query) &&
-			item.query.toLowerCase() !== query
-	);
+	const query = queryString.trim().toLowerCase();
+	// 从搜索历史中筛选匹配的项目
+	const suggestions = searchHistory.value
+		.filter((item) => item.query.toLowerCase().includes(query))
+		.slice(0, 10) // 限制显示最多10个建议
+		.map((item) => ({ value: item.query }));
 
-	if (matchingHistory) {
-		autocompleteSuggestion.value = matchingHistory.query;
-		showAutocompleteSuggestion.value = true;
-	} else {
-		showAutocompleteSuggestion.value = false;
-		autocompleteSuggestion.value = "";
-	}
+	callback(suggestions);
+};
+
+// 处理建议选择
+const handleSuggestionSelect = (item: { value: string }) => {
+	searchQuery.value = item.value;
+	handleSearchNow();
 };
 
 // 立即搜索（回车或手动触发）
@@ -1272,6 +1340,16 @@ const loadNavigationSettings = async () => {
 
 // 键盘导航
 const handleKeyDown = (event: KeyboardEvent) => {
+	// 如果书签对话框打开，优先处理对话框的键盘事件
+	if (bookmarkDialog.show) {
+		if (event.code === "Escape") {
+			event.preventDefault();
+			event.stopPropagation();
+			closeBookmarkDialog();
+		}
+		return; // 对话框打开时，不处理其他键盘事件
+	}
+
 	if (!hasCurrentResults.value) return;
 
 	const allItems = Object.values(currentResults.value).flatMap(
@@ -1379,6 +1457,15 @@ const handleKeyDown = (event: KeyboardEvent) => {
 				const item = findItemById(selectedItem.value);
 				if (item && item.type === "download") {
 					showDownloadFile(item);
+				}
+			}
+			break;
+		case "KeyD":
+			if (event.ctrlKey && selectedItem.value) {
+				event.preventDefault();
+				const item = findItemById(selectedItem.value);
+				if (item && item.type === "history") {
+					handleRemoveHistory(item);
 				}
 			}
 			break;
@@ -1499,8 +1586,8 @@ onMounted(async () => {
 	// 聚焦搜索框
 	await nextTick();
 	searchInput.value?.focus();
-	// 绑定键盘事件
-	document.addEventListener("keydown", handleKeyDown);
+	// 绑定键盘事件，使用捕获模式确保优先处理
+	document.addEventListener("keydown", handleKeyDown, true);
 	// 监听storage变化
 	chrome.storage.onChanged.addListener(handleStorageChange);
 });
@@ -1511,7 +1598,7 @@ onUnmounted(() => {
 	if (searchTimeout.value !== null) {
 		window.clearTimeout(searchTimeout.value);
 	}
-	document.removeEventListener("keydown", handleKeyDown);
+	document.removeEventListener("keydown", handleKeyDown, true);
 	chrome.storage.onChanged.removeListener(handleStorageChange);
 });
 
@@ -1584,36 +1671,5 @@ const extractDomain = (url: string): string => {
 		console.error("提取域名失败:", error);
 		return url;
 	}
-};
-
-// 处理Tab键自动补全
-const handleTabComplete = () => {
-	if (showAutocompleteSuggestion.value && autocompleteSuggestion.value) {
-		searchQuery.value = autocompleteSuggestion.value;
-		showAutocompleteSuggestion.value = false;
-		autocompleteSuggestion.value = "";
-		// 触发搜索
-		handleSearchNow();
-	}
-};
-
-// 获取输入框内边距（用于对齐补全提示）
-const getInputPadding = () => {
-	// 考虑前缀图标和输入框padding
-	return "44px"; // 32px图标 + 12px padding
-};
-
-// 获取补全后缀（当前输入后面的部分）
-const getCompletionSuffix = () => {
-	if (!autocompleteSuggestion.value || !searchQuery.value) return "";
-
-	const query = searchQuery.value.toLowerCase();
-	const suggestion = autocompleteSuggestion.value.toLowerCase();
-
-	if (suggestion.startsWith(query)) {
-		return autocompleteSuggestion.value.slice(searchQuery.value.length);
-	}
-
-	return "";
 };
 </script>
