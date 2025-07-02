@@ -291,6 +291,70 @@
 							<el-option label="Q" value="KeyQ" />
 						</el-select>
 					</el-card>
+
+					<el-card class="text-center p-4">
+						<div class="mb-3">
+							<el-icon class="text-blue-600 dark:text-blue-400 text-xl mb-2"
+								><DocumentCopy
+							/></el-icon>
+							<div class="text-sm font-medium">复制选中项</div>
+						</div>
+						<el-select
+							v-model="navigationSettings.copy"
+							@change="saveNavigationSettings"
+							class="w-full"
+						>
+							<el-option label="C" value="KeyC" />
+						</el-select>
+					</el-card>
+
+					<el-card class="text-center p-4">
+						<div class="mb-3">
+							<el-icon class="text-blue-600 dark:text-blue-400 text-xl mb-2"
+								><Star
+							/></el-icon>
+							<div class="text-sm font-medium">收藏选中项</div>
+						</div>
+						<el-select
+							v-model="navigationSettings.bookmark"
+							@change="saveNavigationSettings"
+							class="w-full"
+						>
+							<el-option label="B" value="KeyB" />
+						</el-select>
+					</el-card>
+
+					<el-card class="text-center p-4">
+						<div class="mb-3">
+							<el-icon class="text-blue-600 dark:text-blue-400 text-xl mb-2"
+								><FolderOpened
+							/></el-icon>
+							<div class="text-sm font-medium">显示选中项</div>
+						</div>
+						<el-select
+							v-model="navigationSettings.showFile"
+							@change="saveNavigationSettings"
+							class="w-full"
+						>
+							<el-option label="F" value="KeyF" />
+						</el-select>
+					</el-card>
+
+					<el-card class="text-center p-4">
+						<div class="mb-3">
+							<el-icon class="text-blue-600 dark:text-blue-400 text-xl mb-2"
+								><BubbleChart
+							/></el-icon>
+							<div class="text-sm font-medium">历史气泡数量</div>
+						</div>
+						<el-input-number
+							v-model="navigationSettings.bubbleCount"
+							@change="saveNavigationSettings"
+							:min="1"
+							:max="10"
+							class="w-full"
+						/>
+					</el-card>
 				</div>
 
 				<el-alert title="📝 提示：" type="info" :closable="false">
@@ -357,6 +421,9 @@ import {
 	Search,
 	Setting,
 	Tools,
+	DocumentCopy,
+	Star,
+	FolderOpened,
 } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import { onMounted, reactive, ref } from "vue";
@@ -392,6 +459,10 @@ const navigationSettings = reactive({
 	down: "ArrowDown",
 	open: "Enter",
 	close: "Escape",
+	copy: "KeyC",
+	bookmark: "KeyB",
+	showFile: "KeyF",
+	bubbleCount: 5,
 });
 
 // 格式化快捷键显示

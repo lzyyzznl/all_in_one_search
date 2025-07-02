@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="w-[780px] max-h-[550px] p-0 overflow-hidden bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-800 text-slate-900 dark:text-slate-100 rounded-xl shadow-2xl border border-slate-200/60 dark:border-slate-700/60 flex flex-col backdrop-blur-sm"
+		class="w-[780px] h-[1100px] p-0 overflow-hidden bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-800 text-slate-900 dark:text-slate-100 rounded-xl shadow-2xl border border-slate-200/60 dark:border-slate-700/60 flex flex-col backdrop-blur-sm"
 		:class="{
 			'w-full h-screen max-w-none max-h-none m-0 rounded-none shadow-none border-none':
 				isNewTabMode,
@@ -23,6 +23,7 @@
 							@input="handleSearchInput"
 							@keydown.enter.prevent="handleEnterKey"
 							@keydown.ctrl.enter.prevent="performWebSearch"
+							@keydown.tab.prevent="handleTabComplete"
 							ref="searchInput"
 							class="bg-white/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-600 rounded-xl shadow-sm backdrop-blur-sm transition-all duration-300"
 						>
@@ -32,6 +33,20 @@
 								/></el-icon>
 							</template>
 						</el-input>
+
+						<!-- 内嵌式Tab补全提示 -->
+						<div
+							v-if="showAutocompleteSuggestion && autocompleteSuggestion"
+							class="absolute left-0 top-0 h-full flex items-center pointer-events-none"
+							:style="{ paddingLeft: getInputPadding() }"
+						>
+							<span
+								class="text-slate-400/60 dark:text-slate-500/60 text-base select-none"
+							>
+								<span class="invisible">{{ searchQuery }}</span
+								>{{ getCompletionSuffix() }}
+							</span>
+						</div>
 					</div>
 
 					<el-button
@@ -44,10 +59,96 @@
 					/>
 				</div>
 
+				<!-- 搜索历史气泡 -->
+				<div
+					v-if="searchHistory.length > 0"
+					class="mb-4 flex flex-wrap gap-2 items-center"
+				>
+					<el-tag
+						v-for="item in displayedHistory"
+						:key="item.timestamp"
+						type="info"
+						effect="plain"
+						size="small"
+						class="cursor-pointer rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 transform hover:scale-105"
+						@click="selectHistoryItem(item.query)"
+					>
+						{{ item.query }}
+					</el-tag>
+
+					<!-- 更多历史记录下拉菜单 -->
+					<el-dropdown
+						v-if="hasMoreHistory"
+						trigger="click"
+						placement="bottom-start"
+						class="cursor-pointer"
+					>
+						<el-tag
+							type="primary"
+							effect="plain"
+							size="small"
+							class="cursor-pointer rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 transform hover:scale-105"
+						>
+							<span class="flex items-center gap-1">
+								<span>更多 ({{ searchHistory.length - 5 }})</span>
+								<el-icon class="text-xs"><ArrowDown /></el-icon>
+							</span>
+						</el-tag>
+						<template #dropdown>
+							<el-dropdown-menu class="max-h-60 overflow-y-auto">
+								<el-dropdown-item
+									v-for="item in searchHistory.slice(5)"
+									:key="item.timestamp"
+									@click="selectHistoryItem(item.query)"
+									class="cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20"
+								>
+									{{ item.query }}
+								</el-dropdown-item>
+							</el-dropdown-menu>
+						</template>
+					</el-dropdown>
+				</div>
+
 				<!-- 搜索选项 -->
 				<div class="flex items-center justify-between gap-4 flex-wrap">
+					<!-- 域名过滤 -->
+					<div class="flex items-center gap-3 flex-1 min-w-[120px]">
+						<span
+							class="text-sm font-medium text-slate-600 dark:text-slate-400 flex-shrink-0"
+							>域名:</span
+						>
+						<el-select
+							v-model="selectedDomains"
+							multiple
+							collapse-tags
+							collapse-tags-tooltip
+							size="small"
+							:placeholder="
+								availableDomains.length > 0 ? '全部域名' : '暂无域名'
+							"
+							class="w-full"
+							@change="handleDomainFilterChange"
+						>
+							<el-option
+								v-for="domain in availableDomains"
+								:key="domain"
+								:label="domain"
+								:value="domain"
+							>
+								<div class="flex items-center gap-2">
+									<img
+										:src="getFaviconUrl(domain)"
+										:alt="domain"
+										class="w-4 h-4 rounded-sm"
+									/>
+									<span>{{ domain }}</span>
+								</div>
+							</el-option>
+						</el-select>
+					</div>
+
 					<!-- 数据源多选 -->
-					<div class="flex items-center gap-3 flex-1 min-w-[210px]">
+					<div class="flex items-center gap-3 flex-1 min-w-[160px]">
 						<span
 							class="text-sm font-medium text-slate-600 dark:text-slate-400 flex-shrink-0"
 							>搜索项:</span
@@ -68,7 +169,7 @@
 					</div>
 
 					<!-- 时间筛选 -->
-					<div class="flex items-center gap-3 flex-1 min-w-[150px]">
+					<div class="flex items-center gap-3 flex-1 min-w-[120px]">
 						<span
 							class="text-sm font-medium text-slate-600 dark:text-slate-400 flex-shrink-0"
 							>时间:</span
@@ -86,7 +187,7 @@
 					</div>
 
 					<!-- 排序选择 -->
-					<div class="flex items-center gap-3 flex-1 min-w-[150px]">
+					<div class="flex items-center gap-3 flex-1 min-w-[120px]">
 						<span
 							class="text-sm font-medium text-slate-600 dark:text-slate-400 flex-shrink-0"
 							>排序:</span
@@ -102,27 +203,17 @@
 						</el-select>
 					</div>
 				</div>
-
-				<!-- 搜索历史气泡 -->
-				<div v-if="searchHistory.length > 0" class="mt-3 flex flex-wrap gap-2">
-					<el-tag
-						v-for="item in searchHistory"
-						:key="item.timestamp"
-						type="info"
-						effect="plain"
-						size="small"
-						class="cursor-pointer rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 transform hover:scale-105"
-						@click="selectHistoryItem(item.query)"
-					>
-						{{ item.query }}
-					</el-tag>
-				</div>
 			</div>
+		</div>
 
+		<!-- 可滚动内容区域 -->
+		<div
+			class="flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-white/50 to-slate-50/50 dark:from-slate-900/50 dark:to-slate-800/50 scrollable-content"
+		>
 			<!-- 搜索统计 -->
 			<div
 				v-if="searchStats"
-				class="px-4 py-2 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-900/20 dark:to-indigo-900/20 border-t border-slate-200/60 dark:border-slate-700/60"
+				class="px-4 py-2 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-900/20 dark:to-indigo-900/20 border-b border-slate-200/60 dark:border-slate-700/60 sticky top-0 z-10"
 			>
 				<el-space :size="8" wrap>
 					<el-tag
@@ -177,199 +268,132 @@
 				</el-space>
 			</div>
 
-			<!-- 域名过滤 -->
-			<div
-				v-if="searchQuery && availableDomains.length > 1"
-				class="px-4 py-3 bg-gradient-to-r from-slate-50/80 to-gray-50/80 dark:from-slate-800/80 dark:to-gray-800/80 border-t border-slate-200/60 dark:border-slate-700/60"
-			>
-				<div class="flex items-center justify-between mb-3">
-					<span class="text-sm font-semibold text-slate-700 dark:text-slate-300"
-						>过滤域名:</span
-					>
-					<el-button
-						size="small"
-						type="text"
-						@click="resetDomainFilter"
-						title="显示全部域名"
-						class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
-					>
-						显示全部
-					</el-button>
-				</div>
-				<el-select
-					v-model="selectedDomains"
-					multiple
-					collapse-tags
-					collapse-tags-tooltip
-					size="small"
-					placeholder="选择要显示的域名"
-					class="w-full"
-					@change="handleDomainFilterChange"
-				>
-					<el-option
-						v-for="domain in availableDomains"
-						:key="domain"
-						:label="domain"
-						:value="domain"
-					>
-						<div class="flex items-center gap-2">
-							<img
-								:src="getFaviconUrl(domain)"
-								:alt="domain"
-								class="w-4 h-4 rounded-sm"
-							/>
-							<span>{{ domain }}</span>
-						</div>
-					</el-option>
-				</el-select>
-			</div>
-		</div>
-
-		<!-- 可滚动内容区域 -->
-		<div
-			class="flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-white/50 to-slate-50/50 dark:from-slate-900/50 dark:to-slate-800/50 scrollable-content"
-		>
 			<!-- 加载状态 -->
 			<div v-if="isLoading" v-loading="true" class="p-8">
 				<el-empty description="搜索中..." :image-size="60" />
 			</div>
 
 			<!-- 搜索结果或推荐内容 -->
-			<div v-else-if="hasCurrentResults" class="p-4 space-y-4">
+			<div v-else-if="hasCurrentResults" class="p-4 space-y-3">
 				<div
-					v-for="(group, domain) in currentResults"
-					:key="domain"
-					class="bg-white/60 dark:bg-slate-800/60 rounded-xl p-4 border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-sm"
+					v-for="item in flattenedResults"
+					:key="item.id"
+					class="bg-white/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60 hover:bg-white dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-lg backdrop-blur-sm group cursor-pointer transition-all duration-300 ease-out"
+					:class="{
+						'ring-2 ring-blue-400/60 dark:ring-blue-500/60 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-900/30 dark:to-indigo-900/30 shadow-lg transform scale-[1.02]':
+							selectedItem === item.id,
+					}"
+					:data-id="item.id"
+					@click="selectAndOpenItem(item)"
 				>
-					<!-- 域名组头部 -->
-					<div
-						class="flex items-center gap-3 mb-3 pb-2 border-b border-slate-200/60 dark:border-slate-700/60"
-					>
-						<img
-							:src="getFaviconUrl(String(domain))"
-							:alt="String(domain)"
-							class="w-5 h-5 rounded-sm shadow-sm"
-						/>
-						<span
-							class="font-semibold text-slate-800 dark:text-slate-200 text-lg"
-							>{{ domain }}</span
-						>
-						<el-tag size="small" type="primary" effect="light" class="ml-auto">
-							{{ group.totalCount }}
-						</el-tag>
-					</div>
-
-					<!-- 结果项目 -->
-					<div class="space-y-2">
-						<div
-							v-for="item in group.items"
-							:key="item.id"
-							class="bg-white/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60 hover:bg-white dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-lg backdrop-blur-sm group cursor-pointer transition-all duration-300 ease-out"
-							:class="{
-								'ring-2 ring-blue-400/60 dark:ring-blue-500/60 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-900/30 dark:to-indigo-900/30 shadow-lg transform scale-[1.02]':
-									selectedItem === item.id,
-							}"
-							:data-id="item.id"
-							@click="selectAndOpenItem(item)"
-						>
-							<div class="flex items-center gap-4 p-3">
-								<div class="text-2xl flex-shrink-0 opacity-80">
-									{{ getItemIcon(item.type) }}
-								</div>
-								<div class="flex-1 min-w-0">
-									<div
-										class="font-semibold text-slate-800 dark:text-slate-200 text-base leading-tight mb-1 truncate"
-										:title="item.title"
-									>
-										{{ item.title }}
-									</div>
-									<div
-										class="text-sm text-slate-500 dark:text-slate-400 mb-2 truncate"
-										:title="item.url"
-									>
-										{{ item.url }}
-									</div>
-									<div class="flex gap-2 text-xs flex-wrap">
-										<el-tag
-											v-if="item.folderName"
-											size="small"
-											type="warning"
-											effect="light"
-											class="bg-slate-100/80 dark:bg-slate-700/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
-										>
-											📁 {{ item.folderName }}
-										</el-tag>
-										<el-tag
-											v-if="item.visitCount && item.type !== 'download'"
-											size="small"
-											type="info"
-											effect="light"
-											class="bg-slate-100/80 dark:bg-slate-700/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
-										>
-											{{ item.visitCount }} 次访问
-										</el-tag>
-										<el-tag
-											v-if="item.fileSize && item.type === 'download'"
-											size="small"
-											type="success"
-											effect="light"
-											class="bg-slate-100/80 dark:bg-slate-700/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
-										>
-											{{ formatFileSize(item.fileSize) }}
-										</el-tag>
-										<span
-											v-if="item.lastVisited"
-											class="text-slate-400 dark:text-slate-500 font-medium"
-										>
-											{{ formatDate(item.lastVisited) }}
-										</span>
-										<el-tag
-											v-if="item.type === 'download' && !item.exists"
-											size="small"
-											type="danger"
-											effect="dark"
-											class="bg-slate-100/80 dark:bg-slate-700/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
-										>
-											⚠️ 文件不存在
-										</el-tag>
-									</div>
-								</div>
-								<div
-									class="flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0"
-								>
-									<el-button
-										v-if="item.type === 'history'"
-										size="small"
-										:type="isItemBookmarked(item) ? 'warning' : 'primary'"
-										:icon="Star"
-										@click.stop="handleBookmarkAction(item)"
-										class="bg-white/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-600 hover:shadow-md backdrop-blur-sm"
-									>
-										{{ isItemBookmarked(item) ? "取消收藏" : "收藏" }}
-									</el-button>
-									<el-button
-										v-if="item.type === 'download'"
-										size="small"
-										type="success"
-										:icon="FolderOpened"
-										@click.stop="showDownloadFile(item)"
-										class="bg-white/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-600 hover:shadow-md backdrop-blur-sm"
-									>
-										显示文件目录
-									</el-button>
-									<el-button
-										v-if="item.type === 'history' || item.type === 'bookmark'"
-										size="small"
-										type="info"
-										:icon="DocumentCopy"
-										@click.stop="copyUrl(item.url)"
-										title="复制链接"
-										class="bg-white/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-600 hover:shadow-md backdrop-blur-sm"
-									>
-										复制
-									</el-button>
-								</div>
+					<div class="flex items-center gap-4 p-3">
+						<div class="flex items-center gap-2 flex-shrink-0">
+							<img
+								:src="getFaviconUrl(extractDomain(item.url))"
+								:alt="extractDomain(item.url)"
+								class="w-4 h-4 rounded-sm"
+							/>
+							<div class="text-lg opacity-80">
+								{{ getItemIcon(item.type) }}
 							</div>
+						</div>
+						<div class="flex-1 min-w-0">
+							<div
+								class="font-semibold text-slate-800 dark:text-slate-200 text-base leading-tight mb-1 truncate"
+								:title="item.title"
+							>
+								{{ item.title }}
+							</div>
+							<div
+								class="text-sm text-slate-500 dark:text-slate-400 mb-2 truncate"
+								:title="item.url"
+							>
+								{{ item.url }}
+							</div>
+							<div class="flex gap-2 text-xs flex-wrap">
+								<el-tag
+									v-if="item.folderName"
+									size="small"
+									type="warning"
+									effect="light"
+									class="bg-slate-100/80 dark:bg-slate-700/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
+								>
+									📁 {{ item.folderName }}
+								</el-tag>
+								<el-tag
+									v-if="item.visitCount && item.type !== 'download'"
+									size="small"
+									type="info"
+									effect="light"
+									class="bg-slate-100/80 dark:bg-slate-700/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
+								>
+									{{ item.visitCount }} 次访问
+								</el-tag>
+								<el-tag
+									v-if="item.fileSize && item.type === 'download'"
+									size="small"
+									type="success"
+									effect="light"
+									class="bg-slate-100/80 dark:bg-slate-700/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
+								>
+									{{ formatFileSize(item.fileSize) }}
+								</el-tag>
+								<span
+									v-if="item.lastVisited"
+									class="text-slate-400 dark:text-slate-500 font-medium"
+								>
+									{{ formatDate(item.lastVisited) }}
+								</span>
+								<el-tag
+									v-if="item.type === 'download' && !item.exists"
+									size="small"
+									type="danger"
+									effect="dark"
+									class="bg-slate-100/80 dark:bg-slate-700/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
+								>
+									⚠️ 文件不存在
+								</el-tag>
+							</div>
+						</div>
+						<div
+							class="flex gap-2 transition-all duration-300 transform"
+							:class="{
+								'opacity-100 translate-x-0': selectedItem === item.id,
+								'opacity-0 translate-x-2 group-hover:opacity-100 group-hover:translate-x-0':
+									selectedItem !== item.id,
+							}"
+						>
+							<el-button
+								v-if="item.type === 'history'"
+								size="small"
+								:type="isItemBookmarked(item) ? 'warning' : 'primary'"
+								:icon="Star"
+								@click.stop="handleBookmarkAction(item)"
+								class="bg-white/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-600 hover:shadow-md backdrop-blur-sm"
+							>
+								{{ isItemBookmarked(item) ? "取消收藏" : "收藏" }}
+							</el-button>
+							<el-button
+								v-if="item.type === 'download'"
+								size="small"
+								type="success"
+								:icon="FolderOpened"
+								@click.stop="showDownloadFile(item)"
+								class="bg-white/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-600 hover:shadow-md backdrop-blur-sm"
+							>
+								显示文件目录
+							</el-button>
+							<el-button
+								v-if="item.type === 'history' || item.type === 'bookmark'"
+								size="small"
+								type="info"
+								:icon="DocumentCopy"
+								@click.stop="copyUrl(item.url)"
+								title="复制链接"
+								class="bg-white/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-600 hover:shadow-md backdrop-blur-sm"
+							>
+								复制
+							</el-button>
 						</div>
 					</div>
 				</div>
@@ -450,7 +474,7 @@
 
 		<!-- 快捷键提示 -->
 		<div
-			class="flex gap-3 p-3 bg-gradient-to-r from-slate-100/80 to-gray-100/80 dark:from-slate-800/80 dark:to-gray-800/80 border-t border-slate-200/60 dark:border-slate-700/60"
+			class="flex gap-2 p-3 bg-gradient-to-r from-slate-100/80 to-gray-100/80 dark:from-slate-800/80 dark:to-gray-800/80 border-t border-slate-200/60 dark:border-slate-700/60 flex-wrap"
 		>
 			<el-tag
 				size="small"
@@ -465,6 +489,27 @@
 				class="bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
 			>
 				{{ navigationKeys.up }}{{ navigationKeys.down }} 选择
+			</el-tag>
+			<el-tag
+				size="small"
+				effect="light"
+				class="bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
+			>
+				Ctrl+C 复制
+			</el-tag>
+			<el-tag
+				size="small"
+				effect="light"
+				class="bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
+			>
+				Ctrl+B 收藏
+			</el-tag>
+			<el-tag
+				size="small"
+				effect="light"
+				class="bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
+			>
+				Ctrl+F 显示文件
 			</el-tag>
 			<el-tag
 				size="small"
@@ -499,6 +544,7 @@ import {
 	Tools,
 	TopRight,
 	Setting,
+	ArrowDown,
 } from "@element-plus/icons-vue";
 import BookmarkDialog from "./BookmarkDialog.vue";
 import {
@@ -591,6 +637,10 @@ const navigationKeys = ref(getNavigationKeys());
 // 默认搜索引擎
 const defaultSearchEngine = ref<SearchEngine | null>(null);
 
+// Tab键自动补全相关
+const autocompleteSuggestion = ref<string>("");
+const showAutocompleteSuggestion = ref<boolean>(false);
+
 // 键盘导航配置（从设置中加载）
 const navigationConfig = reactive({
 	up: "ArrowUp",
@@ -606,6 +656,16 @@ const bookmarkDialog = reactive({
 	url: "",
 	parentId: "",
 	item: null as SearchResultItem | null,
+});
+
+// 显示的搜索历史（前5条）
+const displayedHistory = computed(() => {
+	return searchHistory.value.slice(0, 5);
+});
+
+// 是否有更多历史记录
+const hasMoreHistory = computed(() => {
+	return searchHistory.value.length > 5;
 });
 
 // 处理书签保存
@@ -675,15 +735,29 @@ const hasResults = computed(() => {
 	return Object.keys(searchResults.value).length > 0;
 });
 
-// 获取搜索结果中的可用域名
+// 获取当前可用的域名（从查询结果或推荐内容中）
 const availableDomains = computed(() => {
-	if (!searchQuery.value) return [];
-	return Object.keys(searchResults.value);
+	if (searchQuery.value) {
+		// 有查询时，返回搜索结果中的域名
+		return Object.keys(searchResults.value);
+	} else {
+		// 没有查询时，返回推荐内容中的域名
+		const domains = new Set<string>();
+		Object.values(recommendedResults.value).forEach((group) => {
+			group.items.forEach((item) => {
+				const domain = extractDomain(item.url);
+				if (domain && domain !== item.url) {
+					domains.add(domain);
+				}
+			});
+		});
+		return Array.from(domains).sort();
+	}
 });
 
 // 根据选中域名过滤搜索结果
 const filteredSearchResults = computed<GroupedSearchResults>(() => {
-	if (!searchQuery.value || selectedDomains.value.length === 0) {
+	if (selectedDomains.value.length === 0) {
 		return searchResults.value;
 	}
 	const filtered: GroupedSearchResults = {};
@@ -716,21 +790,55 @@ const recommendedResults = computed<GroupedSearchResults>(() => {
 	return results;
 });
 
+// 根据选中域名过滤推荐内容
+const filteredRecommendedResults = computed<GroupedSearchResults>(() => {
+	if (selectedDomains.value.length === 0) {
+		return recommendedResults.value;
+	}
+	const filtered: GroupedSearchResults = {};
+	Object.entries(recommendedResults.value).forEach(([groupName, group]) => {
+		const filteredItems = group.items.filter((item) => {
+			const domain = extractDomain(item.url);
+			return selectedDomains.value.includes(domain);
+		});
+		if (filteredItems.length > 0) {
+			filtered[groupName] = {
+				...group,
+				items: filteredItems,
+				totalCount: filteredItems.length,
+			};
+		}
+	});
+	return filtered;
+});
+
 // 显示推荐内容的条件
 const showRecommended = computed(() => {
-	return !searchQuery.value && Object.keys(recommendedResults.value).length > 0;
+	return (
+		!searchQuery.value &&
+		Object.keys(filteredRecommendedResults.value).length > 0
+	);
 });
 
 // 当前显示的搜索结果（查询结果或推荐内容）
 const currentResults = computed(() => {
 	return searchQuery.value
 		? filteredSearchResults.value
-		: recommendedResults.value;
+		: filteredRecommendedResults.value;
+});
+
+// 平铺的搜索结果（不分组）
+const flattenedResults = computed(() => {
+	const results: SearchResultItem[] = [];
+	Object.values(currentResults.value).forEach((group) => {
+		results.push(...group.items);
+	});
+	return results;
 });
 
 // 当前是否有结果
 const hasCurrentResults = computed(() => {
-	return Object.keys(currentResults.value).length > 0;
+	return flattenedResults.value.length > 0;
 });
 
 // 加载推荐内容
@@ -837,6 +945,10 @@ const handleSearchInput = () => {
 		window.clearTimeout(searchTimeout.value);
 		searchTimeout.value = null;
 	}
+
+	// 更新自动补全建议
+	updateAutocompleteSuggestion();
+
 	// 如果输入为空，立即清空结果
 	if (!searchQuery.value.trim()) {
 		searchResults.value = {};
@@ -847,6 +959,31 @@ const handleSearchInput = () => {
 	searchTimeout.value = window.setTimeout(() => {
 		handleSearch();
 	}, DEBOUNCE_DELAY);
+};
+
+// 更新自动补全建议
+const updateAutocompleteSuggestion = () => {
+	const query = searchQuery.value.trim().toLowerCase();
+	if (!query) {
+		showAutocompleteSuggestion.value = false;
+		autocompleteSuggestion.value = "";
+		return;
+	}
+
+	// 在搜索历史中查找匹配的项目
+	const matchingHistory = searchHistory.value.find(
+		(item) =>
+			item.query.toLowerCase().startsWith(query) &&
+			item.query.toLowerCase() !== query
+	);
+
+	if (matchingHistory) {
+		autocompleteSuggestion.value = matchingHistory.query;
+		showAutocompleteSuggestion.value = true;
+	} else {
+		showAutocompleteSuggestion.value = false;
+		autocompleteSuggestion.value = "";
+	}
 };
 
 // 立即搜索（回车或手动触发）
@@ -911,6 +1048,17 @@ watch(
 		}
 	},
 	{ deep: true }
+);
+
+// 监听搜索状态变化，在推荐内容和查询结果之间切换时清空域名过滤
+watch(
+	() => !!searchQuery.value,
+	(hasQuery, wasQuery) => {
+		// 当从有查询切换到无查询，或从无查询切换到有查询时，清空域名过滤
+		if (hasQuery !== wasQuery) {
+			selectedDomains.value = [];
+		}
+	}
 );
 
 // 选择并打开项目（单击）
@@ -1216,6 +1364,24 @@ const handleKeyDown = (event: KeyboardEvent) => {
 				}
 			}
 			break;
+		case "KeyB":
+			if (event.ctrlKey && selectedItem.value) {
+				event.preventDefault();
+				const item = findItemById(selectedItem.value);
+				if (item && item.type === "history") {
+					handleBookmarkAction(item);
+				}
+			}
+			break;
+		case "KeyF":
+			if (event.ctrlKey && selectedItem.value) {
+				event.preventDefault();
+				const item = findItemById(selectedItem.value);
+				if (item && item.type === "download") {
+					showDownloadFile(item);
+				}
+			}
+			break;
 	}
 };
 
@@ -1407,5 +1573,47 @@ const getEngineIconUrl = (engine: SearchEngine | null) => {
 		default:
 			return "";
 	}
+};
+
+// 提取域名
+const extractDomain = (url: string): string => {
+	try {
+		const parsedUrl = new URL(url);
+		return parsedUrl.hostname;
+	} catch (error) {
+		console.error("提取域名失败:", error);
+		return url;
+	}
+};
+
+// 处理Tab键自动补全
+const handleTabComplete = () => {
+	if (showAutocompleteSuggestion.value && autocompleteSuggestion.value) {
+		searchQuery.value = autocompleteSuggestion.value;
+		showAutocompleteSuggestion.value = false;
+		autocompleteSuggestion.value = "";
+		// 触发搜索
+		handleSearchNow();
+	}
+};
+
+// 获取输入框内边距（用于对齐补全提示）
+const getInputPadding = () => {
+	// 考虑前缀图标和输入框padding
+	return "44px"; // 32px图标 + 12px padding
+};
+
+// 获取补全后缀（当前输入后面的部分）
+const getCompletionSuffix = () => {
+	if (!autocompleteSuggestion.value || !searchQuery.value) return "";
+
+	const query = searchQuery.value.toLowerCase();
+	const suggestion = autocompleteSuggestion.value.toLowerCase();
+
+	if (suggestion.startsWith(query)) {
+		return autocompleteSuggestion.value.slice(searchQuery.value.length);
+	}
+
+	return "";
 };
 </script>
