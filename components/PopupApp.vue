@@ -15,26 +15,48 @@
 				<!-- 搜索输入框 -->
 				<div class="flex items-center gap-3 mb-4">
 					<div class="relative flex-1">
-						<el-autocomplete
+						<!-- 阴影补全层 -->
+						<div
+							v-if="shadowCompletion"
+							class="absolute inset-0 pointer-events-none z-10 flex items-center"
+							:style="{
+								paddingLeft: `calc(${inputStyles.paddingLeft} + 32px)`,
+								paddingRight: inputStyles.paddingRight,
+							}"
+						>
+							<span
+								class="text-slate-400 dark:text-slate-500 opacity-60 whitespace-nowrap overflow-hidden"
+								:style="{
+									fontSize: inputStyles.fontSize,
+									fontFamily: inputStyles.fontFamily,
+									lineHeight: inputStyles.lineHeight,
+									marginLeft: getTextWidth(searchQuery) + 5 + 'px',
+								}"
+								>{{ shadowCompletion }}</span
+							>
+						</div>
+
+						<!-- 搜索输入框 -->
+						<el-input
 							v-model="searchQuery"
-							:fetch-suggestions="handleAutocompleteSuggestions"
-							placeholder="搜索本地文件，或按 Ctrl+Enter 进行网络搜索"
+							placeholder="搜索本地文件，或按 Ctrl+Enter 进行网络搜索，按 Tab 补全"
 							size="large"
 							clearable
 							@input="handleSearchInput"
-							@select="handleSuggestionSelect"
 							@keydown.enter.prevent="handleEnterKey"
 							@keydown.ctrl.enter.prevent="performWebSearch"
+							@keydown.tab.prevent="handleTabCompletion"
+							@focus="handleSearchFocus"
+							@blur="handleSearchBlur"
 							ref="searchInput"
 							class="bg-white/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-600 rounded-xl shadow-sm backdrop-blur-sm transition-all duration-300"
-							:popper-class="'search-autocomplete-popper'"
 						>
 							<template #prefix>
 								<el-icon class="text-slate-400 dark:text-slate-500"
 									><Search
 								/></el-icon>
 							</template>
-						</el-autocomplete>
+						</el-input>
 					</div>
 
 					<el-button
@@ -196,68 +218,97 @@
 			</div>
 		</div>
 
+		<!-- 搜索结果统计区域（固定） -->
+		<div
+			v-if="searchStats"
+			class="flex-shrink-0 px-4 py-2 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-900/20 dark:to-indigo-900/20 border-b border-slate-200/60 dark:border-slate-700/60 backdrop-blur-md z-10"
+		>
+			<el-space :size="8" wrap>
+				<el-tag
+					size="small"
+					type="primary"
+					effect="light"
+					class="bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors duration-200"
+					:class="{
+						'ring-2 ring-blue-400/60 dark:ring-blue-500/60 bg-blue-50/80 dark:bg-blue-900/30':
+							displayFilters.length === 0,
+					}"
+					@click="handleStatsTagClick('all')"
+					title="点击显示全部结果"
+				>
+					找到 {{ searchStats.totalResults }} 个结果
+				</el-tag>
+				<el-tag
+					v-if="searchStats.bookmarkCount > 0"
+					size="small"
+					type="success"
+					effect="light"
+					class="bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm cursor-pointer hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors duration-200"
+					:class="{
+						'ring-2 ring-green-400/60 dark:ring-green-500/60 bg-green-50/80 dark:bg-green-900/30':
+							displayFilters.includes('bookmark'),
+					}"
+					@click="handleStatsTagClick('bookmarks')"
+					title="点击筛选书签结果（可多选）"
+				>
+					书签 {{ searchStats.bookmarkCount }}
+				</el-tag>
+				<el-tag
+					v-if="searchStats.historyCount > 0"
+					size="small"
+					type="warning"
+					effect="light"
+					class="bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm cursor-pointer hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors duration-200"
+					:class="{
+						'ring-2 ring-amber-400/60 dark:ring-amber-500/60 bg-amber-50/80 dark:bg-amber-900/30':
+							displayFilters.includes('history'),
+					}"
+					@click="handleStatsTagClick('history')"
+					title="点击筛选历史记录结果（可多选）"
+				>
+					历史 {{ searchStats.historyCount }}
+				</el-tag>
+				<el-tag
+					v-if="searchStats.downloadCount > 0"
+					size="small"
+					type="info"
+					effect="light"
+					class="bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors duration-200"
+					:class="{
+						'ring-2 ring-blue-400/60 dark:ring-blue-500/60 bg-blue-50/80 dark:bg-blue-900/30':
+							displayFilters.includes('download'),
+					}"
+					@click="handleStatsTagClick('downloads')"
+					title="点击筛选下载文件结果（可多选）"
+				>
+					下载 {{ searchStats.downloadCount }}
+				</el-tag>
+				<el-tag
+					size="small"
+					effect="light"
+					class="bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
+				>
+					{{ searchStats.uniqueDomains }} 个域名
+				</el-tag>
+				<el-tag
+					size="small"
+					effect="light"
+					class="bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
+				>
+					{{ searchStats.searchTime }}ms
+				</el-tag>
+			</el-space>
+		</div>
+
 		<!-- 可滚动内容区域 -->
 		<div
 			class="flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-white/50 to-slate-50/50 dark:from-slate-900/50 dark:to-slate-800/50 scrollable-content"
+			:style="{
+				contain: 'layout style paint',
+				willChange: isScrolling ? 'scroll-position' : 'auto',
+				transform: 'translate3d(0,0,0)',
+			}"
 		>
-			<!-- 搜索统计 -->
-			<div
-				v-if="searchStats"
-				class="px-4 py-2 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-900/20 dark:to-indigo-900/20 border-b border-slate-200/60 dark:border-slate-700/60 sticky top-0 z-10"
-			>
-				<el-space :size="8" wrap>
-					<el-tag
-						size="small"
-						type="primary"
-						effect="light"
-						class="bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
-					>
-						找到 {{ searchStats.totalResults }} 个结果
-					</el-tag>
-					<el-tag
-						v-if="searchStats.bookmarkCount > 0"
-						size="small"
-						type="success"
-						effect="light"
-						class="bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
-					>
-						书签 {{ searchStats.bookmarkCount }}
-					</el-tag>
-					<el-tag
-						v-if="searchStats.historyCount > 0"
-						size="small"
-						type="warning"
-						effect="light"
-						class="bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
-					>
-						历史 {{ searchStats.historyCount }}
-					</el-tag>
-					<el-tag
-						v-if="searchStats.downloadCount > 0"
-						size="small"
-						type="info"
-						effect="light"
-						class="bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
-					>
-						下载 {{ searchStats.downloadCount }}
-					</el-tag>
-					<el-tag
-						size="small"
-						effect="light"
-						class="bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
-					>
-						{{ searchStats.uniqueDomains }} 个域名
-					</el-tag>
-					<el-tag
-						size="small"
-						effect="light"
-						class="bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-600 backdrop-blur-sm"
-					>
-						{{ searchStats.searchTime }}ms
-					</el-tag>
-				</el-space>
-			</div>
-
 			<!-- 加载状态 -->
 			<div v-if="isLoading" v-loading="true" class="p-8">
 				<el-empty description="搜索中..." :image-size="60" />
@@ -268,10 +319,17 @@
 				<div
 					v-for="item in flattenedResults"
 					:key="item.id"
-					class="bg-white/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60 hover:bg-white dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-lg backdrop-blur-sm group cursor-pointer transition-all duration-300 ease-out"
+					class="bg-white/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60 hover:bg-white dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-lg backdrop-blur-sm group cursor-pointer"
 					:class="{
 						'ring-2 ring-blue-400/60 dark:ring-blue-500/60 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-900/30 dark:to-indigo-900/30 shadow-lg transform scale-[1.02]':
 							selectedItem === item.id,
+					}"
+					:style="{
+						transition: isLowPerformanceDevice
+							? 'none'
+							: 'transform 0.2s ease-out, box-shadow 0.2s ease-out, background-color 0.2s ease-out, border-color 0.2s ease-out',
+						willChange: selectedItem === item.id ? 'transform' : 'auto',
+						transform: 'translate3d(0,0,0)',
 					}"
 					:data-id="item.id"
 					@click="selectAndOpenItem(item)"
@@ -346,11 +404,18 @@
 							</div>
 						</div>
 						<div
-							class="flex gap-2 transition-all duration-300 transform"
+							class="flex gap-2 transform"
 							:class="{
 								'opacity-100 translate-x-0': selectedItem === item.id,
 								'opacity-0 translate-x-2 group-hover:opacity-100 group-hover:translate-x-0':
 									selectedItem !== item.id,
+							}"
+							:style="{
+								transition: isLowPerformanceDevice
+									? 'none'
+									: 'opacity 0.2s ease-out, transform 0.2s ease-out',
+								willChange:
+									selectedItem === item.id ? 'opacity, transform' : 'auto',
 							}"
 						>
 							<el-button
@@ -635,8 +700,149 @@ const searchHistory = ref<SearchHistoryItem[]>([]);
 const searchTimeout = ref<number | null>(null);
 const DEBOUNCE_DELAY = 300;
 
+// 性能优化相关
+const isScrolling = ref(false);
+const scrollAnimationFrame = ref<number | null>(null);
+const elementCache = new Map<string, HTMLElement>();
+const isLowPerformanceDevice = ref(false);
+
+// 节流函数
+const throttle = (func: Function, limit: number) => {
+	let inThrottle: boolean;
+	return function (this: any, ...args: any[]) {
+		if (!inThrottle) {
+			func.apply(this, args);
+			inThrottle = true;
+			setTimeout(() => (inThrottle = false), limit);
+		}
+	};
+};
+
+// 优化的滚动到视图函数
+const smoothScrollToElement = (element: HTMLElement) => {
+	if (isScrolling.value || !element) return;
+
+	const scrollableContainer = document.querySelector(".scrollable-content");
+	if (!scrollableContainer) return;
+
+	const containerRect = scrollableContainer.getBoundingClientRect();
+	const elementRect = element.getBoundingClientRect();
+
+	// 检查元素是否已经在视口内
+	const isVisible =
+		elementRect.top >= containerRect.top &&
+		elementRect.bottom <= containerRect.bottom;
+
+	if (isVisible) return;
+
+	isScrolling.value = true;
+
+	// 取消之前的动画帧
+	if (scrollAnimationFrame.value) {
+		cancelAnimationFrame(scrollAnimationFrame.value);
+	}
+
+	scrollAnimationFrame.value = requestAnimationFrame(() => {
+		try {
+			// 在低性能设备上使用更简单的滚动
+			const scrollOptions: ScrollIntoViewOptions = {
+				block: elementRect.top < containerRect.top ? "start" : "end",
+				behavior: isLowPerformanceDevice.value ? "auto" : "smooth",
+			};
+
+			element.scrollIntoView(scrollOptions);
+		} finally {
+			// 延迟重置滚动状态，避免过快的连续操作
+			setTimeout(
+				() => {
+					isScrolling.value = false;
+				},
+				isLowPerformanceDevice.value ? 50 : 100
+			);
+		}
+	});
+};
+
+// 缓存DOM元素查询
+const getCachedElement = (itemId: string): HTMLElement | null => {
+	if (elementCache.has(itemId)) {
+		const cached = elementCache.get(itemId);
+		// 检查元素是否仍在DOM中
+		if (cached && document.contains(cached)) {
+			return cached;
+		} else {
+			elementCache.delete(itemId);
+		}
+	}
+
+	const element = document.querySelector(
+		`[data-id="${itemId}"]`
+	) as HTMLElement;
+	if (element) {
+		elementCache.set(itemId, element);
+	}
+	return element;
+};
+
+// 节流的键盘导航处理
+const throttledHandleNavigation = throttle((direction: "up" | "down") => {
+	if (!hasCurrentResults.value) return;
+
+	const allItems = Object.values(currentResults.value).flatMap(
+		(group) => group.items
+	);
+	if (!allItems.length) return;
+
+	const currentIndex = selectedItem.value
+		? allItems.findIndex((item) => item.id === selectedItem.value)
+		: -1;
+
+	let newIndex: number;
+	if (direction === "down") {
+		newIndex = currentIndex < allItems.length - 1 ? currentIndex + 1 : 0;
+	} else {
+		newIndex = currentIndex > 0 ? currentIndex - 1 : allItems.length - 1;
+	}
+
+	const newItem = allItems[newIndex];
+	if (newItem) {
+		selectedItem.value = newItem.id;
+
+		// 使用优化的滚动函数
+		const element = getCachedElement(newItem.id);
+		if (element) {
+			smoothScrollToElement(element);
+		}
+	}
+}, 16); // 约60fps的限制
+
+// 检测设备性能
+const detectPerformance = () => {
+	// 简单的性能检测
+	const start = performance.now();
+	const iterations = 10000;
+
+	for (let i = 0; i < iterations; i++) {
+		// 简单的计算任务
+		Math.random() * Math.random();
+	}
+
+	const duration = performance.now() - start;
+	// 如果简单计算超过5ms，认为是低性能设备
+	isLowPerformanceDevice.value = duration > 5;
+
+	console.log(
+		`性能检测: ${duration.toFixed(2)}ms, 低性能设备: ${
+			isLowPerformanceDevice.value
+		}`
+	);
+};
+
 // 选中的数据源 - 默认空（逻辑上等于全选）
 const selectedDataSources = ref<string[]>([]);
+
+// 独立的显示过滤器 - 用于概述栏标签过滤，不影响搜索范围
+const displayFilters = ref<string[]>([]);
 
 // 推荐内容相关状态
 const recommendedContent = ref<RecommendedContent>({
@@ -659,8 +865,55 @@ const navigationKeys = ref(getNavigationKeys());
 // 默认搜索引擎
 const defaultSearchEngine = ref<SearchEngine | null>(null);
 
-// 自动补全建议列表
-const autocompleteSuggestions = ref<{ value: string }[]>([]);
+// 阴影补全相关
+const shadowCompletion = ref("");
+
+// 输入框样式
+const inputStyles = reactive({
+	fontSize: "14px",
+	fontFamily:
+		'-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif',
+	lineHeight: "1.4",
+	paddingLeft: "11px",
+	paddingRight: "11px",
+});
+
+// 创建测量文本宽度的canvas元素
+let textMeasureCanvas: HTMLCanvasElement | null = null;
+
+// 获取文本宽度
+const getTextWidth = (text: string): number => {
+	if (!text) return 0;
+
+	if (!textMeasureCanvas) {
+		textMeasureCanvas = document.createElement("canvas");
+	}
+
+	const context = textMeasureCanvas.getContext("2d");
+	if (!context) return 0;
+
+	// 设置与输入框相同的字体样式
+	context.font = `${inputStyles.fontSize} ${inputStyles.fontFamily}`;
+
+	return context.measureText(text).width;
+};
+
+// 获取输入框的实际样式
+const updateInputStyles = () => {
+	nextTick(() => {
+		const inputElement = (searchInput.value as any)?.$el?.querySelector(
+			"input"
+		);
+		if (inputElement) {
+			const computedStyles = window.getComputedStyle(inputElement);
+			inputStyles.fontSize = computedStyles.fontSize;
+			inputStyles.fontFamily = computedStyles.fontFamily;
+			inputStyles.lineHeight = computedStyles.lineHeight;
+			inputStyles.paddingLeft = computedStyles.paddingLeft;
+			inputStyles.paddingRight = computedStyles.paddingRight;
+		}
+	});
+};
 
 // 键盘导航配置（从设置中加载）
 const navigationConfig = reactive({
@@ -823,18 +1076,40 @@ const availableDomains = computed(() => {
 	}
 });
 
-// 根据选中域名过滤搜索结果
+// 根据显示过滤器和域名过滤搜索结果
 const filteredSearchResults = computed<GroupedSearchResults>(() => {
-	if (selectedDomains.value.length === 0) {
-		return searchResults.value;
+	let results = searchResults.value;
+
+	// 首先根据域名过滤
+	if (selectedDomains.value.length > 0) {
+		const domainFiltered: GroupedSearchResults = {};
+		selectedDomains.value.forEach((domain) => {
+			if (results[domain]) {
+				domainFiltered[domain] = results[domain];
+			}
+		});
+		results = domainFiltered;
 	}
-	const filtered: GroupedSearchResults = {};
-	selectedDomains.value.forEach((domain) => {
-		if (searchResults.value[domain]) {
-			filtered[domain] = searchResults.value[domain];
-		}
-	});
-	return filtered;
+
+	// 然后根据数据类型过滤
+	if (displayFilters.value.length > 0) {
+		const typeFiltered: GroupedSearchResults = {};
+		Object.entries(results).forEach(([domain, group]) => {
+			const filteredItems = group.items.filter((item) =>
+				displayFilters.value.includes(item.type)
+			);
+			if (filteredItems.length > 0) {
+				typeFiltered[domain] = {
+					...group,
+					items: filteredItems,
+					totalCount: filteredItems.length,
+				};
+			}
+		});
+		results = typeFiltered;
+	}
+
+	return results;
 });
 
 // 将推荐内容转换为与查询结果相同的格式
@@ -859,26 +1134,48 @@ const recommendedResults = computed<GroupedSearchResults>(() => {
 	return results;
 });
 
-// 根据选中域名过滤推荐内容
+// 根据域名和显示过滤器过滤推荐内容
 const filteredRecommendedResults = computed<GroupedSearchResults>(() => {
-	if (selectedDomains.value.length === 0) {
-		return recommendedResults.value;
-	}
-	const filtered: GroupedSearchResults = {};
-	Object.entries(recommendedResults.value).forEach(([groupName, group]) => {
-		const filteredItems = group.items.filter((item) => {
-			const domain = extractDomain(item.url);
-			return selectedDomains.value.includes(domain);
+	let results = recommendedResults.value;
+
+	// 根据域名过滤
+	if (selectedDomains.value.length > 0) {
+		const domainFiltered: GroupedSearchResults = {};
+		Object.entries(results).forEach(([groupName, group]) => {
+			const filteredItems = group.items.filter((item) => {
+				const domain = extractDomain(item.url);
+				return selectedDomains.value.includes(domain);
+			});
+			if (filteredItems.length > 0) {
+				domainFiltered[groupName] = {
+					...group,
+					items: filteredItems,
+					totalCount: filteredItems.length,
+				};
+			}
 		});
-		if (filteredItems.length > 0) {
-			filtered[groupName] = {
-				...group,
-				items: filteredItems,
-				totalCount: filteredItems.length,
-			};
-		}
-	});
-	return filtered;
+		results = domainFiltered;
+	}
+
+	// 根据数据类型过滤
+	if (displayFilters.value.length > 0) {
+		const typeFiltered: GroupedSearchResults = {};
+		Object.entries(results).forEach(([groupName, group]) => {
+			const filteredItems = group.items.filter((item) =>
+				displayFilters.value.includes(item.type)
+			);
+			if (filteredItems.length > 0) {
+				typeFiltered[groupName] = {
+					...group,
+					items: filteredItems,
+					totalCount: filteredItems.length,
+				};
+			}
+		});
+		results = typeFiltered;
+	}
+
+	return results;
 });
 
 // 显示推荐内容的条件
@@ -1010,8 +1307,21 @@ const updateSearchOptions = () => {
 	}
 };
 
+// 清理过期的DOM缓存
+const cleanupCache = () => {
+	const currentIds = new Set(flattenedResults.value.map((item) => item.id));
+	for (const [id] of elementCache) {
+		if (!currentIds.has(id)) {
+			elementCache.delete(id);
+		}
+	}
+};
+
 // 处理输入事件（带防抖）
 const handleSearchInput = () => {
+	// 更新阴影补全
+	shadowCompletion.value = calculateShadowCompletion(searchQuery.value);
+
 	// 清除之前的定时器
 	if (searchTimeout.value !== null) {
 		window.clearTimeout(searchTimeout.value);
@@ -1022,6 +1332,9 @@ const handleSearchInput = () => {
 	if (!searchQuery.value.trim()) {
 		searchResults.value = {};
 		searchStats.value = null;
+		shadowCompletion.value = "";
+		// 清理DOM缓存
+		cleanupCache();
 		return;
 	}
 	// 设置新的防抖定时器
@@ -1030,30 +1343,73 @@ const handleSearchInput = () => {
 	}, DEBOUNCE_DELAY);
 };
 
-// 处理自动补全建议
-const handleAutocompleteSuggestions = (
-	queryString: string,
-	callback: (suggestions: { value: string }[]) => void
-) => {
-	if (!queryString) {
-		callback([]);
-		return;
+// 计算阴影补全建议
+const calculateShadowCompletion = (input: string): string => {
+	if (!input.trim()) return "";
+
+	const query = input.trim().toLowerCase();
+	// 从搜索历史中找到最佳匹配（以输入内容开头的）
+	const bestMatch = searchHistory.value.find((item) =>
+		item.query.toLowerCase().startsWith(query)
+	);
+
+	if (bestMatch && bestMatch.query.toLowerCase() !== query) {
+		// 返回补全部分（去掉已输入的部分）
+		return bestMatch.query.slice(input.length);
 	}
 
-	const query = queryString.trim().toLowerCase();
-	// 从搜索历史中筛选匹配的项目
-	const suggestions = searchHistory.value
-		.filter((item) => item.query.toLowerCase().includes(query))
-		.slice(0, 10) // 限制显示最多10个建议
-		.map((item) => ({ value: item.query }));
-
-	callback(suggestions);
+	return "";
 };
 
-// 处理建议选择
-const handleSuggestionSelect = (item: { value: string }) => {
-	searchQuery.value = item.value;
-	handleSearchNow();
+// 处理搜索框聚焦
+const handleSearchFocus = () => {
+	// 聚焦时更新阴影补全
+	shadowCompletion.value = calculateShadowCompletion(searchQuery.value);
+};
+
+// 处理搜索框失焦
+const handleSearchBlur = () => {
+	// 失焦时清空阴影补全
+	shadowCompletion.value = "";
+};
+
+// 处理Tab键补全
+const handleTabCompletion = () => {
+	// 如果有阴影补全内容，进行补全
+	if (shadowCompletion.value) {
+		searchQuery.value += shadowCompletion.value;
+		shadowCompletion.value = "";
+		// 更新新的阴影补全
+		shadowCompletion.value = calculateShadowCompletion(searchQuery.value);
+	}
+};
+
+// 处理统计标签点击 - 只影响显示过滤，不影响搜索范围
+const handleStatsTagClick = (dataSource: string) => {
+	if (dataSource === "all") {
+		// 点击总结果标签，清空显示过滤（显示全部）
+		displayFilters.value = [];
+	} else {
+		// 将UI标识符转换为数据类型名称
+		const typeMapping: Record<string, string> = {
+			bookmarks: "bookmark",
+			history: "history",
+			downloads: "download",
+		};
+
+		const actualType = typeMapping[dataSource];
+		if (!actualType) return;
+
+		// 切换选择状态（支持多选）
+		const index = displayFilters.value.indexOf(actualType);
+		if (index > -1) {
+			// 如果已选中，则取消选择
+			displayFilters.value.splice(index, 1);
+		} else {
+			// 如果未选中，则添加选择
+			displayFilters.value.push(actualType);
+		}
+	}
 };
 
 // 立即搜索（回车或手动触发）
@@ -1082,6 +1438,8 @@ const handleSearch = async () => {
 		const { results, stats } = await searchBookmarksAndHistory(options);
 		searchResults.value = results;
 		searchStats.value = stats;
+		// 清理DOM缓存
+		cleanupCache();
 		// 保存搜索历史
 		await SearchHistoryManager.saveSearchHistory(searchQuery.value.trim());
 		await loadSearchHistory();
@@ -1120,15 +1478,39 @@ watch(
 	{ deep: true }
 );
 
-// 监听搜索状态变化，在推荐内容和查询结果之间切换时清空域名过滤
+// 监听搜索状态变化，在推荐内容和查询结果之间切换时清空过滤
 watch(
 	() => !!searchQuery.value,
 	(hasQuery, wasQuery) => {
-		// 当从有查询切换到无查询，或从无查询切换到有查询时，清空域名过滤
+		// 当从有查询切换到无查询，或从无查询切换到有查询时，清空过滤
 		if (hasQuery !== wasQuery) {
 			selectedDomains.value = [];
+			displayFilters.value = []; // 清空显示过滤器
+			// 清理DOM缓存
+			cleanupCache();
 		}
 	}
+);
+
+// 监听结果变化，清理过期缓存
+watch(
+	() => flattenedResults.value.length,
+	() => {
+		// 延迟清理缓存，确保DOM已更新
+		nextTick(() => {
+			cleanupCache();
+		});
+	}
+);
+
+// 监听搜索项变化，重置概述栏选择
+watch(
+	() => selectedDataSources.value,
+	() => {
+		// 当搜索项发生变化时，重置显示过滤器
+		displayFilters.value = [];
+	},
+	{ deep: true }
 );
 
 // 选择并打开项目（单击）
@@ -1352,77 +1734,16 @@ const handleKeyDown = (event: KeyboardEvent) => {
 		return; // 对话框打开时，不处理其他键盘事件
 	}
 
-	if (!hasCurrentResults.value) return;
-
-	const allItems = Object.values(currentResults.value).flatMap(
-		(group) => group.items
-	);
-	if (!allItems.length) return;
-
-	const currentIndex = selectedItem.value
-		? allItems.findIndex((item) => item.id === selectedItem.value)
-		: -1;
+	// Tab键处理已移至专门的处理函数
 
 	switch (event.code) {
 		case navigationConfig.down:
 			event.preventDefault();
-			const nextIndex =
-				currentIndex < allItems.length - 1 ? currentIndex + 1 : 0;
-			const nextItem = allItems[nextIndex];
-			if (nextItem) {
-				selectedItem.value = nextItem.id;
-				// 滚动到可见区域，但确保在可滚动容器内
-				const nextElement = document.querySelector(
-					`[data-id="${nextItem.id}"]`
-				);
-				if (nextElement) {
-					const scrollableContainer = document.querySelector(
-						".scrollable-content"
-					);
-					if (scrollableContainer) {
-						const containerRect = scrollableContainer.getBoundingClientRect();
-						const elementRect = nextElement.getBoundingClientRect();
-						if (elementRect.bottom > containerRect.bottom) {
-							nextElement.scrollIntoView({ block: "end", behavior: "auto" });
-						} else if (elementRect.top < containerRect.top) {
-							nextElement.scrollIntoView({
-								block: "start",
-								behavior: "auto",
-							});
-						}
-					}
-				}
-			}
+			throttledHandleNavigation("down");
 			break;
 		case navigationConfig.up:
 			event.preventDefault();
-			const prevIndex =
-				currentIndex > 0 ? currentIndex - 1 : allItems.length - 1;
-			const prevItem = allItems[prevIndex];
-			if (prevItem) {
-				selectedItem.value = prevItem.id;
-				// 滚动到可见区域，但确保在可滚动容器内
-				const prevElement = document.querySelector(
-					`[data-id="${prevItem.id}"]`
-				);
-				if (prevElement) {
-					const scrollableContainer = document.querySelector(
-						".scrollable-content"
-					);
-					if (scrollableContainer) {
-						const containerRect = scrollableContainer.getBoundingClientRect();
-						const elementRect = prevElement.getBoundingClientRect();
-						if (elementRect.top < containerRect.top) {
-							prevElement.scrollIntoView({
-								block: "start",
-								behavior: "auto",
-							});
-						} else if (elementRect.bottom > containerRect.bottom) {
-							prevElement.scrollIntoView({ block: "end", behavior: "auto" });
-						}
-					}
-				}
-			}
+			throttledHandleNavigation("up");
 			break;
 		case navigationConfig.open:
 			event.preventDefault();
@@ -1433,7 +1754,12 @@ const handleKeyDown = (event: KeyboardEvent) => {
 			}
 			break;
 		case navigationConfig.close:
-			window.close();
+			// 如果有阴影补全，先清空阴影
+			if (shadowCompletion.value) {
+				shadowCompletion.value = "";
+			} else {
+				window.close();
+			}
 			break;
 		case "KeyC":
 			if (event.ctrlKey && selectedItem.value) {
@@ -1571,6 +1897,9 @@ const handleStorageChange = (
 
 // 组件挂载
 onMounted(async () => {
+	// 性能检测
+	detectPerformance();
+
 	// 初始化主题
 	ThemeManager.init();
 	// 加载快捷键配置
@@ -1590,6 +1919,8 @@ onMounted(async () => {
 	// 聚焦搜索框
 	await nextTick();
 	searchInput.value?.focus();
+	// 更新输入框样式
+	updateInputStyles();
 	// 绑定键盘事件，使用捕获模式确保优先处理
 	document.addEventListener("keydown", handleKeyDown, true);
 	// 监听storage变化
@@ -1602,6 +1933,13 @@ onUnmounted(() => {
 	if (searchTimeout.value !== null) {
 		window.clearTimeout(searchTimeout.value);
 	}
+	// 清理滚动动画帧
+	if (scrollAnimationFrame.value !== null) {
+		cancelAnimationFrame(scrollAnimationFrame.value);
+	}
+	// 清理元素缓存
+	elementCache.clear();
+
 	document.removeEventListener("keydown", handleKeyDown, true);
 	chrome.storage.onChanged.removeListener(handleStorageChange);
 });
