@@ -145,9 +145,11 @@
 							v-model="selectedDataSources"
 							multiple
 							collapse-tags
-							collapse-tags-tooltip
+							:max-collapse-tags="1"
 							size="small"
-							class="w-full"
+							placeholder="全部数据源"
+							class="w-full min-w-0 single-line-select"
+							:popper-class="'data-source-popper'"
 							@change="updateSearchOptions"
 						>
 							<el-option label="书签" value="bookmarks" />
@@ -633,12 +635,8 @@ const searchHistory = ref<SearchHistoryItem[]>([]);
 const searchTimeout = ref<number | null>(null);
 const DEBOUNCE_DELAY = 300;
 
-// 选中的数据源 - 默认全选
-const selectedDataSources = ref<string[]>([
-	"bookmarks",
-	"history",
-	"downloads",
-]);
+// 选中的数据源 - 默认空（逻辑上等于全选）
+const selectedDataSources = ref<string[]>([]);
 
 // 推荐内容相关状态
 const recommendedContent = ref<RecommendedContent>({
@@ -842,8 +840,9 @@ const filteredSearchResults = computed<GroupedSearchResults>(() => {
 // 将推荐内容转换为与查询结果相同的格式
 const recommendedResults = computed<GroupedSearchResults>(() => {
 	const results: GroupedSearchResults = {};
-	// 只显示历史记录，并且必须是选中的数据源
-	if (selectedDataSources.value.includes("history")) {
+	// 当没有选择时默认全选，或者选中了历史记录
+	const isAllSelected = selectedDataSources.value.length === 0;
+	if (isAllSelected || selectedDataSources.value.includes("history")) {
 		// 按访问时间排序，最近访问的在前面
 		const sortedHistory = [...recommendedContent.value.recentHistory].sort(
 			(a, b) => (b.lastVisited || 0) - (a.lastVisited || 0)
@@ -994,11 +993,14 @@ const resetDomainFilter = () => {
 
 // 更新搜索选项
 const updateSearchOptions = () => {
+	// 当没有选择时，默认为全选
+	const isAllSelected = selectedDataSources.value.length === 0;
 	searchOptions.includeBookmarks =
-		selectedDataSources.value.includes("bookmarks");
-	searchOptions.includeHistory = selectedDataSources.value.includes("history");
+		isAllSelected || selectedDataSources.value.includes("bookmarks");
+	searchOptions.includeHistory =
+		isAllSelected || selectedDataSources.value.includes("history");
 	searchOptions.includeDownloads =
-		selectedDataSources.value.includes("downloads");
+		isAllSelected || selectedDataSources.value.includes("downloads");
 	// 如果当前有搜索查询，重新搜索
 	if (searchQuery.value.trim()) {
 		handleSearchNow();
@@ -1381,11 +1383,11 @@ const handleKeyDown = (event: KeyboardEvent) => {
 						const containerRect = scrollableContainer.getBoundingClientRect();
 						const elementRect = nextElement.getBoundingClientRect();
 						if (elementRect.bottom > containerRect.bottom) {
-							nextElement.scrollIntoView({ block: "end", behavior: "smooth" });
+							nextElement.scrollIntoView({ block: "end", behavior: "auto" });
 						} else if (elementRect.top < containerRect.top) {
 							nextElement.scrollIntoView({
 								block: "start",
-								behavior: "smooth",
+								behavior: "auto",
 							});
 						}
 					}
@@ -1413,10 +1415,10 @@ const handleKeyDown = (event: KeyboardEvent) => {
 						if (elementRect.top < containerRect.top) {
 							prevElement.scrollIntoView({
 								block: "start",
-								behavior: "smooth",
+								behavior: "auto",
 							});
 						} else if (elementRect.bottom > containerRect.bottom) {
-							prevElement.scrollIntoView({ block: "end", behavior: "smooth" });
+							prevElement.scrollIntoView({ block: "end", behavior: "auto" });
 						}
 					}
 				}
@@ -1583,6 +1585,8 @@ onMounted(async () => {
 	await loadRecommendedContent();
 	// 加载默认搜索引擎
 	await loadDefaultSearchEngine();
+	// 初始化搜索选项（确保与selectedDataSources状态一致）
+	updateSearchOptions();
 	// 聚焦搜索框
 	await nextTick();
 	searchInput.value?.focus();

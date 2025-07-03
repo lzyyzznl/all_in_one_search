@@ -1,7 +1,7 @@
-import { defineConfig, presetUno } from "unocss";
+import { defineConfig, presetUno, presetTypography } from "unocss";
 
 export default defineConfig({
-	presets: [presetUno()],
+	presets: [presetUno(), presetTypography()],
 	theme: {
 		colors: {
 			// 明亮主题颜色
@@ -150,5 +150,13 @@ export default defineConfig({
 			"transition-base",
 			{ transition: "all 0.2s cubic-bezier(0.645, 0.045, 0.355, 1)" },
 		],
+		[
+			"gradient-bg",
+			{
+				"background-image":
+					"linear-gradient(to right, var(--gradient-from), var(--gradient-to))",
+			},
+		],
+		["text-shadow-custom", { "text-shadow": "0 1px 3px rgba(0, 0, 0, 0.1)" }],
 	],
 });
