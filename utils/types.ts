@@ -2,11 +2,11 @@
 export interface BookmarkItem {
 	id: string;
 	title: string;
-	url?: string;
-	dateAdded?: number;
+	url: string;
 	parentId?: string;
-	children?: BookmarkItem[];
 	index?: number;
+	dateAdded?: number;
+	children?: BookmarkItem[];
 }
 
 // 历史记录接口
@@ -26,7 +26,7 @@ export interface DownloadItem {
 	url: string;
 	startTime: string;
 	endTime?: string;
-	state: 'in_progress' | 'interrupted' | 'complete';
+	state: "in_progress" | "interrupted" | "complete";
 	fileSize: number;
 	mime: string;
 	exists: boolean;
@@ -36,6 +36,7 @@ export interface DownloadItem {
 export interface SearchHistoryItem {
 	query: string;
 	timestamp: number;
+	engine: string;
 }
 
 // 时间筛选选项
@@ -114,12 +115,10 @@ export interface RecommendedGroup {
 
 // 搜索引擎配置接口
 export interface SearchEngine {
-	id: string;
 	name: string;
 	baseUrl: string;
-	queryParam: string;
-	icon: string;
-	encoding?: string;
+	icon?: string;
+	color?: string;
 	description?: string;
 }
 
@@ -140,4 +139,100 @@ export interface AppState {
 	selectedItem: string | null;
 	searchHistory: SearchHistoryItem[];
 	defaultSearchEngine?: SearchEngine;
+}
+
+// 文件系统相关类型定义 - 使用浏览器原生类型
+export type FileSystemHandle = globalThis.FileSystemHandle;
+export type FileSystemFileHandle = globalThis.FileSystemFileHandle;
+export type FileSystemDirectoryHandle = globalThis.FileSystemDirectoryHandle;
+
+// 文件树节点
+export interface FileTreeNode {
+	id: string;
+	label: string;
+	handle: FileSystemHandle;
+	isDirectory: boolean;
+	isFile: boolean;
+	children?: FileTreeNode[];
+}
+
+// 文件内容
+export interface FileContent {
+	handle: FileSystemFileHandle;
+	content: string;
+	modified: boolean;
+}
+
+// 支持的文件类型
+export type SupportedFileType =
+	| ".md"
+	| ".txt"
+	| ".log"
+	| ".json"
+	| ".js"
+	| ".ts"
+	| ".html"
+	| ".css"
+	| ".vue";
+
+// 文件浏览器状态
+export interface FileBrowserState {
+	rootHandle: FileSystemDirectoryHandle | null;
+	selectedNode: FileTreeNode | null;
+	openFiles: Map<string, FileContent>;
+	currentFile: FileContent | null;
+	isLoading: boolean;
+}
+
+// 搜索引擎类型
+export interface SearchEngine {
+	name: string;
+	baseUrl: string;
+	icon?: string;
+	color?: string;
+	description?: string;
+}
+
+// 搜索结果类型
+export interface SearchResult {
+	title: string;
+	url: string;
+	description?: string;
+	favicon?: string;
+	timestamp?: number;
+}
+
+// 通知类型
+export interface NotificationOptions {
+	title: string;
+	message?: string;
+	type?: "success" | "warning" | "error" | "info";
+	duration?: number;
+	position?: "top-right" | "top-left" | "bottom-right" | "bottom-left";
+}
+
+// 主题类型
+export type Theme = "light" | "dark" | "auto";
+
+// 书签树节点
+export interface BookmarkTreeNode {
+	id: string;
+	title: string;
+	url?: string;
+	parentId?: string;
+	index?: number;
+	dateAdded?: number;
+	children?: BookmarkTreeNode[];
+}
+
+// 书签对话框类型
+export interface BookmarkDialogData {
+	title: string;
+	url: string;
+	folder?: string;
+}
+
+// UI状态
+export interface UIState {
+	isLoading: boolean;
 }

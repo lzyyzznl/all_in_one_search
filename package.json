@@ -1,6 +1,6 @@
 {
 	"name": "all_in_one_search",
-	"version": "1.0.0",
+	"version": "2.0.0",
 	"description": "浏览器插件 - 收藏夹和历史记录模糊查询",
 	"main": "index.js",
 	"scripts": {
@@ -16,20 +16,22 @@
 		"vue",
 		"typescript"
 	],
-	"author": "",
+	"author": "lizeyu",
 	"license": "MIT",
 	"packageManager": "pnpm@10.12.3",
 	"dependencies": {
 		"@element-plus/icons-vue": "^2.3.1",
+		"@syfxlin/tiptap-starter-kit": "^1.1.2",
+		"@tiptap/core": "^2.24.2",
+		"@tiptap/pm": "^2.24.2",
+		"@tiptap/vue-3": "^2.24.2",
 		"element-plus": "^2.9.11",
 		"vue": "3.5.17"
 	},
 	"devDependencies": {
 		"@types/chrome": "^0.0.326",
-		"@types/less": "^3.0.8",
 		"@types/node": "22.15.29",
 		"@wxt-dev/module-vue": "1.0.2",
-		"less": "^4.3.0",
 		"typescript": "5.8.3",
 		"unocss": "^66.3.2",
 		"vite": "7.0.0",

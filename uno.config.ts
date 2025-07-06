@@ -1,7 +1,12 @@
-import { defineConfig, presetWind3, presetTypography } from "unocss";
+import {
+	defineConfig,
+	presetUno,
+	presetAttributify,
+	presetIcons,
+} from "unocss";
 
 export default defineConfig({
-	presets: [presetWind3(), presetTypography()],
+	presets: [presetUno(), presetAttributify(), presetIcons()],
 	theme: {
 		colors: {
 			// 明亮主题颜色
@@ -70,7 +75,6 @@ export default defineConfig({
 				900: "#7f1d1d",
 			},
 		},
-
 		fontSize: {
 			xs: "0.75rem", // 12px
 			sm: "0.875rem", // 14px
@@ -100,6 +104,16 @@ export default defineConfig({
 			"2xl": "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
 			inner: "inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)",
 		},
+		fontFamily: {
+			sans: [
+				"Inter",
+				"-apple-system",
+				"BlinkMacSystemFont",
+				"Segoe UI",
+				"Roboto",
+				"sans-serif",
+			],
+		},
 	},
 	shortcuts: {
 		// 基础布局
@@ -114,13 +128,13 @@ export default defineConfig({
 
 		// 按钮样式
 		"btn-primary":
-			"bg-primary-600 text-white px-4 py-2 rounded-md font-medium hover:bg-primary-700 transition-colors duration-200",
+			"bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded transition-colors",
 		"btn-secondary":
-			"bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-4 py-2 rounded-md font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200",
+			"bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded transition-colors",
 
 		// 输入框样式
-		"input-base":
-			"bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500",
+		input:
+			"border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100",
 
 		// 文本样式
 		"text-primary": "text-gray-900 dark:text-gray-100",
@@ -135,6 +149,10 @@ export default defineConfig({
 		// 边框样式
 		"border-base": "border-gray-200 dark:border-gray-700",
 		"border-muted": "border-gray-300 dark:border-gray-600",
+
+		// 滚动条样式
+		"custom-scrollbar":
+			"scrollbar scrollbar-track-slate-100 scrollbar-thumb-slate-300 dark:scrollbar-track-gray-700 dark:scrollbar-thumb-gray-500",
 	},
 	rules: [
 		// 自定义CSS规则
@@ -158,5 +176,68 @@ export default defineConfig({
 			},
 		],
 		["text-shadow-custom", { "text-shadow": "0 1px 3px rgba(0, 0, 0, 0.1)" }],
+		// 滚动条相关规则
+		[
+			/^scrollbar$/,
+			() => ({
+				"scrollbar-width": "thin",
+			}),
+		],
+		[
+			/^scrollbar-track-(.+)$/,
+			([, c]) => ({
+				"scrollbar-color": `var(--un-${c}) transparent`,
+			}),
+		],
+		[
+			/^scrollbar-thumb-(.+)$/,
+			([, c]) => ({
+				"scrollbar-color": `var(--un-${c}) transparent`,
+			}),
+		],
+	],
+	safelist: [
+		// 确保常用类不被清除
+		"h-screen",
+		"w-full",
+		"h-full",
+		"flex",
+		"flex-col",
+		"flex-row",
+		"items-center",
+		"justify-center",
+		"justify-between",
+		"gap-2",
+		"gap-3",
+		"gap-4",
+		"p-2",
+		"p-3",
+		"p-4",
+		"px-2",
+		"px-3",
+		"px-4",
+		"py-2",
+		"py-3",
+		"py-4",
+		"bg-white",
+		"bg-gray-50",
+		"bg-gray-100",
+		"bg-gray-800",
+		"bg-gray-900",
+		"text-gray-600",
+		"text-gray-900",
+		"border",
+		"border-gray-200",
+		"border-gray-700",
+		"rounded",
+		"rounded-lg",
+		"shadow-sm",
+		"transition-colors",
+		"hover:bg-blue-600",
+		"dark:bg-gray-800",
+		"dark:bg-gray-900",
+		"dark:text-gray-100",
+		"dark:text-gray-400",
+		"dark:border-gray-700",
 	],
 });
