@@ -1,3 +1,4 @@
+65
 <template>
 	<!-- 加载状态 -->
 	<div
@@ -171,6 +172,7 @@
 						ref="mdEditorRef"
 						:file-handle="currentFileHandle"
 						:file-node="currentFileNode"
+						:tab-count="openTabs.length"
 						@file-modified="handleFileModified"
 						@file-saved="handleFileSaved"
 					/>
@@ -213,27 +215,6 @@
 				>
 					<span>⚠️</span>
 					浏览器不支持文件系统API
-				</div>
-				<div
-					v-if="currentFileHandle"
-					class="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 text-green-700 dark:text-green-300 rounded-lg text-xs font-medium border border-green-200 dark:border-green-800"
-				>
-					<span>📝</span>
-					{{ wordCount }} 字
-				</div>
-				<div
-					v-if="currentFileHandle"
-					class="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-purple-100 to-violet-100 dark:from-purple-900/30 dark:to-violet-900/30 text-purple-700 dark:text-purple-300 rounded-lg text-xs font-medium border border-purple-200 dark:border-purple-800"
-				>
-					<span>📄</span>
-					{{ formatFileSize(fileSize) }}
-				</div>
-				<div
-					v-if="openTabs.length > 0"
-					class="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-blue-100 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-xs font-medium border border-blue-200 dark:border-blue-800"
-				>
-					<span>📁</span>
-					{{ openTabs.length }} 个页签
 				</div>
 			</div>
 		</div>
@@ -769,7 +750,7 @@ const confirmBeforeClose = async (): Promise<boolean> => {
 	const fileList =
 		unsavedFiles.length > 3
 			? unsavedFiles.slice(0, 3).join("、") +
-			  ` 等 ${unsavedFiles.length} 个文件`
+				` 等 ${unsavedFiles.length} 个文件`
 			: unsavedFiles.join("、");
 
 	try {
