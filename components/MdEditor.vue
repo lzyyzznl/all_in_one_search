@@ -87,11 +87,13 @@
 						<el-dropdown trigger="click">
 							<el-button
 								size="default"
-								class="!rounded-md !shadow-sm transition-all duration-200 !w-12 !h-9 !p-0"
+								class="!rounded-md !shadow-sm transition-all duration-200 !min-w-16 !h-9 !px-2"
 								title="标题样式"
 							>
 								<div class="flex items-center gap-1">
-									<Icon icon="material-symbols:title" class="text-lg" />
+									<span class="text-sm font-medium">{{
+										currentHeadingType
+									}}</span>
 									<Icon
 										icon="material-symbols:keyboard-arrow-down"
 										class="text-sm"
@@ -243,6 +245,14 @@
 							>
 								<Icon icon="material-symbols:horizontal-rule" class="text-lg" />
 							</el-button>
+							<el-button
+								size="default"
+								@click="convertCodeBlocks"
+								title="转换代码块语法 (``` ↔ :::)"
+								class="!rounded-md !shadow-sm transition-all duration-200 !w-9 !h-9 !p-0"
+							>
+								<Icon icon="material-symbols:transform" class="text-lg" />
+							</el-button>
 						</div>
 
 						<!-- 分隔线 -->
@@ -312,7 +322,7 @@
 								/>
 							</el-button>
 							<el-button
-								v-if="fileHandle && !isVirtual && isModified"
+								v-if="fileHandle && !isVirtual"
 								@click="saveFile"
 								:disabled="isSaving"
 								title="保存文件"
@@ -322,7 +332,7 @@
 								<Icon icon="material-symbols:save" class="text-lg" />
 							</el-button>
 							<el-button
-								v-if="isVirtual && isModified"
+								v-if="isVirtual"
 								@click="saveAsFile"
 								:disabled="isSaving"
 								title="另存为文件"
@@ -398,11 +408,60 @@
 
 		<!-- 编辑器主体 -->
 		<div class="flex-1 flex flex-col">
-			<!-- 文件未选择时的占位界面 -->
-			<!-- 已移除占位内容，避免多余文件名和图标显示 -->
+			<!-- 欢迎界面 - 当没有页签时显示 -->
+			<div
+				v-if="tabCount === 0"
+				class="flex-1 flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900"
+			>
+				<div class="text-center max-w-md mx-auto px-8">
+					<!-- 欢迎图标 -->
+					<div class="mb-8">
+						<Icon
+							icon="material-symbols:edit-document-outline"
+							class="text-8xl text-slate-400 dark:text-slate-500 mx-auto"
+						/>
+					</div>
+
+					<!-- 欢迎标题 -->
+					<h1
+						class="text-3xl font-bold text-slate-800 dark:text-slate-200 mb-4"
+					>
+						欢迎使用文档编辑器
+					</h1>
+
+					<!-- 欢迎描述 -->
+					<p
+						class="text-lg text-slate-600 dark:text-slate-400 mb-8 leading-relaxed"
+					>
+						开始您的创作之旅，选择打开现有文件或创建新的文档
+					</p>
+
+					<!-- 操作按钮 -->
+					<div class="flex flex-col gap-4">
+						<el-button
+							type="primary"
+							size="large"
+							@click="$emit('open-file-requested')"
+							class="!h-12 !text-base !font-medium !rounded-xl !shadow-lg hover:!shadow-xl transition-all duration-300"
+						>
+							<Icon icon="material-symbols:folder-open" class="mr-2 text-lg" />
+							打开文件
+						</el-button>
+
+						<el-button
+							size="large"
+							@click="$emit('new-tab-requested')"
+							class="!h-12 !text-base !font-medium !rounded-xl !border-2 !border-slate-300 dark:!border-slate-600 hover:!border-blue-500 dark:hover:!border-blue-400 !bg-white dark:!bg-slate-800 !text-slate-700 dark:!text-slate-300 hover:!text-blue-600 dark:hover:!text-blue-400 !shadow-md hover:!shadow-lg transition-all duration-300"
+						>
+							<Icon icon="material-symbols:add" class="mr-2 text-lg" />
+							新建标签页
+						</el-button>
+					</div>
+				</div>
+			</div>
 
 			<!-- 编辑器内容区域 -->
-			<div class="flex-1 flex flex-col relative">
+			<div v-else class="flex-1 flex flex-col relative">
 				<!-- 右侧目录面板已被移动到编辑器内容区域内 -->
 				<!-- 编辑器主内容区 -->
 				<div class="flex-1 flex flex-col">
@@ -731,6 +790,8 @@ interface Emits {
 		e: "update:stats",
 		stats: { characterCount: number; fileSize: number; lineCount: number }
 	): void;
+	(e: "open-file-requested"): void;
+	(e: "new-tab-requested"): void;
 }
 
 // 组件属性和事件定义
@@ -1180,6 +1241,126 @@ const insertDetails = () => {
 			.run();
 	} catch (error) {
 		console.error("插入可折叠内容失败:", error);
+	}
+};
+
+// 转换代码块语法（``` ↔ :::）
+const convertCodeBlocks = () => {
+	if (!editor.value) return;
+
+	try {
+		// 获取当前编辑器内容
+		let content = "";
+		if (editor.value.storage.markdown && editor.value.storage.markdown.get) {
+			content = editor.value.storage.markdown.get();
+		} else {
+			content = editor.value.getHTML();
+		}
+
+		if (!content) {
+			ElMessage.warning("编辑器内容为空");
+			return;
+		}
+
+		let hasChanges = false;
+		let newContent = content;
+
+		// 检测并转换 ```mermaid``` 到 :::mermaid:::
+		const mermaidBacktickRegex = /```mermaid\s*\r?\n([\s\S]*?)\r?\n```/g;
+		const mermaidMatches = [...content.matchAll(mermaidBacktickRegex)];
+
+		if (mermaidMatches.length > 0) {
+			for (const match of mermaidMatches) {
+				const mermaidContent = match[1].trim();
+				if (mermaidContent) {
+					const replacement = `:::mermaid\n${mermaidContent}\n:::`;
+					newContent = newContent.replace(match[0], replacement);
+					hasChanges = true;
+				}
+			}
+		}
+
+		// 检测并转换 :::mermaid::: 到 ```mermaid```
+		const mermaidColonRegex = /:::mermaid\s*\r?\n([\s\S]*?)\r?\n:::/g;
+		const mermaidColonMatches = [...content.matchAll(mermaidColonRegex)];
+
+		if (mermaidColonMatches.length > 0) {
+			for (const match of mermaidColonMatches) {
+				const mermaidContent = match[1].trim();
+				if (mermaidContent) {
+					const replacement = `\`\`\`mermaid\n${mermaidContent}\n\`\`\``;
+					newContent = newContent.replace(match[0], replacement);
+					hasChanges = true;
+				}
+			}
+		}
+
+		// 检测并转换 ```plantuml``` 到 :::plantuml:::
+		const plantumlBacktickRegex = /```plantuml\s*\r?\n([\s\S]*?)\r?\n```/g;
+		const plantumlMatches = [...content.matchAll(plantumlBacktickRegex)];
+
+		if (plantumlMatches.length > 0) {
+			for (const match of plantumlMatches) {
+				const plantumlContent = match[1].trim();
+				if (plantumlContent) {
+					const replacement = `:::plantuml\n${plantumlContent}\n:::`;
+					newContent = newContent.replace(match[0], replacement);
+					hasChanges = true;
+				}
+			}
+		}
+
+		// 检测并转换 :::plantuml::: 到 ```plantuml```
+		const plantumlColonRegex = /:::plantuml\s*\r?\n([\s\S]*?)\r?\n:::/g;
+		const plantumlColonMatches = [...content.matchAll(plantumlColonRegex)];
+
+		if (plantumlColonMatches.length > 0) {
+			for (const match of plantumlColonMatches) {
+				const plantumlContent = match[1].trim();
+				if (plantumlContent) {
+					const replacement = `\`\`\`plantuml\n${plantumlContent}\n\`\`\``;
+					newContent = newContent.replace(match[0], replacement);
+					hasChanges = true;
+				}
+			}
+		}
+
+		if (hasChanges) {
+			// 更新编辑器内容
+			if (editor.value.storage.markdown && editor.value.storage.markdown.set) {
+				editor.value.storage.markdown.set(newContent);
+			} else {
+				editor.value.commands.setContent(newContent);
+			}
+
+			const totalConversions =
+				mermaidMatches.length +
+				mermaidColonMatches.length +
+				plantumlMatches.length +
+				plantumlColonMatches.length;
+
+			// 如果转换了内容且文档之前是保存状态，标记为已修改
+			if (totalConversions > 0 && !isModified.value) {
+				isModified.value = true;
+				emit("file-modified", true, newContent);
+				console.log("MdEditor: 代码块转换后标记文档为已修改状态");
+			}
+
+			ElMessage.success(`成功转换 ${totalConversions} 个代码块`);
+			console.log("MdEditor: 代码块转换完成", {
+				mermaidToColon: mermaidMatches.length,
+				mermaidToBacktick: mermaidColonMatches.length,
+				plantumlToColon: plantumlMatches.length,
+				plantumlToBacktick: plantumlColonMatches.length,
+				totalConversions,
+				wasModified: isModified.value,
+			});
+		} else {
+			ElMessage.info("未发现需要转换的代码块");
+		}
+	} catch (error) {
+		console.error("转换代码块失败:", error);
+		ElMessage.error("转换代码块失败: " + (error as Error).message);
 	}
 };
 
@@ -1673,6 +1854,44 @@ watch(showSearchDialog, (show) => {
 const showToc = ref(false);
 // 大纲锚点数据
 const anchors = ref<any[]>([]);
+
+// 当前标题类型计算属性 - 用于标题按钮联动显示
+const currentHeadingType = computed(() => {
+	if (!editor.value) return "标题";
+
+	// 检查各级标题
+	for (let level = 1; level <= 6; level++) {
+		if (editor.value.isActive("heading", { level })) {
+			return `标题${level}`;
+		}
+	}
+
+	// 检查是否为正文段落
+	if (editor.value.isActive("paragraph")) {
+		return "正文";
+	}
+
+	// 检查其他块级元素
+	if (
+		editor.value.isActive("bulletList") ||
+		editor.value.isActive("orderedList") ||
+		editor.value.isActive("taskList")
+	) {
+		return "列表";
+	}
+
+	if (editor.value.isActive("blockquote")) {
+		return "引用";
+	}
+
+	if (editor.value.isActive("codeBlock")) {
+		return "代码";
+	}
+
+	// 默认返回
+	return "标题";
+});
+
 // 目录数据
 const tocItems = computed(() =>
 	anchors.value.map((anchor) => ({

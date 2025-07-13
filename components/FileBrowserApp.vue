@@ -273,6 +273,8 @@
 						@file-saved="handleFileSaved"
 						@save-as-requested="handleSaveAsRequested"
 						@update:stats="handleStatsUpdate"
+						@open-file-requested="handleOpenFileRequested"
+						@new-tab-requested="handleNewTabRequested"
 					/>
 				</div>
 			</div>
@@ -792,6 +794,75 @@ const createNewTab = () => {
 		title: newTab.title,
 		isVirtual: newTab.isVirtual,
 	});
+};
+
+// 处理打开文件请求（从欢迎界面）
+const handleOpenFileRequested = async () => {
+	try {
+		// 使用文件系统API打开文件
+		const [fileHandle] = await (window as any).showOpenFilePicker({
+			multiple: false,
+			types: [
+				{
+					description: "文本文件",
+					accept: {
+						"text/*": [
+							".txt",
+							".md",
+							".markdown",
+							".json",
+							".js",
+							".ts",
+							".vue",
+							".html",
+							".css",
+							".scss",
+							".less",
+						],
+					},
+				},
+			],
+		});
+
+		if (fileHandle) {
+			// 获取文件所在的目录
+			const file = await fileHandle.getFile();
+			console.log("打开文件:", file.name);
+
+			// 尝试获取文件所在目录（如果可能的话）
+			// 注意：由于浏览器安全限制，我们无法直接获取文件的父目录
+			// 所以我们需要让用户选择一个工作目录
+			if (!rootDirectoryHandle.value) {
+				ElMessage.info("请先选择一个工作文件夹以便管理文件");
+				// 触发文件树组件的目录选择
+				if (fileTreeRef.value) {
+					await fileTreeRef.value.selectRootDirectory();
+				}
+			}
+
+			// 创建一个临时的文件节点
+			const tempNode: FileTreeNode = {
+				id: `file-${Date.now()}`,
+				label: fileHandle.name,
+				isDirectory: false,
+				isFile: true,
+				handle: fileHandle,
+			};
+
+			// 打开文件
+			await handleSelectFile(fileHandle, tempNode);
+		}
+	} catch (error: any) {
+		if (error.name !== "AbortError") {
+			console.error("打开文件失败:", error);
+			ElMessage.error("打开文件失败: " + (error as Error).message);
+		}
+	}
+};
+
+// 处理新建标签页请求（从欢迎界面）
+const handleNewTabRequested = () => {
+	createNewTab();
 };
 
 // 切换到指定页签
