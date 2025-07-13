@@ -7,74 +7,91 @@
 			class="p-4 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-slate-50 to-blue-50 dark:from-slate-800 dark:to-slate-700 flex-shrink-0 shadow-sm"
 		>
 			<el-button
-				:icon="FolderOpened"
 				@click="selectRootDirectory"
-				class="w-full mb-3 !bg-gradient-to-r !from-blue-600 !to-purple-600 !border-none !text-white !font-medium !py-3 !rounded-xl !shadow-lg hover:!shadow-xl !transition-all !duration-300 hover:!scale-105"
-				type="primary"
-				size="default"
+				class="w-full mb-4 !bg-slate-100 dark:!bg-slate-700 !border-slate-200 dark:!border-slate-600 !text-slate-700 dark:!text-slate-300 hover:!bg-slate-200 dark:hover:!bg-slate-600 !font-medium !py-3 !rounded-xl !shadow-sm hover:!shadow-md !transition-all !duration-300"
+				size="large"
 			>
-				<span class="font-medium">📁 选择目录</span>
+				<div class="flex items-center justify-center gap-2">
+					<Icon icon="material-symbols:folder-open" class="text-lg" />
+					<span class="font-medium">选择目录</span>
+				</div>
 			</el-button>
 
 			<!-- 文件搜索框 -->
-			<div v-if="rootHandle" class="mb-3">
+			<div v-if="rootHandle" class="mb-4">
 				<el-input
 					v-model="searchQuery"
-					placeholder="🔍 搜索文件..."
-					size="small"
+					placeholder="搜索文件..."
+					size="default"
 					clearable
 					@clear="clearSearch"
 					@input="filterFiles"
-					class="shadow-sm !rounded-xl"
+					class="shadow-sm !rounded-xl [&_.el-input__wrapper]:rounded-xl [&_.el-input__wrapper]:shadow-sm [&_.el-input__wrapper]:transition-all [&_.el-input__wrapper]:duration-200 [&_.el-input__wrapper:hover]:shadow-md [&_.el-input__wrapper.is-focus]:shadow-blue-100 [&_.el-input__wrapper.is-focus]:ring-3 [&_.el-input__wrapper.is-focus]:ring-blue-100"
 				>
 					<template #prefix>
-						<el-icon class="text-blue-600 dark:text-blue-400"
-							><Search
-						/></el-icon>
+						<Icon
+							icon="material-symbols:search"
+							class="text-blue-600 dark:text-blue-400 text-base"
+						/>
 					</template>
 				</el-input>
 			</div>
 
 			<!-- 文件操作按钮 -->
-			<div v-if="rootHandle" class="flex gap-1.5 mb-3">
+			<div v-if="rootHandle" class="flex gap-1.5 mb-4 justify-center">
 				<el-button
-					:icon="DocumentAdd"
 					@click="showCreateFileDialog"
 					size="small"
-					title="新建文件"
-					class="flex-1 !bg-green-50 dark:!bg-green-900/20 !border-green-200 dark:!border-green-800 !text-green-700 dark:!text-green-300 hover:!bg-green-100 dark:hover:!bg-green-900/30 !rounded-lg !font-medium shadow-sm !px-2 !py-1.5"
+					title="新增文件"
+					class="!w-[30%] !bg-slate-50 dark:!bg-slate-700 !border-slate-200 dark:!border-slate-600 !text-slate-700 dark:!text-slate-300 hover:!bg-slate-100 dark:hover:!bg-slate-600 !rounded-lg !font-medium shadow-sm !py-2 !px-2 !text-xs"
 				>
-					<span class="text-xs font-medium">📄</span>
+					<div class="flex items-center justify-center gap-1">
+						<Icon icon="material-symbols:note-add" class="text-sm" />
+						<span class="font-medium">文件</span>
+					</div>
 				</el-button>
 				<el-button
-					:icon="FolderAdd"
 					@click="showCreateFolderDialog"
 					size="small"
-					title="新建文件夹"
-					class="flex-1 !bg-blue-50 dark:!bg-blue-900/20 !border-blue-200 dark:!border-blue-800 !text-blue-700 dark:!text-blue-300 hover:!bg-blue-100 dark:hover:!bg-blue-900/30 !rounded-lg !font-medium shadow-sm !px-2 !py-1.5"
+					title="新增文件夹"
+					class="!w-[30%] !bg-slate-50 dark:!bg-slate-700 !border-slate-200 dark:!border-slate-600 !text-slate-700 dark:!text-slate-300 hover:!bg-slate-100 dark:hover:!bg-slate-600 !rounded-lg !font-medium shadow-sm !py-2 !px-2 !text-xs"
 				>
-					<span class="text-xs font-medium">📁</span>
+					<div class="flex items-center justify-center gap-1">
+						<Icon icon="material-symbols:create-new-folder" class="text-sm" />
+						<span class="font-medium">文件夹</span>
+					</div>
 				</el-button>
 				<el-button
-					:icon="Refresh"
 					@click="refreshCurrentDirectory"
 					size="small"
-					title="刷新文件列表"
-					class="!bg-slate-50 dark:!bg-slate-700 !border-slate-200 dark:!border-slate-600 !text-slate-700 dark:!text-slate-300 hover:!bg-slate-100 dark:hover:!bg-slate-600 !rounded-lg !font-medium shadow-sm !px-2 !py-1.5 !w-12"
+					title="刷新文件/文件夹列表"
+					class="!w-[30%] !bg-slate-50 dark:!bg-slate-700 !border-slate-200 dark:!border-slate-600 !text-slate-700 dark:!text-slate-300 hover:!bg-slate-100 dark:hover:!bg-slate-600 !rounded-lg !font-medium shadow-sm !py-2 !px-2 !text-xs"
 					:loading="isRefreshing"
 				>
-					<span class="text-xs font-medium">🔄</span>
+					<div class="flex items-center justify-center">
+						<Icon
+							icon="material-symbols:refresh"
+							class="text-sm"
+							v-if="!isRefreshing"
+						/>
+						<span class="font-medium ml-1" v-if="!isRefreshing">刷新</span>
+					</div>
 				</el-button>
 			</div>
 
 			<!-- 当前路径显示 -->
 			<div
 				v-if="rootHandle"
-				class="flex items-center gap-3 p-4 bg-white dark:bg-slate-700 rounded-xl text-sm text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600 shadow-sm"
+				class="flex items-center gap-2 p-2 bg-white dark:bg-slate-700 rounded-lg text-xs text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600 shadow-sm"
 			>
-				<el-icon class="text-blue-600 dark:text-blue-400"
-					><FolderOpened
-				/></el-icon>
+				<div
+					class="flex items-center justify-center w-6 h-6 bg-slate-100 dark:bg-slate-600 rounded-md"
+				>
+					<Icon
+						icon="material-symbols:folder-open"
+						class="text-slate-600 dark:text-slate-400 text-sm"
+					/>
+				</div>
 				<span class="truncate font-medium">{{ rootHandle.name }}</span>
 			</div>
 		</div>
@@ -90,18 +107,22 @@
 					<div
 						class="w-24 h-24 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800 rounded-3xl flex items-center justify-center shadow-xl"
 					>
-						<el-icon size="48" class="text-slate-400 dark:text-slate-500">
-							<FolderOpened />
-						</el-icon>
+						<Icon
+							icon="material-symbols:folder-open"
+							class="text-slate-400 dark:text-slate-500 text-5xl"
+						/>
 					</div>
 					<div
 						class="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full flex items-center justify-center animate-bounce shadow-lg"
 					>
-						<span class="text-white text-lg">✨</span>
+						<Icon icon="material-symbols:star" class="text-white text-lg" />
 					</div>
 				</div>
-				<h3 class="mb-4 text-xl font-bold text-slate-900 dark:text-slate-100">
-					📁 选择一个目录
+				<h3
+					class="mb-4 text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center justify-center gap-2"
+				>
+					<Icon icon="material-symbols:folder-open" class="text-xl" />
+					选择一个目录
 				</h3>
 				<p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
 					点击上方按钮选择要浏览的目录，<br />开始您的文件管理
@@ -117,16 +138,18 @@
 						class="flex flex-col items-center justify-center py-8 text-center text-slate-500 dark:text-slate-400"
 					>
 						<div
-							class="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center mb-4"
+							class="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center mb-4 shadow-sm"
 						>
-							<el-icon size="24" class="text-slate-400 dark:text-slate-500">
-								<Search />
-							</el-icon>
+							<Icon
+								icon="material-symbols:search"
+								class="text-slate-400 dark:text-slate-500 text-2xl"
+							/>
 						</div>
 						<h4
-							class="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
+							class="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 flex items-center justify-center gap-2"
 						>
-							🔍 未找到匹配的文件
+							<Icon icon="material-symbols:search" class="text-base" />
+							未找到匹配的文件
 						</h4>
 						<p class="text-xs text-slate-500 dark:text-slate-400">
 							请尝试修改搜索关键词
@@ -145,43 +168,41 @@
 					>
 						<template #default="{ node, data }">
 							<div
-								class="flex items-center gap-2 px-2 py-1 mx-2 my-1 rounded-lg cursor-pointer transition-all duration-300 w-full group border border-transparent"
+								class="flex items-center gap-2 px-2 py-1.5 mx-1 my-0.5 rounded-lg cursor-pointer transition-all duration-200 w-full group border border-transparent"
 								:class="{
-									// 选中状态样式
-									'bg-gradient-to-r from-blue-600 to-purple-600 text-white border-blue-500 shadow-lg shadow-blue-500/25':
+									// 选中状态样式 - 黑白效果
+									'bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-800 border-slate-700 dark:border-slate-300 shadow-md':
 										selectedNodeId === data.id,
 
 									// 非选中状态的hover效果
-									'hover:bg-gradient-to-r hover:from-slate-50 hover:to-blue-50 dark:hover:from-slate-800 dark:hover:to-slate-700 hover:border-slate-200 dark:hover:border-slate-600 hover:shadow-sm':
+									'hover:bg-slate-100 dark:hover:bg-slate-700 hover:border-slate-200 dark:hover:border-slate-600':
 										selectedNodeId !== data.id,
 
 									// 文字颜色
-									'text-blue-700 dark:text-blue-300 font-semibold':
+									'text-slate-700 dark:text-slate-300 font-medium':
 										data.isDirectory && selectedNodeId !== data.id,
-									'text-slate-700 dark:text-slate-300':
+									'text-slate-600 dark:text-slate-400 font-normal':
 										data.isFile && selectedNodeId !== data.id,
 								}"
 							>
 								<div
-									class="flex items-center justify-center w-7 h-7 rounded-lg flex-shrink-0 transition-all duration-300 shadow-sm"
+									class="flex items-center justify-center w-6 h-6 rounded-md flex-shrink-0 transition-all duration-200"
 									:class="{
-										// 选中状态下的图标样式
-										'bg-white/20 text-white shadow-md':
+										// 选中状态下的图标样式 - 黑白效果
+										'bg-white/20 dark:bg-slate-800/20 text-white dark:text-slate-800':
 											selectedNodeId === data.id,
 
 										// 非选中状态下的图标样式
-										'bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-800 dark:to-purple-800 text-blue-600 dark:text-blue-300 group-hover:shadow-md':
+										'bg-slate-100 dark:bg-slate-600 text-slate-600 dark:text-slate-400':
 											data.isDirectory && selectedNodeId !== data.id,
-										'bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800 text-slate-600 dark:text-slate-300 group-hover:shadow-md':
+										'bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-500':
 											data.isFile && selectedNodeId !== data.id,
 									}"
 								>
-									<el-icon class="text-sm">
-										<component :is="getNodeIcon(data)" />
-									</el-icon>
+									<Icon :icon="getNodeIcon(data)" class="text-base" />
 								</div>
 								<span
-									class="flex-1 truncate text-sm"
+									class="flex-1 truncate text-sm font-medium"
 									v-html="highlightSearchText(data.label, searchQuery)"
 								>
 								</span>
@@ -194,30 +215,72 @@
 											selectedNodeId !== data.id,
 									}"
 								>
+									<!-- 新建文件/文件夹下拉菜单 -->
+									<el-dropdown
+										@command="handleCreateCommand($event, data)"
+										trigger="click"
+										placement="bottom-start"
+										@click.stop
+									>
+										<el-button
+											size="small"
+											title="新建文件或文件夹"
+											:class="
+												selectedNodeId === data.id
+													? '!p-1.5 !w-6 !h-6 !rounded-md !bg-white/20 dark:!bg-slate-800/20 !border-white/30 dark:!border-slate-700/30 !text-white dark:!text-slate-800 hover:!bg-white/30 dark:hover:!bg-slate-800/30'
+													: '!p-1.5 !w-6 !h-6 !rounded-md !bg-slate-100 dark:!bg-slate-600 !border-slate-200 dark:!border-slate-500 !text-slate-600 dark:!text-slate-400 hover:!bg-slate-200 dark:hover:!bg-slate-500'
+											"
+										>
+											<Icon icon="material-symbols:add" class="text-xs" />
+										</el-button>
+										<template #dropdown>
+											<el-dropdown-menu>
+												<el-dropdown-item command="file">
+													<div class="flex items-center gap-2">
+														<Icon
+															icon="material-symbols:note-add"
+															class="text-sm"
+														/>
+														<span>新建文件</span>
+													</div>
+												</el-dropdown-item>
+												<el-dropdown-item command="folder">
+													<div class="flex items-center gap-2">
+														<Icon
+															icon="material-symbols:create-new-folder"
+															class="text-sm"
+														/>
+														<span>新建文件夹</span>
+													</div>
+												</el-dropdown-item>
+											</el-dropdown-menu>
+										</template>
+									</el-dropdown>
 									<el-button
-										:icon="Edit"
 										size="small"
 										@click.stop="showRenameDialog(data)"
 										title="重命名"
-										type="primary"
 										:class="
 											selectedNodeId === data.id
-												? '!p-1.5 !w-7 !h-7 !rounded-lg !bg-white/20 !border-white/30 !text-white hover:!bg-white/30 hover:!border-white/50'
-												: '!p-1.5 !w-7 !h-7 !rounded-lg !bg-blue-50 dark:!bg-blue-900/30 !border-blue-200 dark:!border-blue-800 !text-blue-600 dark:!text-blue-300 hover:!bg-blue-100 dark:hover:!bg-blue-900/50'
+												? '!p-1.5 !w-6 !h-6 !rounded-md !bg-white/20 dark:!bg-slate-800/20 !border-white/30 dark:!border-slate-700/30 !text-white dark:!text-slate-800 hover:!bg-white/30 dark:hover:!bg-slate-800/30'
+												: '!p-1.5 !w-6 !h-6 !rounded-md !bg-slate-100 dark:!bg-slate-600 !border-slate-200 dark:!border-slate-500 !text-slate-600 dark:!text-slate-400 hover:!bg-slate-200 dark:hover:!bg-slate-500'
 										"
-									/>
+									>
+										<Icon icon="material-symbols:edit" class="text-xs" />
+									</el-button>
 									<el-button
-										:icon="Delete"
 										size="small"
 										@click.stop="confirmDeleteItem(data)"
-										title="删除"
-										type="danger"
+										:title="deleteFunctionSupported ? '删除' : '删除功能不支持'"
+										:disabled="!deleteFunctionSupported"
 										:class="
 											selectedNodeId === data.id
-												? '!p-1.5 !w-7 !h-7 !rounded-lg !bg-red-500/20 !border-red-400/30 !text-red-200 hover:!bg-red-500/30 hover:!border-red-400/50'
-												: '!p-1.5 !w-7 !h-7 !rounded-lg !bg-red-50 dark:!bg-red-900/30 !border-red-200 dark:!border-red-800 !text-red-600 dark:!text-red-300 hover:!bg-red-100 dark:hover:!bg-red-900/50'
+												? '!p-1.5 !w-6 !h-6 !rounded-md !bg-white/20 dark:!bg-slate-800/20 !border-white/30 dark:!border-slate-700/30 !text-white dark:!text-slate-800 hover:!bg-white/30 dark:hover:!bg-slate-800/30'
+												: '!p-1.5 !w-6 !h-6 !rounded-md !bg-slate-100 dark:!bg-slate-600 !border-slate-200 dark:!border-slate-500 !text-slate-600 dark:!text-slate-400 hover:!bg-slate-200 dark:hover:!bg-slate-500'
 										"
-									/>
+									>
+										<Icon icon="material-symbols:delete" class="text-xs" />
+									</el-button>
 								</div>
 							</div>
 						</template>
@@ -228,51 +291,55 @@
 				<el-tree
 					v-else
 					ref="treeRef"
+					:key="treeKey"
 					:data="treeData"
 					:load="isInitialized ? undefined : loadNode"
 					:props="treeProps"
 					node-key="id"
 					:lazy="!isInitialized"
+					:default-expanded-keys="defaultExpandedKeys"
+					:accordion="false"
+					v-loading="isLoading"
 					@node-click="handleNodeClick"
 					@node-contextmenu="handleNodeContextMenu"
+					@node-expand="handleNodeExpand"
+					@node-collapse="handleNodeCollapse"
 					class="file-tree"
 				>
 					<template #default="{ node, data }">
 						<div
-							class="flex items-center gap-2 px-2 py-1 mx-2 my-1 rounded-lg cursor-pointer transition-all duration-300 w-full group border border-transparent"
+							class="flex items-center gap-2 px-2 py-1.5 mx-1 my-0.5 rounded-lg cursor-pointer transition-all duration-200 w-full group border border-transparent"
 							:class="{
-								// 选中状态样式
-								'bg-gradient-to-r from-blue-600 to-purple-600 text-white border-blue-500 shadow-lg shadow-blue-500/25':
+								// 选中状态样式 - 黑白效果
+								'bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-800 border-slate-700 dark:border-slate-300 shadow-md':
 									selectedNodeId === data.id,
 
 								// 非选中状态的hover效果
-								'hover:bg-gradient-to-r hover:from-slate-50 hover:to-blue-50 dark:hover:from-slate-800 dark:hover:to-slate-700 hover:border-slate-200 dark:hover:border-slate-600 hover:shadow-sm':
+								'hover:bg-slate-100 dark:hover:bg-slate-700 hover:border-slate-200 dark:hover:border-slate-600':
 									selectedNodeId !== data.id,
 
 								// 文字颜色
-								'text-blue-700 dark:text-blue-300 font-semibold':
+								'text-slate-700 dark:text-slate-300 font-medium':
 									data.isDirectory && selectedNodeId !== data.id,
-								'text-slate-700 dark:text-slate-300':
+								'text-slate-600 dark:text-slate-400':
 									data.isFile && selectedNodeId !== data.id,
 							}"
 						>
 							<div
-								class="flex items-center justify-center w-7 h-7 rounded-lg flex-shrink-0 transition-all duration-300 shadow-sm"
+								class="flex items-center justify-center w-6 h-6 rounded-md flex-shrink-0 transition-all duration-200"
 								:class="{
-									// 选中状态下的图标样式
-									'bg-white/20 text-white shadow-md':
+									// 选中状态下的图标样式 - 黑白效果
+									'bg-white/20 dark:bg-slate-800/20 text-white dark:text-slate-800':
 										selectedNodeId === data.id,
 
 									// 非选中状态下的图标样式
-									'bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-800 dark:to-purple-800 text-blue-600 dark:text-blue-300 group-hover:shadow-md':
+									'bg-slate-100 dark:bg-slate-600 text-slate-600 dark:text-slate-400':
 										data.isDirectory && selectedNodeId !== data.id,
-									'bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800 text-slate-600 dark:text-slate-300 group-hover:shadow-md':
+									'bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-500':
 										data.isFile && selectedNodeId !== data.id,
 								}"
 							>
-								<el-icon class="text-sm">
-									<component :is="getNodeIcon(data)" />
-								</el-icon>
+								<Icon :icon="getNodeIcon(data)" class="text-base" />
 							</div>
 							<span class="flex-1 truncate text-sm">
 								{{ data.label }}
@@ -286,30 +353,72 @@
 										selectedNodeId !== data.id,
 								}"
 							>
+								<!-- 新建文件/文件夹下拉菜单 -->
+								<el-dropdown
+									@command="handleCreateCommand($event, data)"
+									trigger="click"
+									placement="bottom-start"
+									@click.stop
+								>
+									<el-button
+										size="small"
+										title="新建文件或文件夹"
+										:class="
+											selectedNodeId === data.id
+												? '!p-1.5 !w-6 !h-6 !rounded-md !bg-white/20 dark:!bg-slate-800/20 !border-white/30 dark:!border-slate-700/30 !text-white dark:!text-slate-800 hover:!bg-white/30 dark:hover:!bg-slate-800/30'
+												: '!p-1.5 !w-6 !h-6 !rounded-md !bg-slate-100 dark:!bg-slate-600 !border-slate-200 dark:!border-slate-500 !text-slate-600 dark:!text-slate-400 hover:!bg-slate-200 dark:hover:!bg-slate-500'
+										"
+									>
+										<Icon icon="material-symbols:add" class="text-xs" />
+									</el-button>
+									<template #dropdown>
+										<el-dropdown-menu>
+											<el-dropdown-item command="file">
+												<div class="flex items-center gap-2">
+													<Icon
+														icon="material-symbols:note-add"
+														class="text-sm"
+													/>
+													<span>新建文件</span>
+												</div>
+											</el-dropdown-item>
+											<el-dropdown-item command="folder">
+												<div class="flex items-center gap-2">
+													<Icon
+														icon="material-symbols:create-new-folder"
+														class="text-sm"
+													/>
+													<span>新建文件夹</span>
+												</div>
+											</el-dropdown-item>
+										</el-dropdown-menu>
+									</template>
+								</el-dropdown>
 								<el-button
-									:icon="Edit"
 									size="small"
 									@click.stop="showRenameDialog(data)"
 									title="重命名"
-									type="primary"
 									:class="
 										selectedNodeId === data.id
-											? '!p-1.5 !w-7 !h-7 !rounded-lg !bg-white/20 !border-white/30 !text-white hover:!bg-white/30 hover:!border-white/50'
-											: '!p-1.5 !w-7 !h-7 !rounded-lg !bg-blue-50 dark:!bg-blue-900/30 !border-blue-200 dark:!border-blue-800 !text-blue-600 dark:!text-blue-300 hover:!bg-blue-100 dark:hover:!bg-blue-900/50'
+											? '!p-1.5 !w-6 !h-6 !rounded-md !bg-white/20 dark:!bg-slate-800/20 !border-white/30 dark:!border-slate-700/30 !text-white dark:!text-slate-800 hover:!bg-white/30 dark:hover:!bg-slate-800/30'
+											: '!p-1.5 !w-6 !h-6 !rounded-md !bg-slate-100 dark:!bg-slate-600 !border-slate-200 dark:!border-slate-500 !text-slate-600 dark:!text-slate-400 hover:!bg-slate-200 dark:hover:!bg-slate-500'
 									"
-								/>
+								>
+									<Icon icon="material-symbols:edit" class="text-xs" />
+								</el-button>
 								<el-button
-									:icon="Delete"
 									size="small"
 									@click.stop="confirmDeleteItem(data)"
-									title="删除"
-									type="danger"
+									:title="deleteFunctionSupported ? '删除' : '删除功能不支持'"
+									:disabled="!deleteFunctionSupported"
 									:class="
 										selectedNodeId === data.id
-											? '!p-1.5 !w-7 !h-7 !rounded-lg !bg-red-500/20 !border-red-400/30 !text-red-200 hover:!bg-red-500/30 hover:!border-red-400/50'
-											: '!p-1.5 !w-7 !h-7 !rounded-lg !bg-red-50 dark:!bg-red-900/30 !border-red-200 dark:!border-red-800 !text-red-600 dark:!text-red-300 hover:!bg-red-100 dark:hover:!bg-red-900/50'
+											? '!p-1.5 !w-6 !h-6 !rounded-md !bg-white/20 dark:!bg-slate-800/20 !border-white/30 dark:!border-slate-700/30 !text-white dark:!text-slate-800 hover:!bg-white/30 dark:hover:!bg-slate-800/30'
+											: '!p-1.5 !w-6 !h-6 !rounded-md !bg-slate-100 dark:!bg-slate-600 !border-slate-200 dark:!border-slate-500 !text-slate-600 dark:!text-slate-400 hover:!bg-slate-200 dark:hover:!bg-slate-500'
 									"
-								/>
+								>
+									<Icon icon="material-symbols:delete" class="text-xs" />
+								</el-button>
 							</div>
 						</div>
 					</template>
@@ -320,38 +429,95 @@
 		<!-- 新建文件对话框 -->
 		<el-dialog
 			v-model="showCreateFile"
-			title="📄 新建文件"
 			width="420px"
 			draggable
 			@close="resetCreateFileDialog"
-			class="modern-dialog"
+			class="[&_.el-dialog]:rounded-2xl [&_.el-dialog]:shadow-2xl [&_.el-dialog__header]:bg-gradient-to-135deg [&_.el-dialog__header]:from-slate-50 [&_.el-dialog__header]:to-slate-200 [&_.el-dialog__header]:rounded-t-2xl [&_.el-dialog__header]:p-6 [&_.el-dialog__header]:border-b [&_.el-dialog__header]:border-slate-200 [&_.el-dialog__title]:font-semibold [&_.el-dialog__title]:text-slate-800"
 		>
+			<template #header>
+				<div class="flex items-center gap-2">
+					<el-icon><DocumentAdd /></el-icon>
+					新建文件
+				</div>
+			</template>
 			<el-form :model="createFileForm" label-width="90px" class="p-2">
-				<el-form-item label="📝 文件名" class="mb-6">
+				<el-form-item class="mb-6">
+					<template #label>
+						<div class="flex items-center gap-2">
+							<el-icon><EditPen /></el-icon>
+							文件名
+						</div>
+					</template>
 					<el-input
 						v-model="createFileForm.fileName"
 						placeholder="输入文件名..."
 						autofocus
 						@keyup.enter="createFile"
 						size="large"
-						class="!rounded-xl"
+						class="!rounded-xl [&_.el-input__wrapper]:rounded-xl [&_.el-input__wrapper]:shadow-sm [&_.el-input__wrapper]:transition-all [&_.el-input__wrapper]:duration-200 [&_.el-input__wrapper:hover]:shadow-md [&_.el-input__wrapper.is-focus]:shadow-blue-100 [&_.el-input__wrapper.is-focus]:ring-3 [&_.el-input__wrapper.is-focus]:ring-blue-100"
 					/>
 				</el-form-item>
-				<el-form-item label="📁 类型" class="mb-4">
+				<el-form-item class="mb-4">
+					<template #label>
+						<div class="flex items-center gap-2">
+							<el-icon><FolderOpened /></el-icon>
+							类型
+						</div>
+					</template>
 					<el-select
 						v-model="createFileForm.fileType"
 						placeholder="选择文件类型"
 						class="w-full"
 						size="large"
 					>
-						<el-option label="📝 Markdown文件 (.md)" value="md" />
-						<el-option label="📄 文本文件 (.txt)" value="txt" />
-						<el-option label="📦 JSON文件 (.json)" value="json" />
-						<el-option label="🛠️ JavaScript文件 (.js)" value="js" />
-						<el-option label="🔷 TypeScript文件 (.ts)" value="ts" />
-						<el-option label="🟢 Vue文件 (.vue)" value="vue" />
-						<el-option label="🌐 HTML文件 (.html)" value="html" />
-						<el-option label="🎨 CSS文件 (.css)" value="css" />
+						<el-option value="md">
+							<div class="flex items-center gap-2">
+								<el-icon><EditPen /></el-icon>
+								Markdown文件 (.md)
+							</div>
+						</el-option>
+						<el-option value="txt">
+							<div class="flex items-center gap-2">
+								<el-icon><Document /></el-icon>
+								文本文件 (.txt)
+							</div>
+						</el-option>
+						<el-option value="json">
+							<div class="flex items-center gap-2">
+								<el-icon><Tickets /></el-icon>
+								JSON文件 (.json)
+							</div>
+						</el-option>
+						<el-option value="js">
+							<div class="flex items-center gap-2">
+								<el-icon><DocumentCopy /></el-icon>
+								JavaScript文件 (.js)
+							</div>
+						</el-option>
+						<el-option value="ts">
+							<div class="flex items-center gap-2">
+								<el-icon><DocumentCopy /></el-icon>
+								TypeScript文件 (.ts)
+							</div>
+						</el-option>
+						<el-option value="vue">
+							<div class="flex items-center gap-2">
+								<el-icon><DocumentCopy /></el-icon>
+								Vue文件 (.vue)
+							</div>
+						</el-option>
+						<el-option value="html">
+							<div class="flex items-center gap-2">
+								<el-icon><Document /></el-icon>
+								HTML文件 (.html)
+							</div>
+						</el-option>
+						<el-option value="css">
+							<div class="flex items-center gap-2">
+								<el-icon><Document /></el-icon>
+								CSS文件 (.css)
+							</div>
+						</el-option>
 					</el-select>
 				</el-form-item>
 			</el-form>
@@ -370,7 +536,10 @@
 						size="large"
 						class="!rounded-xl !bg-gradient-to-r !from-green-600 !to-emerald-600 !border-none"
 					>
-						📄 创建
+						<div class="flex items-center gap-2">
+							<el-icon><DocumentAdd /></el-icon>
+							创建
+						</div>
 					</el-button>
 				</div>
 			</template>
@@ -379,21 +548,32 @@
 		<!-- 新建文件夹对话框 -->
 		<el-dialog
 			v-model="showCreateFolder"
-			title="📁 新建文件夹"
 			width="420px"
 			draggable
 			@close="resetCreateFolderDialog"
-			class="modern-dialog"
+			class="[&_.el-dialog]:rounded-2xl [&_.el-dialog]:shadow-2xl [&_.el-dialog__header]:bg-gradient-to-135deg [&_.el-dialog__header]:from-slate-50 [&_.el-dialog__header]:to-slate-200 [&_.el-dialog__header]:rounded-t-2xl [&_.el-dialog__header]:p-6 [&_.el-dialog__header]:border-b [&_.el-dialog__header]:border-slate-200 [&_.el-dialog__title]:font-semibold [&_.el-dialog__title]:text-slate-800"
 		>
+			<template #header>
+				<div class="flex items-center gap-2">
+					<el-icon><FolderAdd /></el-icon>
+					新建文件夹
+				</div>
+			</template>
 			<el-form :model="createFolderForm" label-width="100px" class="p-2">
-				<el-form-item label="📁 文件夹名" class="mb-6">
+				<el-form-item class="mb-6">
+					<template #label>
+						<div class="flex items-center gap-2">
+							<el-icon><FolderAdd /></el-icon>
+							文件夹名
+						</div>
+					</template>
 					<el-input
 						v-model="createFolderForm.folderName"
 						placeholder="输入文件夹名..."
 						autofocus
 						@keyup.enter="createFolder"
 						size="large"
-						class="!rounded-xl"
+						class="!rounded-xl [&_.el-input__wrapper]:rounded-xl [&_.el-input__wrapper]:shadow-sm [&_.el-input__wrapper]:transition-all [&_.el-input__wrapper]:duration-200 [&_.el-input__wrapper:hover]:shadow-md [&_.el-input__wrapper.is-focus]:shadow-blue-100 [&_.el-input__wrapper.is-focus]:ring-3 [&_.el-input__wrapper.is-focus]:ring-blue-100"
 					/>
 				</el-form-item>
 			</el-form>
@@ -412,7 +592,10 @@
 						size="large"
 						class="!rounded-xl !bg-gradient-to-r !from-blue-600 !to-purple-600 !border-none"
 					>
-						📁 创建
+						<div class="flex items-center gap-2">
+							<el-icon><FolderAdd /></el-icon>
+							创建
+						</div>
 					</el-button>
 				</div>
 			</template>
@@ -421,21 +604,32 @@
 		<!-- 重命名对话框 -->
 		<el-dialog
 			v-model="showRename"
-			title="✏️ 重命名"
 			width="420px"
 			draggable
 			@close="resetRenameDialog"
-			class="modern-dialog"
+			class="[&_.el-dialog]:rounded-2xl [&_.el-dialog]:shadow-2xl [&_.el-dialog__header]:bg-gradient-to-135deg [&_.el-dialog__header]:from-slate-50 [&_.el-dialog__header]:to-slate-200 [&_.el-dialog__header]:rounded-t-2xl [&_.el-dialog__header]:p-6 [&_.el-dialog__header]:border-b [&_.el-dialog__header]:border-slate-200 [&_.el-dialog__title]:font-semibold [&_.el-dialog__title]:text-slate-800"
 		>
+			<template #header>
+				<div class="flex items-center gap-2">
+					<el-icon><Edit /></el-icon>
+					重命名
+				</div>
+			</template>
 			<el-form :model="renameForm" label-width="80px" class="p-2">
-				<el-form-item label="🏷️ 新名称" class="mb-6">
+				<el-form-item class="mb-6">
+					<template #label>
+						<div class="flex items-center gap-2">
+							<el-icon><Edit /></el-icon>
+							新名称
+						</div>
+					</template>
 					<el-input
 						v-model="renameForm.newName"
 						placeholder="输入新名称..."
 						autofocus
 						@keyup.enter="renameItem"
 						size="large"
-						class="!rounded-xl"
+						class="!rounded-xl [&_.el-input__wrapper]:rounded-xl [&_.el-input__wrapper]:shadow-sm [&_.el-input__wrapper]:transition-all [&_.el-input__wrapper]:duration-200 [&_.el-input__wrapper:hover]:shadow-md [&_.el-input__wrapper.is-focus]:shadow-blue-100 [&_.el-input__wrapper.is-focus]:ring-3 [&_.el-input__wrapper.is-focus]:ring-blue-100"
 					/>
 				</el-form-item>
 			</el-form>
@@ -454,7 +648,10 @@
 						size="large"
 						class="!rounded-xl !bg-gradient-to-r !from-orange-600 !to-red-600 !border-none"
 					>
-						✏️ 确定
+						<div class="flex items-center gap-2">
+							<el-icon><Edit /></el-icon>
+							确定
+						</div>
 					</el-button>
 				</div>
 			</template>
@@ -463,26 +660,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from "vue";
-import { ElTree, ElMessage, ElMessageBox } from "element-plus";
+// Iconify Vue 图标导入
+import { Icon } from "@iconify/vue";
+import { ElMessage, ElMessageBox, ElTree } from "element-plus";
+import { nextTick, onMounted, ref, watch } from "vue";
 import {
-	FolderOpened,
-	Document,
-	DocumentCopy,
-	EditPen,
-	Tickets,
-	Search,
-	DocumentAdd,
-	FolderAdd,
-	Edit,
-	Delete,
-	Refresh,
-} from "@element-plus/icons-vue";
-import {
-	chooseDirectory,
 	buildTree,
-	isSupportedFile,
+	chooseDirectory,
+	deleteFileOrFolder,
 	getFileType,
+	isDeleteSupported,
+	isSupportedFile,
+	renameFileOrFolder,
 } from "../utils/file-service";
 import type { FileTreeNode } from "../utils/types";
 
@@ -548,9 +737,26 @@ const treeProps = {
 	isLeaf: (data: any) => data.isFile,
 };
 
+// 默认展开的节点
+const defaultExpandedKeys = ref<string[]>([]);
+
+// 添加树组件的key，用于强制重新渲染
+const treeKey = ref(0);
+
+// 加载状态
+const isLoading = ref(false);
+
+// 功能支持状态
+const deleteFunctionSupported = ref(true);
+
+// 当前创建操作的目录和节点
+const currentCreateDirectory = ref<FileSystemDirectoryHandle | null>(null);
+const currentCreateNode = ref<FileTreeNode | null>(null);
+
 // 选择根目录
 const selectRootDirectory = async () => {
 	try {
+		isLoading.value = true;
 		const handle = await chooseDirectory();
 		rootHandle.value = handle;
 		emit("update:modelValue", handle);
@@ -561,14 +767,31 @@ const selectRootDirectory = async () => {
 		if (error instanceof Error && error.name !== "AbortError") {
 			ElMessage.error("选择目录失败: " + error.message);
 		}
+	} finally {
+		isLoading.value = false;
 	}
 };
 
 // 加载完整的目录树
 const loadFullDirectoryTree = async () => {
 	if (!rootHandle.value) return;
+
 	try {
+		isLoading.value = true;
 		console.log("开始加载完整目录树...");
+
+		// 先重置状态
+		treeData.value = [];
+		filteredTreeData.value = [];
+		isInitialized.value = false;
+		defaultExpandedKeys.value = []; // 保持所有节点折叠
+
+		// 强制重新渲染
+		treeKey.value++;
+
+		// 等待一个tick确保DOM更新
+		await nextTick();
+
 		const rootTree = await buildTree(rootHandle.value);
 		treeData.value = rootTree;
 		filteredTreeData.value = rootTree;
@@ -577,6 +800,15 @@ const loadFullDirectoryTree = async () => {
 		// 清除选中状态
 		selectedNode.value = null;
 		selectedNodeId.value = null;
+
+		// 不自动展开任何节点，让用户手动点击展开
+		// defaultExpandedKeys.value = []; // 已经在上面重置了
+
+		// 再次强制重新渲染以确保切换到静态数据模式
+		treeKey.value++;
+
+		// 等待一个tick确保树完全重新渲染
+		await nextTick();
 
 		console.log("完整目录树已加载:", rootTree);
 		const fileNodes = rootTree.filter((node) => node.isFile);
@@ -591,6 +823,8 @@ const loadFullDirectoryTree = async () => {
 	} catch (error) {
 		console.error("加载目录树失败:", error);
 		ElMessage.error("加载目录树失败");
+	} finally {
+		isLoading.value = false;
 	}
 };
 
@@ -699,7 +933,7 @@ const loadDirectoryHistory = async () => {
 							name: directoryInfo.name,
 							path: directoryInfo.path,
 							hasHandle: !!directoryInfo.handle,
-					  }
+						}
 					: null
 			);
 		} catch (dbError) {
@@ -875,27 +1109,49 @@ const handleNodeClick = (data: FileTreeNode, node: any) => {
 	}
 };
 
+// 处理节点展开
+const handleNodeExpand = (data: FileTreeNode, node: any) => {
+	console.log("节点展开:", data.label);
+	if (data.isDirectory && data.handle) {
+		// 只有当节点不在展开列表中时才添加
+		if (!defaultExpandedKeys.value.includes(data.id)) {
+			defaultExpandedKeys.value.push(data.id);
+		}
+	}
+};
+
+// 处理节点折叠
+const handleNodeCollapse = (data: FileTreeNode, node: any) => {
+	console.log("节点折叠:", data.label);
+	if (data.isDirectory && data.handle) {
+		// 从展开列表中移除
+		defaultExpandedKeys.value = defaultExpandedKeys.value.filter(
+			(key) => key !== data.id
+		);
+	}
+};
+
 // 获取节点图标
-const getNodeIcon = (data: FileTreeNode) => {
+const getNodeIcon = (data: FileTreeNode): string => {
 	if (data.isDirectory) {
-		return FolderOpened;
+		return "material-symbols:folder";
 	}
 	if (data.isFile) {
 		const fileType = getFileType(data.label);
 		switch (fileType) {
 			case "markdown":
-				return EditPen;
+				return "material-symbols:edit-note";
 			case "json":
-				return Tickets;
+				return "material-symbols:data-object";
 			case "javascript":
 			case "typescript":
 			case "vue":
-				return DocumentCopy;
+				return "material-symbols:code";
 			default:
-				return Document;
+				return "material-symbols:description";
 		}
 	}
-	return Document;
+	return "material-symbols:description";
 };
 
 // 刷新当前目录
@@ -904,18 +1160,7 @@ const refreshCurrentDirectory = async () => {
 
 	try {
 		isRefreshing.value = true;
-		const rootTree = await buildTree(rootHandle.value);
-		treeData.value = rootTree;
-		filteredTreeData.value = rootTree;
-		filterFiles();
-
-		// 清除选中状态
-		selectedNode.value = null;
-		selectedNodeId.value = null;
-
-		if (treeRef.value) {
-			treeRef.value.setCurrentKey(undefined);
-		}
+		await loadFullDirectoryTree();
 		ElMessage.success("目录已刷新");
 	} catch (error) {
 		console.error("刷新目录失败:", error);
@@ -969,11 +1214,25 @@ const clearSearch = () => {
 
 // 显示新建文件对话框
 const showCreateFileDialog = () => {
+	currentCreateDirectory.value = rootHandle.value;
+	currentCreateNode.value = null;
 	showCreateFile.value = true;
 };
 
 // 显示新建文件夹对话框
 const showCreateFolderDialog = () => {
+	currentCreateDirectory.value = rootHandle.value;
+	currentCreateNode.value = null;
+	showCreateFolder.value = true;
+};
+
+// 显示在指定目录创建文件的对话框
+const showCreateFileInDirectoryDialog = () => {
+	showCreateFile.value = true;
+};
+
+// 显示在指定目录创建文件夹的对话框
+const showCreateFolderInDirectoryDialog = () => {
 	showCreateFolder.value = true;
 };
 
@@ -989,12 +1248,16 @@ const resetCreateFileDialog = () => {
 	showCreateFile.value = false;
 	createFileForm.value.fileName = "";
 	createFileForm.value.fileType = "md";
+	currentCreateDirectory.value = null;
+	currentCreateNode.value = null;
 };
 
 // 重置新建文件夹对话框
 const resetCreateFolderDialog = () => {
 	showCreateFolder.value = false;
 	createFolderForm.value.folderName = "";
+	currentCreateDirectory.value = null;
+	currentCreateNode.value = null;
 };
 
 // 重置重命名对话框
@@ -1006,8 +1269,15 @@ const resetRenameDialog = () => {
 
 // 创建文件
 const createFile = async () => {
-	if (!rootHandle.value || !createFileForm.value.fileName.trim()) {
+	if (!createFileForm.value.fileName.trim()) {
 		ElMessage.warning("请输入文件名");
+		return;
+	}
+
+	// 使用当前创建目录或根目录
+	const targetDirectory = currentCreateDirectory.value || rootHandle.value;
+	if (!targetDirectory) {
+		ElMessage.error("没有选择目标目录");
 		return;
 	}
 
@@ -1018,14 +1288,19 @@ const createFile = async () => {
 			? fileName
 			: `${fileName}.${fileExtension}`;
 
-		const fileHandle = await rootHandle.value.getFileHandle(fullFileName, {
+		const fileHandle = await targetDirectory.getFileHandle(fullFileName, {
 			create: true,
 		});
 		const writable = await fileHandle.createWritable();
 		await writable.write("");
 		await writable.close();
 
-		ElMessage.success(`文件 ${fullFileName} 创建成功`);
+		// 显示创建位置信息
+		const locationInfo = currentCreateNode.value
+			? `在 "${currentCreateNode.value.label}" ${currentCreateNode.value.isDirectory ? "文件夹内" : "所在目录"}`
+			: "在根目录";
+
+		ElMessage.success(`文件 ${fullFileName} ${locationInfo}创建成功`);
 		resetCreateFileDialog();
 		await loadFullDirectoryTree();
 	} catch (error) {
@@ -1036,15 +1311,28 @@ const createFile = async () => {
 
 // 创建文件夹
 const createFolder = async () => {
-	if (!rootHandle.value || !createFolderForm.value.folderName.trim()) {
+	if (!createFolderForm.value.folderName.trim()) {
 		ElMessage.warning("请输入文件夹名");
+		return;
+	}
+
+	// 使用当前创建目录或根目录
+	const targetDirectory = currentCreateDirectory.value || rootHandle.value;
+	if (!targetDirectory) {
+		ElMessage.error("没有选择目标目录");
 		return;
 	}
 
 	try {
 		const folderName = createFolderForm.value.folderName.trim();
-		await rootHandle.value.getDirectoryHandle(folderName, { create: true });
-		ElMessage.success(`文件夹 ${folderName} 创建成功`);
+		await targetDirectory.getDirectoryHandle(folderName, { create: true });
+
+		// 显示创建位置信息
+		const locationInfo = currentCreateNode.value
+			? `在 "${currentCreateNode.value.label}" ${currentCreateNode.value.isDirectory ? "文件夹内" : "所在目录"}`
+			: "在根目录";
+
+		ElMessage.success(`文件夹 ${folderName} ${locationInfo}创建成功`);
 		resetCreateFolderDialog();
 		await loadFullDirectoryTree();
 	} catch (error) {
@@ -1060,9 +1348,37 @@ const renameItem = async () => {
 		return;
 	}
 
-	try {
-		ElMessage.warning("重命名功能暂未实现，浏览器API限制");
+	if (!rootHandle.value) {
+		ElMessage.error("没有选择根目录");
+		return;
+	}
+
+	const targetNode = renameForm.value.targetNode;
+	const newName = renameForm.value.newName.trim();
+	const oldName = targetNode.label;
+
+	// 检查新名称是否与旧名称相同
+	if (newName === oldName) {
+		ElMessage.warning("新名称与原名称相同");
 		resetRenameDialog();
+		return;
+	}
+
+	try {
+		if (targetNode.isDirectory) {
+			ElMessage.warning("文件夹重命名功能暂未实现，需要递归复制所有子项");
+		} else {
+			// 检查删除功能是否支持
+			if (!isDeleteSupported()) {
+				ElMessage.error("当前浏览器不支持文件操作功能");
+				return;
+			}
+
+			await renameFileOrFolder(rootHandle.value, oldName, newName, false);
+			ElMessage.success(`文件重命名成功: ${oldName} → ${newName}`);
+			resetRenameDialog();
+			await loadFullDirectoryTree();
+		}
 	} catch (error) {
 		console.error("重命名失败:", error);
 		ElMessage.error("重命名失败: " + (error as Error).message);
@@ -1097,10 +1413,45 @@ const deleteItem = async (node: FileTreeNode) => {
 			ElMessage.error("无法删除：缺少文件句柄");
 			return;
 		}
-		ElMessage.warning("删除功能暂未实现，浏览器API限制");
+
+		// 检查删除功能是否支持
+		if (!isDeleteSupported()) {
+			ElMessage.error("当前浏览器不支持删除功能");
+			return;
+		}
+
+		const itemName = node.label;
+		const isDirectory = node.isDirectory;
+
+		// 使用标准的removeEntry方法删除
+		await deleteFileOrFolder(rootHandle.value, itemName, isDirectory);
+
+		ElMessage.success(
+			`${isDirectory ? "文件夹" : "文件"} "${itemName}" 删除成功`
+		);
+
+		// 清除选中状态（如果删除的是当前选中项）
+		if (selectedNodeId.value === node.id) {
+			selectedNode.value = null;
+			selectedNodeId.value = null;
+		}
+
+		// 刷新文件树
+		await loadFullDirectoryTree();
 	} catch (error) {
 		console.error("删除失败:", error);
-		ElMessage.error("删除失败: " + (error as Error).message);
+		const errorMessage = (error as Error).message;
+
+		// 根据错误类型提供更友好的提示
+		if (errorMessage.includes("NotAllowedError")) {
+			ElMessage.error("删除失败：没有权限访问该文件");
+		} else if (errorMessage.includes("NotFoundError")) {
+			ElMessage.error("删除失败：文件或文件夹不存在");
+		} else if (errorMessage.includes("InvalidModificationError")) {
+			ElMessage.error("删除失败：文件夹不为空，请先删除其中的内容");
+		} else {
+			ElMessage.error("删除失败: " + errorMessage);
+		}
 	}
 };
 
@@ -1108,6 +1459,58 @@ const deleteItem = async (node: FileTreeNode) => {
 const handleNodeContextMenu = (event: MouseEvent, data: FileTreeNode) => {
 	event.preventDefault();
 	console.log("右键点击:", data.label);
+};
+
+// 获取目标目录handle
+const getTargetDirectoryHandle = async (
+	node: FileTreeNode
+): Promise<FileSystemDirectoryHandle | null> => {
+	if (!rootHandle.value) return null;
+
+	if (node.isDirectory) {
+		// 如果是文件夹，直接返回该文件夹的handle
+		return node.handle as FileSystemDirectoryHandle;
+	} else {
+		// 如果是文件，需要获取其父目录的handle
+		const pathParts = node.id.split("/");
+		if (pathParts.length <= 1) {
+			// 文件在根目录
+			return rootHandle.value;
+		}
+
+		// 遍历路径获取父目录handle
+		let currentHandle = rootHandle.value;
+		for (const part of pathParts.slice(0, -1)) {
+			if (part) {
+				currentHandle = await currentHandle.getDirectoryHandle(part);
+			}
+		}
+		return currentHandle;
+	}
+};
+
+// 处理创建命令
+const handleCreateCommand = async (command: string, node: FileTreeNode) => {
+	try {
+		const targetDirectory = await getTargetDirectoryHandle(node);
+		if (!targetDirectory) {
+			ElMessage.error("无法获取目标目录");
+			return;
+		}
+
+		// 设置当前操作的目录
+		currentCreateDirectory.value = targetDirectory;
+		currentCreateNode.value = node;
+
+		if (command === "file") {
+			showCreateFileInDirectoryDialog();
+		} else if (command === "folder") {
+			showCreateFolderInDirectoryDialog();
+		}
+	} catch (error) {
+		console.error("获取目标目录失败:", error);
+		ElMessage.error("获取目标目录失败: " + (error as Error).message);
+	}
 };
 
 // 展开到指定节点
@@ -1166,13 +1569,37 @@ watch(
 // 组件挂载时尝试加载历史目录
 onMounted(async () => {
 	console.log("FileTree组件挂载，尝试加载历史目录");
+
+	// 检查删除功能支持情况
+	const deleteSupported = isDeleteSupported();
+	deleteFunctionSupported.value = deleteSupported;
+	console.log("删除功能支持情况:", deleteSupported);
+
+	if (!deleteSupported) {
+		ElMessage({
+			message: "当前浏览器不支持文件删除功能，建议使用Chrome 86+或Firefox 111+",
+			type: "warning",
+			duration: 5000,
+			showClose: true,
+		});
+	}
+
 	try {
+		isLoading.value = true;
 		const loaded = await loadDirectoryHistory();
 		if (!loaded) {
 			console.log("未能自动加载历史目录，等待用户手动选择");
+			// 可以考虑在这里显示一个提示消息
 		}
 	} catch (error) {
 		console.error("加载历史目录时出错:", error);
+		ElMessage({
+			message: "加载历史目录失败，请手动选择目录",
+			type: "warning",
+			duration: 3000,
+		});
+	} finally {
+		isLoading.value = false;
 	}
 });
 
@@ -1187,36 +1614,3 @@ defineExpose({
 	loadDirectoryHistory,
 });
 </script>
-
-<style scoped>
-:deep(.modern-dialog .el-dialog) {
-	border-radius: 16px;
-	box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-}
-
-:deep(.modern-dialog .el-dialog__header) {
-	background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-	border-radius: 16px 16px 0 0;
-	padding: 20px 24px;
-	border-bottom: 1px solid #e2e8f0;
-}
-
-:deep(.modern-dialog .el-dialog__title) {
-	font-weight: 600;
-	color: #1e293b;
-}
-
-:deep(.el-input__wrapper) {
-	border-radius: 12px;
-	box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-	transition: all 0.2s;
-}
-
-:deep(.el-input__wrapper:hover) {
-	box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-:deep(.el-input__wrapper.is-focus) {
-	box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-</style>

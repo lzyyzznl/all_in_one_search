@@ -207,6 +207,83 @@ export function getFileExtension(filename: string): string {
 	return filename.substring(filename.lastIndexOf("."));
 }
 
+// 删除文件或文件夹
+export async function deleteFileOrFolder(
+	parentHandle: FileSystemDirectoryHandle,
+	name: string,
+	isDirectory: boolean = false
+): Promise<void> {
+	try {
+		// 使用标准的removeEntry方法
+		await parentHandle.removeEntry(name, {
+			recursive: isDirectory, // 如果是目录，递归删除
+		});
+		console.log(`成功删除${isDirectory ? "文件夹" : "文件"}: ${name}`);
+	} catch (error) {
+		console.error(`删除${isDirectory ? "文件夹" : "文件"}失败:`, error);
+		throw error;
+	}
+}
+
+// 直接通过句柄删除（实验性方法，作为备选）
+export async function deleteByHandle(
+	handle: FileSystemFileHandle | FileSystemDirectoryHandle
+): Promise<void> {
+	try {
+		// 检查是否支持remove方法
+		if ("remove" in handle && typeof handle.remove === "function") {
+			await (handle as any).remove({
+				recursive: handle.kind === "directory",
+			});
+			console.log(`成功删除${handle.kind}: ${handle.name}`);
+		} else {
+			throw new Error("浏览器不支持直接删除方法");
+		}
+	} catch (error) {
+		console.error("直接删除失败:", error);
+		throw error;
+	}
+}
+
+// 检查删除功能是否可用
+export function isDeleteSupported(): boolean {
+	// 检查removeEntry方法是否可用
+	return "removeEntry" in FileSystemDirectoryHandle.prototype;
+}
+
+// 重命名文件或文件夹（通过复制+删除实现）
+export async function renameFileOrFolder(
+	parentHandle: FileSystemDirectoryHandle,
+	oldName: string,
+	newName: string,
+	isDirectory: boolean = false
+): Promise<void> {
+	try {
+		if (isDirectory) {
+			// 文件夹重命名比较复杂，需要递归复制所有内容
+			throw new Error("文件夹重命名功能暂未实现，需要递归复制所有子项");
+		} else {
+			// 文件重命名：读取内容 -> 创建新文件 -> 删除旧文件
+			const oldFileHandle = await parentHandle.getFileHandle(oldName);
+			const content = await readFile(oldFileHandle);
+
+			// 创建新文件
+			const newFileHandle = await parentHandle.getFileHandle(newName, {
+				create: true,
+			});
+			await writeFile(newFileHandle, content);
+
+			// 删除旧文件
+			await parentHandle.removeEntry(oldName);
+
+			console.log(`成功重命名文件: ${oldName} -> ${newName}`);
+		}
+	} catch (error) {
+		console.error("重命名失败:", error);
+		throw error;
+	}
+}
+
 // 获取文件类型（用于编辑器语言模式）
 export function getFileType(filename: string): string {
 	const ext = getFileExtension(filename).toLowerCase();

@@ -1,7 +1,5 @@
 ---
-description:
-globs:
-alwaysApply: true
+type: "always_apply"
 ---
 
 1. 请你每次执行任务之前都使用 sequential-thinking 的 mcp 服务来进行逻辑思考之后，再考虑下一步要怎么行动

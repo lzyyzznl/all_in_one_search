@@ -1,588 +1,476 @@
 <template>
 	<div class="h-full flex flex-col bg-white dark:bg-slate-800">
-		<!-- 编辑器工具栏 -->
+		<!-- 双行工具栏，仅在有标签时显示 -->
 		<div
-			class="flex justify-between items-center px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-white to-slate-50 dark:from-slate-800 dark:to-slate-700 flex-shrink-0 shadow-sm"
+			v-if="tabCount > 0"
+			class="border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-slate-50 to-white dark:from-slate-800 dark:to-slate-700 shadow-sm"
 		>
-			<div class="flex items-center gap-4">
-				<div
-					v-if="fileHandle"
-					class="w-10 h-10 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-800 dark:to-purple-800 rounded-xl flex items-center justify-center shadow-lg"
-				>
-					<el-icon class="text-blue-600 dark:text-blue-300">
-						<Document />
-					</el-icon>
-				</div>
-				<div>
-					<span class="font-bold text-slate-900 dark:text-slate-100 text-lg">
-						{{ fileName || "未选择文件" }}
-					</span>
+			<!-- 第一行工具栏：基础编辑功能 -->
+			<div class="flex border-b border-slate-100 dark:border-slate-600">
+				<!-- 左侧：Tiptap编辑按钮组（可滚动区域） -->
+				<div class="flex-1 min-w-0">
 					<div
-						v-if="isModified"
-						class="flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-orange-100 to-yellow-100 dark:from-orange-900/30 dark:to-yellow-900/30 text-orange-700 dark:text-orange-300 rounded-lg text-xs font-medium border border-orange-200 dark:border-orange-800 mt-1"
+						class="overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600"
 					>
-						<span
-							class="w-1.5 h-1.5 bg-orange-400 rounded-full animate-pulse"
-						></span>
-						已修改
+						<div class="flex items-center gap-2 px-4 py-2 min-w-max">
+							<!-- 基础文本格式化工具组 -->
+							<div class="flex items-center gap-1">
+								<el-button
+									size="small"
+									@click="editor?.chain().focus().toggleBold().run()"
+									title="粗体"
+									class="!rounded-lg !shadow-sm transition-all duration-200"
+									:class="{
+										'!bg-gradient-to-r !from-blue-600 !to-purple-600 !border-none !text-white !shadow-md':
+											editor?.isActive('bold'),
+										'!bg-white dark:!bg-slate-800 !border-slate-300 dark:!border-slate-600 !text-slate-700 dark:!text-slate-300 hover:!bg-slate-50 dark:hover:!bg-slate-700':
+											!editor?.isActive('bold'),
+									}"
+								>
+									<Icon icon="material-symbols:format-bold" class="text-base" />
+								</el-button>
+								<el-button
+									size="small"
+									@click="editor?.chain().focus().toggleItalic().run()"
+									title="斜体"
+									class="!rounded-lg !shadow-sm transition-all duration-200"
+									:class="{
+										'!bg-gradient-to-r !from-blue-600 !to-purple-600 !border-none !text-white !shadow-md':
+											editor?.isActive('italic'),
+										'!bg-white dark:!bg-slate-800 !border-slate-300 dark:!border-slate-600 !text-slate-700 dark:!text-slate-300 hover:!bg-slate-50 dark:hover:!bg-slate-700':
+											!editor?.isActive('italic'),
+									}"
+								>
+									<Icon
+										icon="material-symbols:format-italic"
+										class="text-base"
+									/>
+								</el-button>
+								<el-button
+									size="small"
+									:type="editor?.isActive('strike') ? 'primary' : 'default'"
+									@click="editor?.chain().focus().toggleStrike().run()"
+									title="删除线"
+									class="!rounded-lg !shadow-sm transition-all duration-200"
+								>
+									<Icon
+										icon="material-symbols:format-strikethrough"
+										class="text-base"
+									/>
+								</el-button>
+								<el-button
+									size="small"
+									@click="editor?.chain().focus().toggleUnderline().run()"
+									title="下划线"
+									class="!rounded-lg !shadow-sm transition-all duration-200"
+									:class="{
+										'!bg-gradient-to-r !from-blue-600 !to-purple-600 !border-none !text-white !shadow-md':
+											editor?.isActive('underline'),
+										'!bg-white dark:!bg-slate-800 !border-slate-300 dark:!border-slate-600 !text-slate-700 dark:!text-slate-300 hover:!bg-slate-50 dark:hover:!bg-slate-700':
+											!editor?.isActive('underline'),
+									}"
+								>
+									<Icon
+										icon="material-symbols:format-underlined"
+										class="text-base"
+									/>
+								</el-button>
+								<el-button
+									size="small"
+									:type="editor?.isActive('code') ? 'primary' : 'default'"
+									@click="editor?.chain().focus().toggleCode().run()"
+									title="行内代码"
+									class="!rounded-lg !shadow-sm transition-all duration-200"
+								>
+									<Icon icon="material-symbols:code" class="text-base" />
+								</el-button>
+							</div>
+
+							<!-- 分隔线 -->
+							<div class="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+
+							<!-- 标题下拉菜单 -->
+							<el-dropdown trigger="click">
+								<el-button
+									size="small"
+									class="!rounded-lg !shadow-sm transition-all duration-200 flex items-center gap-1"
+									title="标题样式"
+								>
+									<div class="flex items-center gap-1">
+										<Icon icon="material-symbols:title" class="text-base" />
+										<span>{{ currentHeadingText }}</span>
+										<Icon
+											icon="material-symbols:keyboard-arrow-down"
+											class="text-sm"
+										/>
+									</div>
+								</el-button>
+								<template #dropdown>
+									<el-dropdown-menu class="min-w-40 p-2">
+										<el-dropdown-item
+											@click.native="
+												editor?.chain().focus().setParagraph().run()
+											"
+											:class="{
+												'font-bold text-base': editor?.isActive('paragraph'),
+											}"
+											>正文
+											<span class="ml-4 text-xs text-slate-400"
+												>Alt Ctrl 0</span
+											></el-dropdown-item
+										>
+										<el-dropdown-item
+											v-for="level in [1, 2, 3, 4, 5, 6]"
+											:key="level"
+											@click.native="
+												editor
+													?.chain()
+													.focus()
+													.toggleHeading({
+														level: level as 1 | 2 | 3 | 4 | 5 | 6,
+													})
+													.run()
+											"
+											:class="{
+												'font-bold': editor?.isActive('heading', { level }),
+											}"
+										>
+											<span :class="'text-lg font-bold'">标题{{ level }}</span>
+											<span class="ml-4 text-xs text-slate-400"
+												>Alt Ctrl {{ level }}</span
+											>
+										</el-dropdown-item>
+									</el-dropdown-menu>
+								</template>
+							</el-dropdown>
+
+							<!-- 分隔线 -->
+							<div class="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+
+							<!-- 列表工具组 -->
+							<div class="flex items-center gap-1">
+								<el-button
+									size="small"
+									:type="editor?.isActive('bulletList') ? 'primary' : 'default'"
+									@click="editor?.chain().focus().toggleBulletList().run()"
+									title="无序列表"
+									class="!rounded-lg !shadow-sm transition-all duration-200"
+								>
+									<div class="flex items-center gap-1">
+										<Icon
+											icon="material-symbols:format-list-bulleted"
+											class="text-base"
+										/>
+										<span class="hidden sm:inline">无序列表</span>
+									</div>
+								</el-button>
+								<el-button
+									size="small"
+									:type="
+										editor?.isActive('orderedList') ? 'primary' : 'default'
+									"
+									@click="editor?.chain().focus().toggleOrderedList().run()"
+									title="有序列表"
+									class="!rounded-lg !shadow-sm transition-all duration-200"
+								>
+									<div class="flex items-center gap-1">
+										<Icon
+											icon="material-symbols:format-list-numbered"
+											class="text-base"
+										/>
+										<span class="hidden sm:inline">有序列表</span>
+									</div>
+								</el-button>
+								<el-button
+									size="small"
+									:type="editor?.isActive('taskList') ? 'primary' : 'default'"
+									@click="editor?.chain().focus().toggleTaskList().run()"
+									title="任务列表"
+									class="!rounded-lg !shadow-sm transition-all duration-200"
+								>
+									<div class="flex items-center gap-1">
+										<Icon icon="material-symbols:checklist" class="text-base" />
+										<span class="hidden sm:inline">任务列表</span>
+									</div>
+								</el-button>
+							</div>
+
+							<!-- 分隔线 -->
+							<div class="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+
+							<!-- 引用和代码块工具组 -->
+							<div class="flex items-center gap-1">
+								<el-button
+									size="small"
+									:type="editor?.isActive('blockquote') ? 'primary' : 'default'"
+									@click="editor?.chain().focus().toggleBlockquote().run()"
+									title="引用"
+									class="!rounded-lg !shadow-sm transition-all duration-200"
+								>
+									<div class="flex items-center gap-1">
+										<Icon
+											icon="material-symbols:format-quote"
+											class="text-base"
+										/>
+										<span class="hidden sm:inline">引用</span>
+									</div>
+								</el-button>
+								<el-button
+									size="small"
+									:type="editor?.isActive('codeBlock') ? 'primary' : 'default'"
+									@click="editor?.chain().focus().toggleCodeBlock().run()"
+									title="代码块"
+									class="!rounded-lg !shadow-sm transition-all duration-200"
+								>
+									<div class="flex items-center gap-1">
+										<Icon
+											icon="material-symbols:code-blocks"
+											class="text-base"
+										/>
+										<span class="hidden sm:inline">代码块</span>
+									</div>
+								</el-button>
+								<el-button
+									size="small"
+									@click="insertDetails"
+									title="插入折叠区域"
+									class="!rounded-lg !shadow-sm transition-all duration-200"
+								>
+									<div class="flex items-center gap-1">
+										<Icon
+											icon="material-symbols:expand-more"
+											class="text-base"
+										/>
+										<span class="hidden sm:inline">折叠区域</span>
+									</div>
+								</el-button>
+							</div>
+
+							<!-- 分隔线 -->
+							<div class="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+
+							<!-- 表格编辑工具组 -->
+							<div class="flex items-center gap-1">
+								<el-button
+									size="small"
+									@click="
+										editor
+											?.chain()
+											.focus()
+											.insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+											.run()
+									"
+									title="插入表格"
+									class="!rounded-lg !shadow-sm transition-all duration-200"
+								>
+									<div class="flex items-center gap-1">
+										<Icon icon="material-symbols:table" class="text-base" />
+										<span class="hidden sm:inline">表格</span>
+									</div>
+								</el-button>
+							</div>
+
+							<!-- 分隔线 -->
+							<div class="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+
+							<!-- 其他编辑工具组 -->
+							<div class="flex items-center gap-1">
+								<el-button
+									size="small"
+									@click="insertMermaidChart"
+									title="插入Mermaid"
+									class="!rounded-lg !shadow-sm transition-all duration-200"
+								>
+									<div class="flex items-center gap-1">
+										<Icon
+											icon="material-symbols:insert-chart"
+											class="text-base"
+										/>
+										<span class="hidden sm:inline">Mermaid</span>
+									</div>
+								</el-button>
+								<el-button
+									size="small"
+									@click="editor?.chain().focus().setHorizontalRule().run()"
+									title="分割线"
+									class="!rounded-lg !shadow-sm transition-all duration-200"
+								>
+									<div class="flex items-center gap-1">
+										<Icon
+											icon="material-symbols:horizontal-rule"
+											class="text-base"
+										/>
+										<span class="hidden sm:inline">分割线</span>
+									</div>
+								</el-button>
+								<div class="flex items-center gap-1">
+									<el-button
+										size="small"
+										@click="exportMarkdown"
+										title="导出Markdown"
+										class="!rounded-lg !shadow-sm transition-all duration-200"
+									>
+										<div class="flex items-center gap-1">
+											<Icon
+												icon="material-symbols:description"
+												class="text-base"
+											/>
+											<span class="hidden sm:inline">MD</span>
+										</div>
+									</el-button>
+									<el-button
+										size="small"
+										@click="exportImage"
+										title="导出为图片"
+										class="!rounded-lg !shadow-sm transition-all duration-200"
+									>
+										<div class="flex items-center gap-1">
+											<Icon icon="material-symbols:image" class="text-base" />
+											<span class="hidden sm:inline">图片</span>
+										</div>
+									</el-button>
+									<el-button
+										size="small"
+										@click="editor?.chain().focus().undo().run()"
+										:disabled="!editor?.can().undo()"
+										title="撤销"
+										class="!rounded-lg !shadow-sm transition-all duration-200 !px-2"
+									>
+										<Icon icon="material-symbols:undo" class="text-base" />
+									</el-button>
+									<el-button
+										size="small"
+										@click="editor?.chain().focus().redo().run()"
+										:disabled="!editor?.can().redo()"
+										title="重做"
+										class="!rounded-lg !shadow-sm transition-all duration-200 !px-2"
+									>
+										<Icon icon="material-symbols:redo" class="text-base" />
+									</el-button>
+								</div>
+
+								<!-- 分隔线 -->
+								<div class="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+
+								<!-- 文件操作组 -->
+								<div class="flex items-center gap-1">
+									<el-button
+										v-if="fileHandle && !isVirtual"
+										@click="reloadFile"
+										:disabled="isLoading"
+										title="重新加载"
+										size="small"
+										class="!rounded-lg !shadow-sm transition-all duration-200 !px-2"
+									>
+										<Icon
+											icon="material-symbols:refresh"
+											class="text-base"
+											:class="{ 'animate-spin': isLoading }"
+										/>
+									</el-button>
+									<el-button
+										v-if="fileHandle && !isVirtual && isModified"
+										@click="saveFile"
+										:disabled="isSaving"
+										title="保存文件"
+										size="small"
+										class="!rounded-lg !shadow-sm transition-all duration-200 !px-2 !bg-green-600 hover:!bg-green-700 !text-white !border-green-600"
+									>
+										<Icon icon="material-symbols:save" class="text-base" />
+									</el-button>
+									<el-button
+										v-if="isVirtual && isModified"
+										@click="saveAsFile"
+										:disabled="isSaving"
+										title="另存为文件"
+										size="small"
+										class="!rounded-lg !shadow-sm transition-all duration-200 !px-2 !bg-blue-600 hover:!bg-blue-700 !text-white !border-blue-600"
+									>
+										<Icon icon="material-symbols:save-as" class="text-base" />
+									</el-button>
+								</div>
+
+								<!-- 分隔线 -->
+								<div class="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+
+								<!-- 模式切换组 -->
+								<div class="flex items-center gap-1">
+									<el-button
+										@click="toggleEditorMode('wysiwyg')"
+										:class="
+											editorMode === 'wysiwyg'
+												? '!bg-blue-600 !text-white !border-blue-600'
+												: ''
+										"
+										size="small"
+										title="富文本"
+										class="!rounded-lg !shadow-sm transition-all duration-200 !px-2"
+									>
+										<Icon icon="material-symbols:edit" class="text-base" />
+									</el-button>
+									<el-button
+										@click="toggleEditorMode('markdown')"
+										:class="
+											editorMode === 'markdown'
+												? '!bg-blue-600 !text-white !border-blue-600'
+												: ''
+										"
+										size="small"
+										title="源码"
+										class="!rounded-lg !shadow-sm transition-all duration-200 !px-2"
+									>
+										<Icon icon="material-symbols:code" class="text-base" />
+									</el-button>
+								</div>
+
+								<!-- 分隔线 -->
+								<div class="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+
+								<!-- 功能切换组 -->
+								<div class="flex items-center gap-1">
+									<el-button
+										@click="showSearchDialog = true"
+										size="small"
+										title="查找/替换 (Ctrl+F)"
+										class="!rounded-lg !shadow-sm transition-all duration-200 !px-2"
+									>
+										<Icon icon="material-symbols:search" class="text-base" />
+									</el-button>
+									<el-button
+										@click="showToc = !showToc"
+										size="small"
+										:class="
+											showToc ? '!bg-blue-600 !text-white !border-blue-600' : ''
+										"
+										title="显示/隐藏大纲目录"
+										class="!rounded-lg !shadow-sm transition-all duration-200 !px-2"
+									>
+										<Icon icon="material-symbols:toc" class="text-base" />
+									</el-button>
+								</div>
+							</div>
+						</div>
 					</div>
 				</div>
-			</div>
-			<div class="flex gap-3">
-				<el-button
-					v-if="fileHandle"
-					:icon="Refresh"
-					size="small"
-					@click="reloadFile"
-					:loading="isLoading"
-					title="重新加载"
-					class="!bg-slate-100 dark:!bg-slate-700 !border-slate-300 dark:!border-slate-600 !text-slate-600 dark:!text-slate-300 hover:!bg-slate-200 dark:hover:!bg-slate-600 !rounded-xl !shadow-sm hover:!shadow-md transition-all duration-200"
-				>
-					<span class="ml-1">🔄</span>
-				</el-button>
-				<el-button
-					v-if="fileHandle && isModified"
-					:icon="DocumentCopy"
-					size="small"
-					@click="saveFile"
-					:loading="isSaving"
-					title="保存文件"
-					class="!bg-gradient-to-r !from-green-600 !to-emerald-600 !border-none !text-white hover:!from-green-700 hover:!to-emerald-700 !rounded-xl !shadow-lg hover:!shadow-xl !transition-all !duration-300 !font-medium !px-4"
-				>
-					✨ 保存
-				</el-button>
 			</div>
 		</div>
 
 		<!-- 编辑器主体 -->
 		<div class="flex-1 flex flex-col">
 			<!-- 文件未选择时的占位界面 -->
-			<div
-				v-if="!fileHandle"
-				class="flex flex-col items-center justify-center h-full p-12 text-center bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800"
-			>
-				<div class="relative mb-10">
-					<div
-						class="w-32 h-32 bg-gradient-to-br from-white to-slate-100 dark:from-slate-700 dark:to-slate-800 rounded-3xl flex items-center justify-center shadow-2xl animate-pulse"
-					>
-						<el-icon size="64" class="text-slate-400 dark:text-slate-500">
-							<Document />
-						</el-icon>
-					</div>
-					<div
-						class="absolute -top-3 -right-3 w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center animate-bounce shadow-xl"
-					>
-						<span class="text-white text-2xl">✏️</span>
-					</div>
-				</div>
-				<h3 class="mb-6 text-2xl font-bold text-slate-900 dark:text-slate-100">
-					选择一个文件开始编辑
-				</h3>
-				<p
-					class="mb-8 text-slate-600 dark:text-slate-400 leading-relaxed max-w-md"
-				>
-					从左侧文件树中选择支持的文件类型，<br />开启您的创作之旅
-				</p>
-				<div class="flex flex-wrap gap-3 justify-center">
-					<div
-						v-for="format in supportedFormats"
-						:key="format"
-						class="px-4 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-medium border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all duration-200"
-					>
-						{{ format }}
-					</div>
-				</div>
-			</div>
+			<!-- 已移除占位内容，避免多余文件名和图标显示 -->
 
 			<!-- 编辑器内容区域 -->
-			<div v-else class="flex-1 flex flex-col relative">
-				<!-- 右侧目录按钮 -->
-				<button
-					@click="showToc = !showToc"
-					class="fixed right-4 top-1/3 z-40 bg-gradient-to-br from-blue-100 to-purple-200 dark:from-blue-900 dark:to-purple-900 text-blue-700 dark:text-blue-200 rounded-full shadow-lg w-10 h-10 flex items-center justify-center hover:scale-110 transition-all"
-					title="显示/隐藏大纲目录"
-				>
-					<span v-if="!showToc">📑</span>
-					<span v-else>❌</span>
-				</button>
-				<!-- 右侧目录面板 -->
-				<transition name="fade">
-					<div
-						v-if="showToc && tocItems.length > 0"
-						class="fixed right-0 top-0 h-full w-72 bg-white/95 dark:bg-slate-900/95 border-l border-slate-200 dark:border-slate-700 shadow-2xl z-50 p-6 overflow-y-auto flex flex-col"
-					>
-						<h3
-							class="text-lg font-bold mb-4 text-slate-900 dark:text-slate-100 flex items-center gap-2"
-						>
-							📑 文档大纲
-						</h3>
-						<div class="space-y-1">
-							<div
-								v-for="item in tocItems"
-								:key="item.id"
-								class="pl-2 border-l-2 border-slate-200 dark:border-slate-700 ml-1"
-							>
-								<a
-									class="block py-1 px-2 rounded hover:bg-blue-100 dark:hover:bg-blue-900 cursor-pointer text-slate-700 dark:text-slate-200 text-sm"
-									:style="{ marginLeft: `${(item.level - 1) * 12}px` }"
-									@click="jumpToHeading(item.id)"
-								>
-									{{ item.text }}
-								</a>
-							</div>
-						</div>
-					</div>
-				</transition>
+			<div class="flex-1 flex flex-col relative">
+				<!-- 右侧目录面板已被移动到编辑器内容区域内 -->
 				<!-- 编辑器主内容区 -->
 				<div class="flex-1 flex flex-col">
-					<!-- Tiptap编辑器工具栏 -->
-					<div
-						class="flex items-center gap-3 px-6 py-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex-wrap shadow-sm flex-shrink-0"
-						v-if="editor"
-					>
-						<!-- 基础文本格式化工具 -->
-						<div
-							class="flex items-center gap-2 border-r border-slate-300 dark:border-slate-600 pr-3 mr-3"
-						>
-							<el-button
-								size="small"
-								@click="editor.chain().focus().toggleBold().run()"
-								title="粗体"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
-								:class="{
-									'!bg-gradient-to-r !from-blue-600 !to-purple-600 !border-none !text-white !shadow-md':
-										editor.isActive('bold'),
-									'!bg-white dark:!bg-slate-800 !border-slate-300 dark:!border-slate-600 !text-slate-700 dark:!text-slate-300 hover:!bg-slate-50 dark:hover:!bg-slate-700':
-										!editor.isActive('bold'),
-								}"
-							>
-								<strong class="font-bold">B</strong>
-							</el-button>
-							<el-button
-								size="small"
-								@click="editor.chain().focus().toggleItalic().run()"
-								title="斜体"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
-								:class="{
-									'!bg-gradient-to-r !from-blue-600 !to-purple-600 !border-none !text-white !shadow-md':
-										editor.isActive('italic'),
-									'!bg-white dark:!bg-slate-800 !border-slate-300 dark:!border-slate-600 !text-slate-700 dark:!text-slate-300 hover:!bg-slate-50 dark:hover:!bg-slate-700':
-										!editor.isActive('italic'),
-								}"
-							>
-								<em class="font-semibold">I</em>
-							</el-button>
-							<el-button
-								size="small"
-								:type="editor.isActive('strike') ? 'primary' : 'default'"
-								@click="editor.chain().focus().toggleStrike().run()"
-								title="删除线"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
-							>
-								<s>S</s>
-							</el-button>
-							<el-button
-								size="small"
-								@click="editor.chain().focus().toggleUnderline().run()"
-								title="下划线"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
-								:class="{
-									'!bg-gradient-to-r !from-blue-600 !to-purple-600 !border-none !text-white !shadow-md':
-										editor.isActive('underline'),
-									'!bg-white dark:!bg-slate-800 !border-slate-300 dark:!border-slate-600 !text-slate-700 dark:!text-slate-300 hover:!bg-slate-50 dark:hover:!bg-slate-700':
-										!editor.isActive('underline'),
-								}"
-							>
-								<u class="font-semibold">U</u>
-							</el-button>
-							<el-button
-								size="small"
-								:type="editor.isActive('code') ? 'primary' : 'default'"
-								@click="editor.chain().focus().toggleCode().run()"
-								title="行内代码"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
-							>
-								<code>&lt;/&gt;</code>
-							</el-button>
-						</div>
-
-						<!-- 标题工具 -->
-						<div
-							class="flex items-center gap-1 border-r border-gray-300 dark:border-gray-600 pr-2 mr-2"
-						>
-							<el-button
-								size="small"
-								:type="
-									editor.isActive('heading', { level: 1 })
-										? 'primary'
-										: 'default'
-								"
-								@click="
-									editor.chain().focus().toggleHeading({ level: 1 }).run()
-								"
-								title="标题1"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
-							>
-								H1
-							</el-button>
-							<el-button
-								size="small"
-								:type="
-									editor.isActive('heading', { level: 2 })
-										? 'primary'
-										: 'default'
-								"
-								@click="
-									editor.chain().focus().toggleHeading({ level: 2 }).run()
-								"
-								title="标题2"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
-							>
-								H2
-							</el-button>
-							<el-button
-								size="small"
-								:type="
-									editor.isActive('heading', { level: 3 })
-										? 'primary'
-										: 'default'
-								"
-								@click="
-									editor.chain().focus().toggleHeading({ level: 3 }).run()
-								"
-								title="标题3"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
-							>
-								H3
-							</el-button>
-							<el-button
-								size="small"
-								:type="
-									editor.isActive('heading', { level: 4 })
-										? 'primary'
-										: 'default'
-								"
-								@click="
-									editor.chain().focus().toggleHeading({ level: 4 }).run()
-								"
-								title="标题4"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
-							>
-								H4
-							</el-button>
-							<el-button
-								size="small"
-								:type="
-									editor.isActive('heading', { level: 5 })
-										? 'primary'
-										: 'default'
-								"
-								@click="
-									editor.chain().focus().toggleHeading({ level: 5 }).run()
-								"
-								title="标题5"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
-							>
-								H5
-							</el-button>
-							<el-button
-								size="small"
-								:type="
-									editor.isActive('heading', { level: 6 })
-										? 'primary'
-										: 'default'
-								"
-								@click="
-									editor.chain().focus().toggleHeading({ level: 6 }).run()
-								"
-								title="标题6"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
-							>
-								H6
-							</el-button>
-						</div>
-
-						<!-- 列表工具 -->
-						<div
-							class="flex items-center gap-1 border-r border-gray-300 dark:border-gray-600 pr-2 mr-2"
-						>
-							<el-button
-								size="small"
-								:type="editor.isActive('bulletList') ? 'primary' : 'default'"
-								@click="editor.chain().focus().toggleBulletList().run()"
-								title="无序列表"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
-							>
-								•
-							</el-button>
-							<el-button
-								size="small"
-								:type="editor.isActive('orderedList') ? 'primary' : 'default'"
-								@click="editor.chain().focus().toggleOrderedList().run()"
-								title="有序列表"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
-							>
-								1.
-							</el-button>
-							<el-button
-								size="small"
-								:type="editor.isActive('taskList') ? 'primary' : 'default'"
-								@click="editor.chain().focus().toggleTaskList().run()"
-								title="任务列表"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
-							>
-								☑
-							</el-button>
-						</div>
-
-						<!-- 引用和代码块工具 -->
-						<div
-							class="flex items-center gap-1 border-r border-gray-300 dark:border-gray-600 pr-2 mr-2"
-						>
-							<el-button
-								size="small"
-								:type="editor.isActive('blockquote') ? 'primary' : 'default'"
-								@click="editor.chain().focus().toggleBlockquote().run()"
-								title="引用"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
-							>
-								❝
-							</el-button>
-							<el-button
-								size="small"
-								:type="editor.isActive('codeBlock') ? 'primary' : 'default'"
-								@click="editor.chain().focus().toggleCodeBlock().run()"
-								title="代码块"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
-							>
-								{}
-							</el-button>
-							<el-button
-								size="small"
-								@click="insertDetails"
-								title="可折叠内容"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
-							>
-								📋
-							</el-button>
-						</div>
-
-						<!-- 表格编辑工具 -->
-						<div
-							class="flex items-center gap-1 border-r border-gray-300 dark:border-gray-600 pr-2 mr-2"
-						>
-							<el-button
-								size="small"
-								@click="
-									editor
-										.chain()
-										.focus()
-										.insertTable({ rows: 3, cols: 3, withHeaderRow: true })
-										.run()
-								"
-								title="插入表格"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
-							>
-								📊
-							</el-button>
-							<el-button
-								size="small"
-								@click="editor.chain().focus().addRowAfter().run()"
-								:disabled="!editor.can().addRowAfter()"
-								title="添加行"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
-							>
-								+行
-							</el-button>
-							<el-button
-								size="small"
-								@click="editor.chain().focus().addColumnAfter().run()"
-								:disabled="!editor.can().addColumnAfter()"
-								title="添加列"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
-							>
-								+列
-							</el-button>
-							<el-button
-								size="small"
-								@click="editor.chain().focus().deleteRow().run()"
-								:disabled="!editor.can().deleteRow()"
-								title="删除行"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
-							>
-								-行
-							</el-button>
-							<el-button
-								size="small"
-								@click="editor.chain().focus().deleteColumn().run()"
-								:disabled="!editor.can().deleteColumn()"
-								title="删除列"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
-							>
-								-列
-							</el-button>
-							<el-button
-								size="small"
-								@click="editor.chain().focus().deleteTable().run()"
-								:disabled="!editor.can().deleteTable()"
-								title="删除表格"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
-							>
-								🗑️
-							</el-button>
-						</div>
-
-						<!-- 图表功能工具 -->
-						<div
-							class="flex items-center gap-1 border-r border-gray-300 dark:border-gray-600 pr-2 mr-2"
-						>
-							<el-button
-								size="small"
-								@click="insertMermaidChart"
-								title="插入Mermaid图表"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
-							>
-								📈
-							</el-button>
-						</div>
-
-						<!-- 其他编辑工具 -->
-						<div class="flex items-center gap-1">
-							<el-button
-								size="small"
-								@click="exportJSON"
-								title="导出JSON"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
-								>🗂️JSON</el-button
-							>
-							<el-button
-								size="small"
-								@click="importJSON"
-								title="导入JSON"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
-								>📥JSON</el-button
-							>
-							<el-button
-								size="small"
-								@click="exportHTML"
-								title="导出HTML"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
-								>🗂️HTML</el-button
-							>
-							<el-button
-								size="small"
-								@click="importHTML"
-								title="导入HTML"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
-								>📥HTML</el-button
-							>
-							<el-button
-								size="small"
-								@click="exportMarkdown"
-								title="导出Markdown"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
-								>🗂️MD</el-button
-							>
-							<el-button
-								size="small"
-								@click="exportImage"
-								title="导出为图片"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
-							>
-								🖼️图片
-							</el-button>
-							<el-button
-								size="small"
-								@click="editor.chain().focus().setHorizontalRule().run()"
-								title="分割线"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
-							>
-								—
-							</el-button>
-							<el-button
-								size="small"
-								@click="editor.chain().focus().undo().run()"
-								:disabled="!editor.can().undo()"
-								title="撤销"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
-							>
-								↶
-							</el-button>
-							<el-button
-								size="small"
-								@click="editor.chain().focus().redo().run()"
-								:disabled="!editor.can().redo()"
-								title="重做"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
-							>
-								↷
-							</el-button>
-						</div>
-
-						<!-- 编辑模式切换 -->
-						<div
-							class="ml-auto flex items-center gap-2 bg-white dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-600 shadow-sm"
-						>
-							<el-button
-								size="small"
-								@click="toggleEditorMode('wysiwyg')"
-								title="可视化编辑"
-								class="!rounded-lg !px-4 !py-2 transition-all duration-200"
-								:class="{
-									'!bg-gradient-to-r !from-blue-600 !to-purple-600 !border-none !text-white !shadow-md':
-										editorMode === 'wysiwyg',
-									'!bg-transparent !border-transparent !text-blue-600 dark:!text-blue-300 hover:!bg-blue-50 dark:hover:!bg-blue-700':
-										editorMode !== 'wysiwyg',
-								}"
-							>
-								🎨 富文本
-							</el-button>
-							<el-button
-								size="small"
-								@click="toggleEditorMode('markdown')"
-								title="Markdown源码"
-								class="!rounded-lg !px-4 !py-2 transition-all duration-200"
-								:class="{
-									'!bg-gradient-to-r !from-slate-600 !to-slate-700 !border-none !text-white !shadow-md':
-										editorMode === 'markdown',
-									'!bg-transparent !border-transparent !text-slate-600 dark:!text-slate-300 hover:!bg-slate-50 dark:hover:!bg-slate-700':
-										editorMode !== 'markdown',
-								}"
-							>
-								📝 原始文本
-							</el-button>
-						</div>
-
-						<el-button
-							size="small"
-							@click="showSearchDialog = true"
-							title="查找/替换"
-							class="!rounded-lg !shadow-sm transition-all duration-200"
-						>
-							🔍查找
-						</el-button>
-						<el-button
-							size="small"
-							@click="toggleLineNumbers"
-							title="显示/隐藏行号"
-							class="!rounded-lg !shadow-sm transition-all duration-200"
-							:class="{
-								'!bg-gradient-to-r !from-indigo-600 !to-purple-600 !border-none !text-white !shadow-md':
-									showLineNumbers,
-								'!bg-white dark:!bg-slate-800 !border-slate-300 dark:!border-slate-600 !text-slate-700 dark:!text-slate-300 hover:!bg-slate-50 dark:hover:!bg-slate-700':
-									!showLineNumbers,
-							}"
-						>
-							{{ showLineNumbers ? "🔢隐藏行号" : "🔢显示行号" }}
-						</el-button>
-					</div>
-
 					<!-- 编辑器内容区 -->
 					<div class="flex-1 flex flex-col">
 						<!-- 富文本编辑模式 -->
 						<div
 							v-if="editorMode === 'wysiwyg'"
-							class="flex-1 flex flex-col p-6 bg-slate-50 dark:bg-slate-900"
+							class="flex-1 flex flex-col px-3 py-2 bg-slate-50 dark:bg-slate-900"
 						>
 							<div
 								class="flex-1 bg-white dark:bg-slate-800 rounded-2xl border-2 border-slate-200 dark:border-slate-700 shadow-xl relative min-h-0"
@@ -595,54 +483,217 @@
 									class="bubble-menu bg-white dark:bg-gray-800 border rounded-lg shadow-lg p-2 flex space-x-1"
 								>
 									<button
-										@click="editor.chain().focus().toggleBold().run()"
+										@click="editor?.chain().focus().toggleBold().run()"
 										:class="{
-											'bg-blue-500 text-white': editor.isActive('bold'),
+											'bg-blue-500 text-white': editor?.isActive('bold'),
 										}"
-										class="px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+										class="px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center"
 										title="粗体"
 									>
-										<strong>B</strong>
+										<Icon icon="material-symbols:format-bold" class="text-sm" />
 									</button>
 									<button
-										@click="editor.chain().focus().toggleItalic().run()"
+										@click="editor?.chain().focus().toggleItalic().run()"
 										:class="{
-											'bg-blue-500 text-white': editor.isActive('italic'),
+											'bg-blue-500 text-white': editor?.isActive('italic'),
 										}"
-										class="px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+										class="px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center"
 										title="斜体"
 									>
-										<em>I</em>
+										<Icon
+											icon="material-symbols:format-italic"
+											class="text-sm"
+										/>
 									</button>
 									<button
-										@click="editor.chain().focus().toggleStrike().run()"
+										@click="editor?.chain().focus().toggleStrike().run()"
 										:class="{
-											'bg-blue-500 text-white': editor.isActive('strike'),
+											'bg-blue-500 text-white': editor?.isActive('strike'),
 										}"
-										class="px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+										class="px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center"
 										title="删除线"
 									>
-										<s>S</s>
+										<Icon
+											icon="material-symbols:format-strikethrough"
+											class="text-sm"
+										/>
 									</button>
 									<button
-										@click="editor.chain().focus().toggleUnderline().run()"
+										@click="editor?.chain().focus().toggleUnderline().run()"
 										:class="{
-											'bg-blue-500 text-white': editor.isActive('underline'),
+											'bg-blue-500 text-white': editor?.isActive('underline'),
 										}"
-										class="px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+										class="px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center"
 										title="下划线"
 									>
-										<u>U</u>
+										<Icon
+											icon="material-symbols:format-underlined"
+											class="text-sm"
+										/>
 									</button>
 								</bubble-menu>
 
 								<EditorContent
 									:editor="editor"
-									:class="[
-										'absolute inset-0 p-8 overflow-y-auto',
-										{ 'line-numbers': showLineNumbers },
-									]"
+									class="absolute inset-0 p-8 overflow-y-auto"
 								/>
+
+								<!-- 目录弹窗，与EditorContent同级，确保高度一致 -->
+								<transition name="fade">
+									<div
+										v-if="showToc"
+										ref="tocPanel"
+										class="absolute right-0 inset-y-0 w-72 bg-white/95 dark:bg-slate-900/95 border-l border-slate-200 dark:border-slate-700 shadow-2xl z-50 p-6 overflow-y-auto flex flex-col"
+									>
+										<h3
+											class="text-lg font-bold mb-4 text-slate-900 dark:text-slate-100 flex items-center gap-2"
+										>
+											📑 文档大纲
+										</h3>
+										<div v-if="tocItems.length > 0" class="space-y-1">
+											<div
+												v-for="item in tocItems"
+												:key="item.id"
+												class="pl-2 border-l-2 border-slate-200 dark:border-slate-700 ml-1"
+											>
+												<a
+													class="block py-1 px-2 rounded hover:bg-blue-100 dark:hover:bg-blue-900 cursor-pointer text-slate-700 dark:text-slate-200 text-sm"
+													:style="{
+														marginLeft: `${(item.level - 1) * 12}px`,
+													}"
+													@click="jumpToHeading(item.id)"
+												>
+													{{ item.text }}
+												</a>
+											</div>
+										</div>
+										<div
+											v-else
+											class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 text-sm py-8"
+										>
+											<Icon
+												icon="material-symbols:article-outline"
+												class="text-4xl mb-2 opacity-50"
+											/>
+											<p class="text-center">暂无标题</p>
+											<p class="text-center text-xs mt-1">
+												在文档中添加标题后，大纲将在此显示
+											</p>
+										</div>
+									</div>
+								</transition>
+								<!-- 查找弹窗，与大纲弹窗同级，右侧显示 -->
+								<transition name="fade">
+									<div
+										v-if="showSearchDialog"
+										ref="searchPanel"
+										class="absolute right-0 top-8 w-80 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 z-50 backdrop-blur-sm"
+										style="animation: fadeInSlide 0.3s ease-out"
+									>
+										<!-- 关闭按钮 - 右上角绝对定位 -->
+										<el-button
+											@click="showSearchDialog = false"
+											size="small"
+											title="关闭"
+											class="!absolute !top-3 !right-3 !p-1.5 !w-6 !h-6 !rounded-md !bg-slate-100 dark:!bg-slate-600 !border-slate-200 dark:!border-slate-500 !text-slate-600 dark:!text-slate-400 hover:!bg-slate-200 dark:hover:!bg-slate-500 !shadow-sm transition-all duration-200 !z-10"
+										>
+											<Icon icon="material-symbols:close" class="text-xs" />
+										</el-button>
+
+										<!-- 标题和内容区域 -->
+										<div class="p-6">
+											<h3
+												class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 pr-8"
+											>
+												查找与替换
+											</h3>
+
+											<div class="space-y-4">
+												<div>
+													<label
+														class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
+														>查找</label
+													>
+													<el-input
+														ref="searchInput"
+														v-model="searchTerm"
+														placeholder="输入查找内容..."
+														@input="onSearchInput"
+														@keydown.enter="findNext"
+														@keydown.shift.enter="findPrev"
+														class="w-full search-input"
+													/>
+												</div>
+												<div>
+													<label
+														class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
+														>替换</label
+													>
+													<el-input
+														v-model="replaceTerm"
+														placeholder="输入替换内容..."
+														@input="onReplaceInput"
+														@keydown.enter="replaceOne"
+														@keydown.shift.enter="replaceAll"
+														class="w-full"
+													/>
+												</div>
+												<div class="flex items-center gap-3">
+													<el-checkbox
+														v-model="regexEnabled"
+														label="正则表达式"
+													/>
+													<el-checkbox
+														v-model="caseSensitive"
+														label="大小写敏感"
+													/>
+													<el-checkbox
+														v-model="wholeWordMatch"
+														label="完全匹配"
+													/>
+												</div>
+												<div class="flex gap-2 pt-2">
+													<el-button
+														size="small"
+														@click="findPrev"
+														class="flex-1"
+														:disabled="searchResults.total === 0"
+														>上一个</el-button
+													>
+													<el-button
+														size="small"
+														@click="findNext"
+														class="flex-1"
+														:disabled="searchResults.total === 0"
+														>下一个</el-button
+													>
+												</div>
+												<div class="flex gap-2">
+													<el-button
+														size="small"
+														@click="replaceOne"
+														class="flex-1"
+														>替换</el-button
+													>
+													<el-button
+														size="small"
+														type="primary"
+														@click="replaceAll"
+														class="flex-1"
+														>全部替换</el-button
+													>
+												</div>
+												<div
+													v-if="searchResults.current && searchResults.total"
+													class="text-xs text-slate-500 dark:text-slate-400 text-center"
+												>
+													{{ searchResults.current }} /
+													{{ searchResults.total }}
+												</div>
+											</div>
+										</div>
+									</div>
+								</transition>
 							</div>
 						</div>
 
@@ -655,7 +706,7 @@
 								v-model="markdownContent"
 								type="textarea"
 								:autosize="false"
-								placeholder="🌱 在这里输入您的 Markdown 内容...您可以使用：# 标题**粗体** *斜体*- 列表[链接](url)\`\`\`代码块\`\`\`开始您的创作吧！✨"
+								placeholder="🌱 在这里输入您的 Markdown 内容...您可以使用：# 标题**粗体** *斜体*- 列表[链接](url)```代码块```开始您的创作吧！✨"
 								class="flex-1 font-mono text-sm"
 								resize="none"
 								@input="handleMarkdownInput"
@@ -677,132 +728,6 @@
 				</div>
 			</div>
 		</div>
-		<!-- 统计卡片 -->
-		<div
-			v-if="editor"
-			class="px-6 py-3 flex justify-end items-center gap-3 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700"
-		>
-			<div
-				class="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-orange-100 to-red-100 dark:from-orange-900/30 dark:to-red-900/30 text-orange-700 dark:text-orange-300 rounded-lg text-xs font-medium border border-orange-200 dark:border-orange-800"
-			>
-				<span>📝</span>
-				{{ characterCount }} 字符
-			</div>
-			<div
-				class="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 text-green-700 dark:text-green-300 rounded-lg text-xs font-medium border border-green-200 dark:border-green-800"
-			>
-				<span>📊</span>
-				{{ wordCount }} 字数
-			</div>
-			<div
-				class="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-purple-100 to-violet-100 dark:from-purple-900/30 dark:to-violet-900/30 text-purple-700 dark:text-purple-300 rounded-lg text-xs font-medium border border-purple-200 dark:border-purple-800"
-			>
-				<span>📄</span>
-				{{ formatFileSize(fileSize) }}
-			</div>
-			<div
-				class="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-blue-100 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-xs font-medium border border-blue-200 dark:border-blue-800"
-			>
-				<span>📄</span>
-				{{ lineCount }} 行
-			</div>
-			<div
-				v-if="tabCount > 0"
-				class="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg text-xs font-medium border border-indigo-200 dark:border-indigo-800"
-			>
-				<span>📁</span>
-				{{ tabCount }} 页签
-			</div>
-		</div>
-
-		<!-- 查找替换弹窗 - 位于编辑器右上角 -->
-		<div
-			v-if="showSearchDialog"
-			class="fixed top-20 right-6 z-50 w-80 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 p-6 backdrop-blur-sm"
-			style="animation: fadeInSlide 0.3s ease-out"
-		>
-			<div class="flex items-center justify-between mb-4">
-				<h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
-					查找与替换
-				</h3>
-				<button
-					@click="showSearchDialog = false"
-					class="w-6 h-6 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-				>
-					✕
-				</button>
-			</div>
-
-			<div class="space-y-4">
-				<div>
-					<label
-						class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
-					>
-						查找
-					</label>
-					<el-input
-						ref="searchInput"
-						v-model="searchTerm"
-						placeholder="输入查找内容..."
-						@input="onSearchInput"
-						@keydown.enter="findNext"
-						@keydown.shift.enter="findPrev"
-						class="w-full search-input"
-					/>
-				</div>
-
-				<div>
-					<label
-						class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
-					>
-						替换
-					</label>
-					<el-input
-						v-model="replaceTerm"
-						placeholder="输入替换内容..."
-						@input="onReplaceInput"
-						@keydown.enter="replaceOne"
-						@keydown.shift.enter="replaceAll"
-						class="w-full"
-					/>
-				</div>
-
-				<div class="flex items-center gap-3">
-					<el-checkbox v-model="regexEnabled" label="正则表达式" />
-					<el-checkbox v-model="caseSensitive" label="大小写敏感" />
-				</div>
-
-				<div class="flex gap-2 pt-2">
-					<el-button size="small" @click="findPrev" class="flex-1">
-						上一个
-					</el-button>
-					<el-button size="small" @click="findNext" class="flex-1">
-						下一个
-					</el-button>
-				</div>
-
-				<div class="flex gap-2">
-					<el-button size="small" @click="replaceOne" class="flex-1">
-						替换
-					</el-button>
-					<el-button
-						size="small"
-						type="primary"
-						@click="replaceAll"
-						class="flex-1"
-					>
-						全部替换
-					</el-button>
-				</div>
-
-				<div
-					v-if="searchResults.current && searchResults.total"
-					class="text-xs text-slate-500 dark:text-slate-400 text-center"
-				>
-					{{ searchResults.current }} / {{ searchResults.total }}
-				</div>
-			</div>
-		</div>
 	</div>
 </template>
 
@@ -818,9 +743,11 @@ import {
 	watch,
 } from "vue";
 
-// Element Plus 组件和图标导入
-import { Document, DocumentCopy, Refresh } from "@element-plus/icons-vue";
+// Element Plus 组件导入
 import { ElMessage, ElMessageBox, ElNotification } from "element-plus";
+
+// Iconify Vue 图标导入
+import { Icon } from "@iconify/vue";
 
 // Tiptap 相关导入
 import { StarterKit } from "@syfxlin/tiptap-starter-kit";
@@ -843,14 +770,6 @@ import SearchAndReplace from "@sereneinserenade/tiptap-search-and-replace";
 import { getFileType, readFile, writeFile } from "../utils/file-service";
 import type { FileSystemFileHandle, FileTreeNode } from "../utils/types";
 
-// 引入prettier
-import parserBabel from "prettier/parser-babel";
-import parserHtml from "prettier/parser-html";
-import parserMarkdown from "prettier/parser-markdown";
-import parserPostcss from "prettier/parser-postcss";
-import parserTypescript from "prettier/parser-typescript";
-import prettier from "prettier/standalone";
-
 // 引入html2canvas
 import html2canvas from "html2canvas";
 
@@ -859,12 +778,18 @@ interface Props {
 	fileHandle?: FileSystemFileHandle | null;
 	fileNode?: FileTreeNode | null;
 	tabCount?: number;
+	isVirtual?: boolean;
 }
 
 // 组件事件接口定义
 interface Emits {
 	(e: "file-modified", isModified: boolean, modifiedContent?: string): void;
 	(e: "file-saved", fileHandle: FileSystemFileHandle): void;
+	(e: "save-as-requested", content: string): void;
+	(
+		e: "update:stats",
+		stats: { characterCount: number; fileSize: number; lineCount: number }
+	): void;
 }
 
 // 组件属性和事件定义
@@ -872,6 +797,7 @@ const props = withDefaults(defineProps<Props>(), {
 	fileHandle: null,
 	fileNode: null,
 	tabCount: 0,
+	isVirtual: false,
 });
 
 const emit = defineEmits<Emits>();
@@ -897,18 +823,35 @@ const fileName = computed(() => {
 	return props.fileNode?.label || props.fileHandle?.name || "";
 });
 
-// 支持的文件格式列表
-const supportedFormats = computed(() => [
-	".md",
-	".txt",
-	".log",
-	".json",
-	".js",
-	".ts",
-	".html",
-	".css",
-	".vue",
-]);
+// 当前标题状态的动态文本
+const currentHeadingText = computed(() => {
+	if (!editor.value) {
+		return "标题";
+	}
+
+	// 检查是否在段落中（正文）
+	if (editor.value.isActive("paragraph")) {
+		return "正文";
+	}
+
+	// 检查各级标题
+	for (let level = 1; level <= 6; level++) {
+		if (editor.value.isActive("heading", { level })) {
+			const levelNames = [
+				"一级标题",
+				"二级标题",
+				"三级标题",
+				"四级标题",
+				"五级标题",
+				"六级标题",
+			];
+			return levelNames[level - 1];
+		}
+	}
+
+	// 默认返回"标题"
+	return "标题";
+});
 
 // 初始化Tiptap编辑器实例
 const editor = useEditor({
@@ -937,12 +880,15 @@ const editor = useEditor({
 		TextAlign,
 		LineHeight,
 		Typography,
-		// @ts-ignore
 		SearchAndReplace.configure({
 			searchResultClass: "search-result",
 			disableRegex: false,
 		}),
-		TableOfContents,
+		TableOfContents.configure({
+			onUpdate: (updatedAnchors: any[]) => {
+				anchors.value = updatedAnchors;
+			},
+		}),
 	],
 	content: "",
 	editorProps: {
@@ -961,6 +907,10 @@ const editor = useEditor({
 		}
 
 		checkModified();
+	},
+	onSelectionUpdate: ({ editor }) => {
+		// 当光标位置改变时，计算属性会自动重新计算
+		// 这里不需要额外的逻辑，Vue的响应式系统会处理
 	},
 	onCreate: ({ editor }) => {
 		// 编辑器创建时初始化字符统计
@@ -1166,6 +1116,28 @@ const saveFile = async () => {
 	}
 };
 
+// 另存为文件（用于虚拟标签页）
+const saveAsFile = async () => {
+	if (!editor.value) return;
+
+	try {
+		isSaving.value = true;
+		let content = "";
+		if (editor.value.storage.markdown && editor.value.storage.markdown.get) {
+			content = editor.value.storage.markdown.get();
+		} else {
+			content = editor.value.getHTML();
+		}
+
+		// 发射事件让父组件处理另存为逻辑
+		emit("save-as-requested", content);
+	} catch (error) {
+		ElMessage.error("获取内容失败: " + (error as Error).message);
+	} finally {
+		isSaving.value = false;
+	}
+};
+
 // 重新加载文件
 const reloadFile = async () => {
 	if (isModified.value) {
@@ -1187,22 +1159,25 @@ const searchTerm = ref("");
 const replaceTerm = ref("");
 const regexEnabled = ref(false);
 const caseSensitive = ref(false);
+const wholeWordMatch = ref(false);
+// 搜索结果相关状态
 const searchResults = ref({ current: 0, total: 0 });
+const searchPositions = ref<number[]>([]);
+const currentSearchIndex = ref(-1);
 
 // 字符统计
 const characterCount = ref(0);
-const wordCount = ref(0);
 const fileSize = ref(0);
 const lineCount = ref(0);
 
-// 格式化文件大小
-const formatFileSize = (bytes: number): string => {
-	if (bytes === 0) return "0 B";
-	const k = 1024;
-	const sizes = ["B", "KB", "MB", "GB"];
-	const i = Math.floor(Math.log(bytes) / Math.log(k));
-	return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-};
+// 格式化文件大小（保留以备将来使用）
+// const formatFileSize = (bytes: number): string => {
+// 	if (bytes === 0) return "0 B";
+// 	const k = 1024;
+// 	const sizes = ["B", "KB", "MB", "GB"];
+// 	const i = Math.floor(Math.log(bytes) / Math.log(k));
+// 	return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+// };
 
 // 更新字符统计
 const updateCharacterCount = (editorInstance: any) => {
@@ -1217,20 +1192,6 @@ const updateCharacterCount = (editorInstance: any) => {
 		// 更新字符数
 		characterCount.value = text.length;
 
-		// 计算字数
-		if (text.trim() === "") {
-			wordCount.value = 0;
-		} else {
-			// 简单的字数统计：中文字符每个算一个词，英文按空格分隔
-			const chineseChars = (text.match(/[\u4e00-\u9fff]/g) || []).length;
-			const englishWords = text
-				.replace(/[\u4e00-\u9fff]/g, " ")
-				.trim()
-				.split(/\s+/)
-				.filter((word: string) => word.length > 0).length;
-			wordCount.value = chineseChars + englishWords;
-		}
-
 		// 计算文件大小（字节数）
 		fileSize.value = new Blob([text]).size;
 
@@ -1238,9 +1199,15 @@ const updateCharacterCount = (editorInstance: any) => {
 		const lines = text.split("\n");
 		lineCount.value = lines.length;
 
+		// 发送统计数据到父组件
+		emit("update:stats", {
+			characterCount: characterCount.value,
+			fileSize: fileSize.value,
+			lineCount: lineCount.value,
+		});
+
 		console.log("字符统计更新:", {
 			characters: characterCount.value,
-			words: wordCount.value,
 			fileSize: fileSize.value,
 			lines: lineCount.value,
 			text: text.substring(0, 100) + (text.length > 100 ? "..." : ""),
@@ -1248,7 +1215,6 @@ const updateCharacterCount = (editorInstance: any) => {
 	} catch (error) {
 		console.warn("字符统计更新失败:", error);
 		characterCount.value = 0;
-		wordCount.value = 0;
 		fileSize.value = 0;
 		lineCount.value = 0;
 	}
@@ -1282,12 +1248,9 @@ const insertMermaidChart = () => {
 
 	// 优先调用 insertMermaid 指令方法
 	// @ts-ignore
-	if (typeof editor.value.commands.insertMermaid === "function") {
+	if (editor.value.commands.insertMermaid) {
 		// @ts-ignore
 		editor.value.commands.insertMermaid(defaultMermaidCode);
-	} else {
-		const fullMermaidCode = `\`\`\`mermaid\n${defaultMermaidCode}\n\`\`\`\n\n`;
-		editor.value.commands.insertContent(fullMermaidCode);
 	}
 };
 
@@ -1312,130 +1275,8 @@ const insertDetails = () => {
 	}
 };
 
-// 代码格式化方法
-const formatCode = async () => {
-	if (!editor.value) return;
-	const { state, view } = editor.value;
-	const { selection } = state;
-	const { $from } = selection;
-	const parent = $from.parent;
-	if (parent.type.name !== "codeBlock") {
-		ElMessage.warning("请先选中一个代码块");
-		return;
-	}
-	const code = parent.textContent;
-	// 获取语言
-	const attrs = editor.value.getAttributes("codeBlock");
-	const lang = attrs.language || "javascript";
-
-	let parser = "babel";
-	let plugins: any[] = [parserBabel];
-	if (["typescript", "ts"].includes(lang)) {
-		parser = "typescript";
-		plugins = [parserTypescript] as any[];
-	} else if (["html", "vue"].includes(lang)) {
-		parser = "html";
-		plugins = [parserHtml] as any[];
-	} else if (["css", "scss", "less"].includes(lang)) {
-		parser = "css";
-		plugins = [parserPostcss] as any[];
-	} else if (["json"].includes(lang)) {
-		parser = "json";
-		plugins = [parserBabel] as any[];
-	} else if (["markdown", "md"].includes(lang)) {
-		parser = "markdown";
-		plugins = [parserMarkdown] as any[];
-	}
-
-	try {
-		const formatted = await prettier.format(code, {
-			parser,
-			plugins,
-			tabWidth: 2,
-			semi: true,
-			singleQuote: true,
-		});
-		// 替换当前代码块内容
-		const { tr } = state;
-		const pos = $from.before();
-		tr.replaceWith(
-			pos,
-			pos + parent.nodeSize,
-			parent.type.create(attrs, state.schema.text(formatted))
-		);
-		view.dispatch(tr);
-		ElMessage.success("代码格式化完成");
-	} catch (err) {
-		ElMessage.error("格式化失败: " + (err as Error).message);
-	}
-};
-
 // 工具栏方法实现
-const exportJSON = () => {
-	if (!editor.value) return;
-	const json = editor.value.getJSON();
-	const blob = new Blob([JSON.stringify(json, null, 2)], {
-		type: "application/json",
-	});
-	const url = URL.createObjectURL(blob);
-	const a = document.createElement("a");
-	a.href = url;
-	a.download = "document.json";
-	document.body.appendChild(a);
-	a.click();
-	document.body.removeChild(a);
-	URL.revokeObjectURL(url);
-};
-const importJSON = async () => {
-	if (!editor.value) return;
-	const input = document.createElement("input");
-	input.type = "file";
-	input.accept = ".json,application/json";
-	input.onchange = async (e: any) => {
-		const file = e.target.files[0];
-		if (!file) return;
-		const text = await file.text();
-		try {
-			const json = JSON.parse(text);
-			if (editor.value) {
-				editor.value.commands.setContent(json);
-				ElMessage.success("JSON导入成功");
-			}
-		} catch (err) {
-			ElMessage.error("JSON格式错误");
-		}
-	};
-	input.click();
-};
-const exportHTML = () => {
-	if (!editor.value) return;
-	const html = editor.value.getHTML();
-	const blob = new Blob([html], { type: "text/html" });
-	const url = URL.createObjectURL(blob);
-	const a = document.createElement("a");
-	a.href = url;
-	a.download = "document.html";
-	document.body.appendChild(a);
-	a.click();
-	document.body.removeChild(a);
-	URL.revokeObjectURL(url);
-};
-const importHTML = async () => {
-	if (!editor.value) return;
-	const input = document.createElement("input");
-	input.type = "file";
-	input.accept = ".html,text/html";
-	input.onchange = async (e: any) => {
-		const file = e.target.files[0];
-		if (!file) return;
-		const text = await file.text();
-		if (editor.value) {
-			editor.value.commands.setContent(text);
-			ElMessage.success("HTML导入成功");
-		}
-	};
-	input.click();
-};
+
 const exportMarkdown = () => {
 	if (!editor.value) return;
 	if (editor.value.storage.markdown && editor.value.storage.markdown.get) {
@@ -1477,14 +1318,6 @@ const exportImage = async () => {
 	});
 };
 
-// 行号显示状态
-const showLineNumbers = ref(false);
-
-// 切换行号显示
-const toggleLineNumbers = () => {
-	showLineNumbers.value = !showLineNumbers.value;
-};
-
 // 监听文件句柄变化
 watch(
 	() => props.fileHandle,
@@ -1518,7 +1351,6 @@ watch(
 			originalContent.value = "";
 			isModified.value = false;
 			characterCount.value = 0;
-			wordCount.value = 0;
 			fileSize.value = 0;
 			lineCount.value = 0;
 		}
@@ -1572,7 +1404,6 @@ onMounted(() => {
 		originalContent.value = "";
 		isModified.value = false;
 		characterCount.value = 0;
-		wordCount.value = 0;
 		fileSize.value = 0;
 		lineCount.value = 0;
 	}
@@ -1608,67 +1439,175 @@ defineExpose({
 
 const onSearchInput = () => {
 	if (editor.value) {
-		// 更新搜索配置以支持正则表达式
-		// @ts-ignore
-		editor.value.commands.setSearchTerm(searchTerm.value, {
-			regex: regexEnabled.value,
-			caseSensitive: caseSensitive.value,
-		});
-		// 更新搜索结果统计
-		updateSearchResults();
+		// 只有在搜索对话框显示且有搜索内容时才进行搜索
+		if (showSearchDialog.value && searchTerm.value.trim()) {
+			// 更新搜索词
+			editor.value.commands.setSearchTerm(searchTerm.value);
+			// 收集搜索结果位置
+			collectSearchPositions();
+		} else {
+			// 清除搜索
+			editor.value.commands.setSearchTerm("");
+			searchPositions.value = [];
+			searchResults.value = { current: 0, total: 0 };
+			currentSearchIndex.value = -1;
+		}
 	}
+};
+
+// 收集搜索结果位置
+const collectSearchPositions = () => {
+	if (!editor.value || !searchTerm.value) {
+		searchPositions.value = [];
+		searchResults.value = { current: 0, total: 0 };
+		currentSearchIndex.value = -1;
+		return;
+	}
+
+	const positions: number[] = [];
+	const doc = editor.value.state.doc;
+
+	// 遍历文档找到所有匹配位置
+	doc.descendants((node, pos) => {
+		if (node.isText && node.text) {
+			const originalText = node.text;
+			let searchText = searchTerm.value;
+			let textToSearch = originalText;
+
+			// 处理大小写敏感
+			if (!caseSensitive.value) {
+				searchText = searchText.toLowerCase();
+				textToSearch = originalText.toLowerCase();
+			}
+
+			if (regexEnabled.value) {
+				try {
+					const flags = caseSensitive.value ? "g" : "gi";
+					const regex = new RegExp(searchText, flags);
+					let match;
+					while ((match = regex.exec(originalText)) !== null) {
+						positions.push(pos + match.index);
+						if (match[0].length === 0) break; // 防止无限循环
+					}
+				} catch (e) {
+					// 正则表达式无效时使用普通搜索
+					let index = 0;
+					while ((index = textToSearch.indexOf(searchText, index)) !== -1) {
+						positions.push(pos + index);
+						index += searchText.length;
+					}
+				}
+			} else if (wholeWordMatch.value) {
+				// 完全匹配模式
+				const escapedSearchText = searchText.replace(
+					/[.*+?^${}()|[\]\\]/g,
+					"\\$&"
+				);
+				const regex = new RegExp(
+					`\\b${escapedSearchText}\\b`,
+					caseSensitive.value ? "g" : "gi"
+				);
+				let match;
+				while ((match = regex.exec(originalText)) !== null) {
+					positions.push(pos + match.index);
+				}
+			} else {
+				// 普通搜索
+				let index = 0;
+				while ((index = textToSearch.indexOf(searchText, index)) !== -1) {
+					positions.push(pos + index);
+					index += searchText.length;
+				}
+			}
+		}
+	});
+
+	searchPositions.value = positions;
+	searchResults.value = {
+		current: positions.length > 0 ? 1 : 0,
+		total: positions.length,
+	};
+	currentSearchIndex.value = positions.length > 0 ? 0 : -1;
 };
 const onReplaceInput = () => {
 	if (editor.value) {
-		// @ts-ignore
 		editor.value.commands.setReplaceTerm(replaceTerm.value);
 	}
 };
+// 查找下一个/上一个功能
 const findNext = () => {
-	if (editor.value) {
-		// @ts-ignore
-		editor.value.commands.goToNext?.();
-		updateSearchResults();
-	}
+	if (!editor.value || searchPositions.value.length === 0) return;
+
+	// 计算下一个索引
+	const nextIndex =
+		(currentSearchIndex.value + 1) % searchPositions.value.length;
+	currentSearchIndex.value = nextIndex;
+
+	// 跳转到位置
+	const pos = searchPositions.value[nextIndex];
+	editor.value
+		.chain()
+		.focus()
+		.setTextSelection({ from: pos, to: pos + searchTerm.value.length })
+		.scrollIntoView()
+		.run();
+
+	// 更新统计
+	searchResults.value.current = nextIndex + 1;
 };
+
 const findPrev = () => {
-	if (editor.value) {
-		// @ts-ignore
-		editor.value.commands.goToPrevious?.();
-		updateSearchResults();
-	}
+	if (!editor.value || searchPositions.value.length === 0) return;
+
+	// 计算上一个索引
+	const prevIndex =
+		currentSearchIndex.value === 0
+			? searchPositions.value.length - 1
+			: currentSearchIndex.value - 1;
+	currentSearchIndex.value = prevIndex;
+
+	// 跳转到位置
+	const pos = searchPositions.value[prevIndex];
+	editor.value
+		.chain()
+		.focus()
+		.setTextSelection({ from: pos, to: pos + searchTerm.value.length })
+		.scrollIntoView()
+		.run();
+
+	// 更新统计
+	searchResults.value.current = prevIndex + 1;
 };
 const replaceOne = () => {
-	if (editor.value) {
-		// @ts-ignore
-		editor.value.commands.replace?.();
-		updateSearchResults();
+	if (editor.value && searchTerm.value && replaceTerm.value) {
+		// @ts-ignore - 使用可能的API命令
+		editor.value.commands.replace?.() || editor.value.commands.replaceNext?.();
 	}
 };
 const replaceAll = () => {
-	if (editor.value) {
-		// @ts-ignore
+	if (editor.value && searchTerm.value && replaceTerm.value) {
+		// @ts-ignore - 使用可能的API命令
 		editor.value.commands.replaceAll?.();
-		updateSearchResults();
 	}
 };
 
-// 更新搜索结果统计
-const updateSearchResults = () => {
-	if (editor.value && searchTerm.value) {
-		// 这里需要根据具体的SearchAndReplace扩展API来获取搜索结果
-		// 目前先设置一个模拟值
-		const results = { current: 1, total: 1 };
-		searchResults.value = results;
-	} else {
-		searchResults.value = { current: 0, total: 0 };
-	}
-};
+// 移除搜索结果统计功能
 
 // 监听搜索选项变化
-watch([regexEnabled, caseSensitive], () => {
+watch([regexEnabled, caseSensitive, wholeWordMatch], () => {
 	if (searchTerm.value) {
 		onSearchInput();
+	}
+});
+
+// 监听搜索对话框状态，隐藏时清除搜索
+watch(showSearchDialog, (isVisible) => {
+	if (!isVisible && editor.value) {
+		// 清除搜索高亮
+		editor.value.commands.setSearchTerm("");
+		searchPositions.value = [];
+		searchResults.value = { current: 0, total: 0 };
+		currentSearchIndex.value = -1;
 	}
 });
 
@@ -1686,29 +1625,109 @@ watch(showSearchDialog, (show) => {
 
 // 目录面板显示状态
 const showToc = ref(false);
+// 大纲锚点数据
+const anchors = ref<any[]>([]);
 // 目录数据
-const tocItems = computed(
-	() => editor.value?.storage?.tableOfContents?.items || []
+const tocItems = computed(() =>
+	anchors.value.map((anchor) => ({
+		id: anchor.id,
+		text: anchor.textContent,
+		level: anchor.level,
+		pos: anchor.pos,
+	}))
 );
 // 目录跳转方法
 const jumpToHeading = (id: string) => {
-	if (editor.value && id) {
-		// @ts-ignore
-		editor.value.commands.scrollToHeading?.(id);
+	if (!editor.value || !id) return;
+
+	// 找到对应的anchor
+	const anchor = anchors.value.find((a) => a.id === id);
+	if (anchor) {
+		// 使用链式调用聚焦、定位和滚动
+		editor.value
+			.chain()
+			.focus()
+			.setTextSelection(anchor.pos)
+			.scrollIntoView()
+			.run();
 	}
 };
+
+const tocPanel = ref<HTMLElement | null>(null);
+const searchPanel = ref<HTMLElement | null>(null);
+
+// 目录弹窗外部点击和Esc关闭逻辑
+watch(showToc, (visible) => {
+	if (visible) {
+		nextTick(() => {
+			const onClick = (e: MouseEvent) => {
+				const panel = tocPanel.value;
+				if (panel && !panel.contains(e.target as Node)) {
+					showToc.value = false;
+				}
+			};
+			const onKeydown = (e: KeyboardEvent) => {
+				if (e.key === "Escape") {
+					showToc.value = false;
+				}
+			};
+			document.addEventListener("mousedown", onClick);
+			document.addEventListener("keydown", onKeydown);
+			// 关闭时移除监听
+			const stop = watch(showToc, (v) => {
+				if (!v) {
+					document.removeEventListener("mousedown", onClick);
+					document.removeEventListener("keydown", onKeydown);
+					stop();
+				}
+			});
+		});
+	}
+});
+
+// 查找弹窗外部点击和Esc关闭逻辑
+watch(showSearchDialog, (visible) => {
+	if (visible) {
+		nextTick(() => {
+			const onClick = (e: MouseEvent) => {
+				const panel = searchPanel.value;
+				if (panel && !panel.contains(e.target as Node)) {
+					showSearchDialog.value = false;
+				}
+			};
+			const onKeydown = (e: KeyboardEvent) => {
+				if (e.key === "Escape") {
+					showSearchDialog.value = false;
+				}
+			};
+			document.addEventListener("mousedown", onClick);
+			document.addEventListener("keydown", onKeydown);
+			// 关闭时移除监听
+			const stop = watch(showSearchDialog, (v) => {
+				if (!v) {
+					document.removeEventListener("mousedown", onClick);
+					document.removeEventListener("keydown", onKeydown);
+					stop();
+				}
+			});
+		});
+	}
+});
 </script>
 
 <style scoped>
+/* 使用UnoCSS风格的组件样式 */
 :deep(.modern-drawer .el-drawer) {
 	border-radius: 16px 0 0 16px;
-	box-shadow: -10px 0 25px -5px rgba(0, 0, 0, 0.1);
+	box-shadow:
+		0 10px 15px -3px rgba(0, 0, 0, 0.1),
+		0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
 :deep(.modern-drawer .el-drawer__header) {
-	background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+	background: linear-gradient(to bottom right, #f8fafc, #e2e8f0);
 	border-bottom: 1px solid #e2e8f0;
-	padding: 20px 24px;
+	padding: 1.25rem;
 }
 
 :deep(.modern-drawer .el-drawer__title) {
@@ -1717,178 +1736,151 @@ const jumpToHeading = (id: string) => {
 }
 
 :deep(.el-input__wrapper) {
-	border-radius: 12px;
-	box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-	transition: all 0.2s;
+	border-radius: 0.75rem;
+	box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+	transition: all 0.2s cubic-bezier(0.645, 0.045, 0.355, 1);
 }
 
 :deep(.el-input__wrapper:hover) {
-	box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+	box-shadow:
+		0 4px 6px -1px rgba(0, 0, 0, 0.1),
+		0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 :deep(.el-input__wrapper.is-focus) {
 	box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
+/* ProseMirror编辑器样式 - UnoCSS设计系统 */
 :deep(.ProseMirror) {
 	outline: none;
 	padding: 2rem;
 	font-family:
 		-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu",
 		"Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
-	line-height: 1.7;
-	color: #374151;
+	line-height: 1.5;
+	color: #374151; /* text-gray-700 */
 }
 
+/* 标题样式 - 使用UnoCSS的字体大小和颜色系统 */
 :deep(.ProseMirror h1) {
-	font-size: 2.25rem;
-	font-weight: 700;
-	margin: 2rem 0 1rem 0;
-	color: #111827;
+	font-size: 2.25rem; /* text-4xl */
+	font-weight: 700; /* font-bold */
+	margin: 1.5rem 0 0.75rem 0; /* my-6 mb-3 */
+	color: #111827; /* text-gray-900 */
 }
 
 :deep(.ProseMirror h2) {
-	font-size: 1.875rem;
-	font-weight: 600;
-	margin: 1.75rem 0 0.875rem 0;
-	color: #111827;
+	font-size: 1.875rem; /* text-3xl */
+	font-weight: 600; /* font-semibold */
+	margin: 1.25rem 0 0.5rem 0; /* my-5 mb-2 */
+	color: #111827; /* text-gray-900 */
 }
 
 :deep(.ProseMirror h3) {
-	font-size: 1.5rem;
-	font-weight: 600;
-	margin: 1.5rem 0 0.75rem 0;
-	color: #111827;
+	font-size: 1.5rem; /* text-2xl */
+	font-weight: 600; /* font-semibold */
+	margin: 1rem 0 0.5rem 0; /* my-4 mb-2 */
+	color: #111827; /* text-gray-900 */
 }
 
+/* 段落样式 - UnoCSS设计系统 */
 :deep(.ProseMirror p) {
-	margin: 1rem 0;
+	margin: 0.25rem 0; /* my-1 */
 }
 
-:deep(.ProseMirror ul, .ProseMirror ol) {
-	margin: 1rem 0;
-	padding-left: 2rem;
-}
+/* 列表使用默认样式，不做特殊修改 */
 
 :deep(.ProseMirror blockquote) {
-	border-left: 4px solid #e5e7eb;
-	padding-left: 1rem;
-	margin: 1.5rem 0;
-	font-style: italic;
-	color: #6b7280;
+	border-left: 4px solid #e5e7eb; /* border-l-4 border-gray-200 */
+	padding-left: 0; /* pl-0 - 统一左边距为0 */
+	margin: 0.75rem 0; /* my-3 */
+	font-style: italic; /* italic */
+	color: #6b7280; /* text-gray-500 */
 }
 
+/* 代码样式 - UnoCSS设计系统 */
 :deep(.ProseMirror code) {
-	background: #f3f4f6;
-	padding: 0.25rem 0.5rem;
-	border-radius: 0.375rem;
+	background: #f3f4f6; /* bg-gray-100 */
+	padding: 0.25rem 0.5rem; /* px-2 py-1 */
+	border-radius: 0.375rem; /* rounded-md */
 	font-family:
 		ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo,
-		monospace;
-	font-size: 0.875rem;
+		monospace; /* font-mono */
+	font-size: 0.875rem; /* text-sm */
 }
 
 :deep(.ProseMirror pre) {
-	background: #1f2937;
-	color: #f9fafb;
-	padding: 1.5rem;
-	border-radius: 0.75rem;
-	overflow-x: auto;
-	margin: 1.5rem 0;
+	background: #1f2937; /* bg-gray-800 */
+	color: #f9fafb; /* text-gray-50 */
+	padding: 1.5rem; /* p-6 */
+	border-radius: 0.75rem; /* rounded-xl */
+	overflow-x: auto; /* overflow-x-auto */
+	margin: 1.5rem 0; /* my-6 */
 }
 
 :deep(.ProseMirror pre code) {
-	background: transparent;
-	padding: 0;
+	background: transparent; /* bg-transparent */
+	padding: 0; /* p-0 */
 	color: inherit;
 }
 
+/* 表格样式 - UnoCSS设计系统 */
 :deep(.ProseMirror table) {
 	border-collapse: collapse;
-	margin: 1.5rem 0;
-	width: 100%;
+	margin: 1.5rem 0; /* my-6 */
+	width: 100%; /* w-full */
 }
 
 :deep(.ProseMirror th, .ProseMirror td) {
-	border: 1px solid #e5e7eb;
-	padding: 0.75rem;
-	text-align: left;
+	border: 1px solid #e5e7eb; /* border border-gray-200 */
+	padding: 0.75rem; /* p-3 */
+	text-align: left; /* text-left */
 }
 
 :deep(.ProseMirror th) {
-	background: #f9fafb;
-	font-weight: 600;
+	background: #f9fafb; /* bg-gray-50 */
+	font-weight: 600; /* font-semibold */
 }
 
 :deep(.ProseMirror hr) {
 	border: none;
-	border-top: 2px solid #e5e7eb;
-	margin: 2rem 0;
+	border-top: 2px solid #e5e7eb; /* border-t-2 border-gray-200 */
+	margin: 2rem 0; /* my-8 */
 }
 
+/* 暗色主题样式 - UnoCSS设计系统 */
 :deep(.dark .ProseMirror) {
-	color: #d1d5db;
+	color: #d1d5db; /* dark:text-gray-300 */
 }
 
 :deep(.dark .ProseMirror h1, .dark .ProseMirror h2, .dark .ProseMirror h3) {
-	color: #f9fafb;
+	color: #f9fafb; /* dark:text-gray-50 */
 }
 
 :deep(.dark .ProseMirror blockquote) {
-	border-left-color: #4b5563;
-	color: #9ca3af;
+	border-left-color: #4b5563; /* dark:border-gray-600 */
+	color: #9ca3af; /* dark:text-gray-400 */
 }
 
 :deep(.dark .ProseMirror code) {
-	background: #374151;
-	color: #f3f4f6;
+	background: #374151; /* dark:bg-gray-700 */
+	color: #f3f4f6; /* dark:text-gray-100 */
 }
 
 :deep(.dark .ProseMirror th, .dark .ProseMirror td) {
-	border-color: #4b5563;
+	border-color: #4b5563; /* dark:border-gray-600 */
 }
 
 :deep(.dark .ProseMirror th) {
-	background: #374151;
+	background: #374151; /* dark:bg-gray-700 */
 }
 
 :deep(.dark .ProseMirror hr) {
-	border-top-color: #4b5563;
+	border-top-color: #4b5563; /* dark:border-gray-600 */
 }
 
-/* 任务列表样式 */
-:deep(.ProseMirror ul[data-type="taskList"]) {
-	list-style: none;
-	padding: 0;
-}
-
-:deep(.ProseMirror ul[data-type="taskList"] li) {
-	display: flex;
-	align-items: flex-start;
-	margin: 0.5rem 0;
-}
-
-:deep(.ProseMirror ul[data-type="taskList"] li > label) {
-	flex: 0 0 auto;
-	margin-right: 0.5rem;
-	margin-top: 0.1rem;
-	user-select: none;
-}
-
-:deep(.ProseMirror ul[data-type="taskList"] li > div) {
-	flex: 1 1 auto;
-}
-
-:deep(.ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div) {
-	text-decoration: line-through;
-	color: #9ca3af;
-}
-
-:deep(
-	.dark .ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div
-) {
-	color: #6b7280;
-}
+/* 任务列表使用默认样式，不做特殊修改 */
 
 /* 搜索弹窗动画 */
 @keyframes fadeInSlide {
@@ -1914,162 +1906,14 @@ const jumpToHeading = (id: string) => {
 	outline: 2px solid #ff6b00;
 }
 
-/* 行号样式 */
-:deep(.line-numbers .ProseMirror) {
-	counter-reset: line;
-	padding-left: 5rem; /* 为行号预留更多空间，避免与悬浮菜单冲突 */
-	position: relative; /* 为行号定位提供参考点 */
+/* 淡入淡出过渡动画 */
+.fade-enter-active,
+.fade-leave-active {
+	transition: opacity 0.3s ease;
 }
 
-/* 确保行号不影响正常的行间距和段落间距 */
-:deep(.line-numbers .ProseMirror p),
-:deep(.line-numbers .ProseMirror h1),
-:deep(.line-numbers .ProseMirror h2),
-:deep(.line-numbers .ProseMirror h3),
-:deep(.line-numbers .ProseMirror h4),
-:deep(.line-numbers .ProseMirror h5),
-:deep(.line-numbers .ProseMirror h6) {
-	margin-top: 1rem; /* 恢复正常的段落间距 */
-	margin-bottom: 1rem;
-}
-
-:deep(.line-numbers .ProseMirror h1) {
-	margin-top: 2rem;
-	margin-bottom: 1rem;
-}
-
-:deep(.line-numbers .ProseMirror h2) {
-	margin-top: 1.75rem;
-	margin-bottom: 0.875rem;
-}
-
-:deep(.line-numbers .ProseMirror h3) {
-	margin-top: 1.5rem;
-	margin-bottom: 0.75rem;
-}
-
-/* 为引用和列表添加正常间距 */
-:deep(.line-numbers .ProseMirror blockquote) {
-	margin: 1.5rem 0;
-}
-
-:deep(.line-numbers .ProseMirror ul),
-:deep(.line-numbers .ProseMirror ol) {
-	margin: 1rem 0;
-	padding-left: 2rem;
-}
-
-:deep(.line-numbers .ProseMirror p),
-:deep(.line-numbers .ProseMirror h1),
-:deep(.line-numbers .ProseMirror h2),
-:deep(.line-numbers .ProseMirror h3),
-:deep(.line-numbers .ProseMirror h4),
-:deep(.line-numbers .ProseMirror h5),
-:deep(.line-numbers .ProseMirror h6),
-:deep(.line-numbers .ProseMirror blockquote),
-:deep(.line-numbers .ProseMirror pre),
-:deep(.line-numbers .ProseMirror ul li),
-:deep(.line-numbers .ProseMirror ol li) {
-	counter-increment: line;
-	position: relative; /* 为行号定位提供参考点 */
-}
-
-:deep(.line-numbers .ProseMirror p::before),
-:deep(.line-numbers .ProseMirror h1::before),
-:deep(.line-numbers .ProseMirror h2::before),
-:deep(.line-numbers .ProseMirror h3::before),
-:deep(.line-numbers .ProseMirror h4::before),
-:deep(.line-numbers .ProseMirror h5::before),
-:deep(.line-numbers .ProseMirror h6::before),
-:deep(.line-numbers .ProseMirror blockquote::before),
-:deep(.line-numbers .ProseMirror pre::before),
-:deep(.line-numbers .ProseMirror ul li::before),
-:deep(.line-numbers .ProseMirror ol li::before) {
-	content: counter(line);
-	position: absolute;
-	left: -4.5rem; /* 更靠左，避免与悬浮菜单冲突 */
-	top: 0;
-	width: 3rem;
-	height: 0; /* 确保不占用垂直空间 */
-	color: #9ca3af;
-	font-size: 0.75rem;
-	font-family:
-		ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo,
-		monospace;
-	text-align: right;
-	line-height: inherit;
-	user-select: none;
-	pointer-events: none;
-	overflow: visible; /* 确保内容可见 */
-}
-
-/* 深色模式下的行号颜色 */
-:deep(.dark .line-numbers .ProseMirror p::before),
-:deep(.dark .line-numbers .ProseMirror h1::before),
-:deep(.dark .line-numbers .ProseMirror h2::before),
-:deep(.dark .line-numbers .ProseMirror h3::before),
-:deep(.dark .line-numbers .ProseMirror h4::before),
-:deep(.dark .line-numbers .ProseMirror h5::before),
-:deep(.dark .line-numbers .ProseMirror h6::before),
-:deep(.dark .line-numbers .ProseMirror blockquote::before),
-:deep(.dark .line-numbers .ProseMirror pre::before),
-:deep(.dark .line-numbers .ProseMirror ul li::before),
-:deep(.dark .line-numbers .ProseMirror ol li::before) {
-	color: #6b7280;
-}
-
-/* 优化列表项行号显示 */
-:deep(.line-numbers .ProseMirror ul li::before),
-:deep(.line-numbers .ProseMirror ol li::before) {
-	left: -6.5rem; /* 列表项需要更多的左边距，避免与悬浮菜单冲突 */
-}
-
-/* 代码块的行号样式 */
-:deep(.line-numbers .ProseMirror pre) {
-	padding-left: 1rem;
-	margin: 1.5rem 0; /* 确保正常的代码块间距 */
-}
-
-:deep(.line-numbers .ProseMirror pre::before) {
-	left: -4.5rem; /* 与其他行号保持一致的位置 */
-	background: #f3f4f6;
-	padding: 0.25rem 0.5rem;
-	border-radius: 0.25rem;
-	margin-top: 0.25rem;
-	height: 0; /* 确保不占用垂直空间 */
-	overflow: visible; /* 确保内容可见 */
-}
-
-/* 深色模式下的代码块行号背景 */
-:deep(.dark .line-numbers .ProseMirror pre::before) {
-	background: #374151;
-}
-
-/* 表格和其他元素的特殊处理 */
-:deep(.line-numbers .ProseMirror table),
-:deep(.line-numbers .ProseMirror hr) {
-	counter-increment: line;
-	position: relative;
-	margin: 1.5rem 0; /* 确保正常的表格和分割线间距 */
-}
-
-:deep(.line-numbers .ProseMirror table::before),
-:deep(.line-numbers .ProseMirror hr::before) {
-	content: counter(line);
-	position: absolute;
-	left: -4.5rem; /* 与其他行号保持一致的位置 */
-	top: 0;
-	width: 3rem;
-	height: 0; /* 确保不占用垂直空间 */
-	color: #9ca3af;
-	font-size: 0.75rem;
-	font-family:
-		ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo,
-		monospace;
-	text-align: right;
-	line-height: 1.5;
-	user-select: none;
-	pointer-events: none;
-	overflow: visible; /* 确保内容可见 */
+.fade-enter-from,
+.fade-leave-to {
+	opacity: 0;
 }
 </style>
