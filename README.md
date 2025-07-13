@@ -1,32 +1,124 @@
-# 🔍 浏览器搜索大师 | All In One Search
+# 🚀 All In One Search | 多功能浏览器工具集
 
 <div align="center">
 
 ![图标展示](public/icon/128.png)
 
-**一个极致优雅的浏览器收藏夹、历史记录与下载文件搜索扩展**
+**集成智能搜索、文件管理、Markdown编辑的现代化浏览器扩展**
 
 [![WXT Framework](https://img.shields.io/badge/Built%20with-WXT-blue?style=for-the-badge)](https://wxt.dev/)
 [![Vue 3](https://img.shields.io/badge/Vue-3.5.17-4FC08D?style=for-the-badge&logo=vue.js)](https://vuejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8.3-3178C6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![UnoCSS](https://img.shields.io/badge/UnoCSS-66.3.2-0A7B4C?style=for-the-badge&logo=unocss)](https://unocss.dev/)
+[![Tiptap](https://img.shields.io/badge/Tiptap-2.24.2-000000?style=for-the-badge&logo=tiptap)](https://tiptap.dev/)
 
 </div>
 
-## ✨ 核心亮点
+## ✨ 核心功能模块
 
-🎯 **智能搜索** - 毫秒级响应的模糊搜索，支持中英文混合匹配  
-🔍 **Tab 补全** - 智能搜索建议，按 Tab 键一键补全并搜索  
-🌐 **域名过滤** - 固定显示域名筛选，支持推荐内容和查询结果过滤  
-📝 **搜索历史** - 智能记录 100 条搜索历史，下拉菜单查看更多  
-⚡ **实时预览** - 输入即搜索，无需按回车  
-⌨️ **键盘导航** - 完整的键盘快捷键系统，高效操作  
-🎨 **主题系统** - 浅色/深色主题，支持跟随系统设置  
-🔧 **高度定制** - 完整的设置页面，可配置所有功能选项  
-📥 **下载管理** - 支持搜索下载文件，一键打开或定位  
-🌙 **现代界面** - 基于 Element Plus 的现代化组件库  
-📱 **响应式** - 完美适配各种屏幕尺寸  
+### 🔍 智能搜索引擎
+
+🎯 **毫秒级响应** - 模糊搜索收藏夹、历史记录、下载文件
+🔍 **Tab 补全** - 智能搜索建议，按 Tab 键一键补全
+🌐 **域名过滤** - 固定显示域名筛选，支持多维度过滤
+📝 **搜索历史** - 智能记录 100 条搜索历史，下拉菜单查看更多
+⌨️ **键盘导航** - 完整的键盘快捷键系统，高效操作
+
+### 📁 文件浏览器
+
+🗂️ **本地文件管理** - 基于 File System Access API 的现代文件浏览
+📑 **多标签页** - 支持同时编辑多个文件，拖拽排序
+🌳 **文件树导航** - 可折叠的文件目录结构，支持文件操作
+💾 **智能保存** - 自动检测文件变更，支持虚拟标签页保存
+🔄 **实时同步** - 文件系统变更实时反映到界面
+
+### ✍️ Markdown编辑器
+
+📝 **富文本编辑** - 基于 Tiptap 的所见即所得编辑器
+🎨 **双模式切换** - WYSIWYG 和 Markdown 源码模式自由切换
+📊 **图表支持** - 内置 Mermaid 图表渲染，支持流程图、时序图等
+🔧 **丰富工具栏** - 完整的格式化工具，支持表格、列表、代码块等
+🖼️ **导出功能** - 支持导出为图片，高质量截图功能
+📋 **目录生成** - 自动生成文档大纲，支持快速导航
+
+### 🎨 统一设计系统
+
+🌙 **主题系统** - 浅色/深色主题，支持跟随系统设置
+🎯 **UnoCSS 驱动** - 原子化 CSS，统一的设计语言
+📱 **响应式设计** - 完美适配各种屏幕尺寸和设备
 🚀 **性能优化** - 基于现代前端技术栈，极速流畅
+
+## 🚀 功能详细介绍
+
+### 🔍 智能搜索引擎详解
+
+#### 核心搜索功能
+
+- **多维度匹配**: 标题、URL、域名、文件名全文检索
+- **模糊算法**: 支持拼音首字母、部分匹配
+- **Tab 补全**: 智能匹配搜索历史，Tab 键一键补全
+- **搜索统计**: 实时显示结果数量、搜索耗时、域名统计
+- **去重优化**: 智能合并重复页面
+- **三重来源**: 支持书签、历史记录、下载文件综合搜索
+
+#### 域名过滤系统
+
+- **固定显示**: 域名过滤始终可见，无需等待搜索结果
+- **智能切换**: 无查询时显示推荐内容，有查询时显示搜索结果
+- **多选过滤**: 支持同时选择多个域名进行过滤
+- **图标展示**: 每个域名选项显示对应的网站图标
+
+#### 搜索历史增强
+
+- **智能存储**: 后台保存最近 100 条搜索历史
+- **简洁显示**: 前端默认显示最近 5 条，保持界面清爽
+- **下拉扩展**: 点击"更多"按钮查看所有历史记录
+- **Tab 补全**: 输入时自动匹配历史记录，支持 Tab 键补全
+
+### 📁 文件浏览器详解
+
+#### 文件系统集成
+
+- **现代API**: 基于 File System Access API，安全可靠
+- **权限管理**: 用户主动授权，浏览器记住选择
+- **实时同步**: 文件系统变更实时反映到界面
+- **跨平台**: 支持 Windows、macOS、Linux 文件系统
+
+#### 多标签页管理
+
+- **拖拽排序**: 使用 VueDraggable 实现流畅的标签页排序
+- **智能标识**: 相同文件名显示目录前缀，避免混淆
+- **虚拟标签**: 支持新建未保存的标签页，保存时选择位置
+- **状态管理**: 实时显示文件修改状态，防止数据丢失
+
+#### 文件操作功能
+
+- **CRUD操作**: 支持文件和文件夹的创建、重命名、删除
+- **系统集成**: 一键在系统文件管理器中打开文件位置
+- **智能保存**: 自动检测文件变更，支持自动保存功能
+
+### ✍️ Markdown编辑器详解
+
+#### Tiptap 编辑器核心
+
+- **无头架构**: 基于 ProseMirror 的现代编辑器框架
+- **扩展系统**: 模块化扩展，按需加载功能
+- **双模式**: WYSIWYG 和 Markdown 源码模式无缝切换
+- **实时预览**: 所见即所得的编辑体验
+
+#### 丰富的编辑功能
+
+- **文本格式**: 粗体、斜体、删除线、行内代码等
+- **结构元素**: 标题、段落、列表、引用、分割线
+- **表格支持**: 完整的表格编辑功能，支持行列操作
+- **代码块**: 多语言代码高亮，支持语法识别
+
+#### 图表与媒体
+
+- **Mermaid图表**: 支持流程图、时序图、甘特图等
+- **图片导出**: 使用 html2canvas 生成高质量截图
+- **目录生成**: 自动提取标题生成文档大纲
+- **搜索替换**: 全文搜索和替换功能，支持正则表达式
 
 ## 🎨 界面设计
 
@@ -162,16 +254,27 @@ dark-background: linear-gradient(to-br, from-slate-900 to-slate-800);
 │  TypeScript 5.8.3 (类型安全)        │
 │  Element Plus 2.9.11 (UI组件库)     │
 │  UnoCSS 66.3.2 (原子化CSS)          │
+│  Iconify Vue 5.0.0 (图标系统)       │
+└──────────────────────────────────────┘
+
+┌─ 📝 编辑器生态 ──────────────────────┐
+│  Tiptap 2.24.2 (富文本编辑器)       │
+│  Tiptap Starter Kit (扩展集合)      │
+│  Mermaid 图表支持                   │
+│  搜索替换功能                       │
+│  目录生成                           │
 └──────────────────────────────────────┘
 
 ┌─ 🔧 构建工具 ────────────────────────┐
 │  WXT 0.20.7 (扩展框架)              │
 │  Vite 7.0.0 (极速构建)              │
 │  pnpm 10.12.3 (包管理)              │
+│  html2canvas 1.4.1 (截图导出)       │
 └──────────────────────────────────────┘
 
 ┌─ 🔌 浏览器集成 ──────────────────────┐
 │  Chrome Extension APIs              │
+│  File System Access API            │
 │  Bookmarks & History APIs           │
 │  Downloads API                      │
 │  Storage & Commands APIs            │
@@ -183,20 +286,26 @@ dark-background: linear-gradient(to-br, from-slate-900 to-slate-800);
 ```
 all_in_one_search/
 ├── 🎨 components/              # Vue组件层
-│   ├── PopupApp.vue           #   弹窗主组件
+│   ├── PopupApp.vue           #   弹窗搜索主组件
+│   ├── FileBrowserApp.vue     #   文件浏览器主组件
+│   ├── MdEditor.vue           #   Markdown编辑器组件
+│   ├── FileTree.vue           #   文件树组件
+│   ├── TocTree.vue            #   目录树组件
 │   ├── SettingsPage.vue       #   设置页面组件
 │   ├── BookmarkDialog.vue     #   书签对话框组件
 │   ├── SearchControls.vue     #   搜索控制组件
 │   ├── SearchResultItem.vue   #   搜索结果项组件
 │   └── index.ts               #   组件导出
 ├── 🚪 entrypoints/            # WXT入口点
-│   ├── popup.html             #   弹窗入口
-│   ├── single_tab.html        #   新标签页入口
+│   ├── popup.html             #   弹窗搜索入口
+│   ├── file-browser.html      #   文件浏览器入口
+│   ├── single_tab.html        #   新标签页搜索入口
 │   ├── settings.html          #   设置页入口
 │   ├── background.ts          #   后台脚本
 │   └── content.ts             #   内容脚本
 ├── 🔧 utils/                  # 工具函数层
 │   ├── search.ts             #   搜索引擎实现
+│   ├── file-service.ts       #   文件系统服务
 │   ├── shortcuts.ts          #   快捷键管理
 │   ├── searchEngines.ts      #   搜索引擎配置
 │   ├── bookmarksApiWrapper.ts #   书签API封装
@@ -225,15 +334,19 @@ all_in_one_search/
 │       ├── baidu.png         #     百度图标
 │       ├── bing.png          #     必应图标
 │       └── google.png        #     谷歌图标
-├── 📄 配置文件               # 项目配置
+├── � schedule/               # 项目规划
+│   ├── product.md            #   产品功能说明
+│   ├── implementation-plan.md #   实施计划
+│   └── todolist.md           #   待办事项
+├── �📄 配置文件               # 项目配置
 │   ├── wxt.config.ts         #   WXT构建配置
 │   ├── uno.config.ts         #   UnoCSS配置
 │   ├── tsconfig.json         #   TypeScript配置
-│   ├── less.config.ts        #   Less配置
 │   ├── package.json          #   依赖管理
 │   └── pnpm-lock.yaml        #   锁定版本
 └── 📋 文档                   # 项目文档
     ├── README.md             #   项目说明
+    ├── CLAUDE.md             #   开发指南
     └── LICENSE               #   开源协议
 ```
 
@@ -265,6 +378,25 @@ pnpm zip
 2. **加载扩展**: 选择 `.output/chrome-mv3` 目录
 3. **设置快捷键**: 访问 `chrome://extensions/shortcuts` 配置快捷键
 4. **开始使用**: 点击工具栏图标或按快捷键
+
+### 🎯 使用模式
+
+#### 🔍 智能搜索模式
+
+- **弹窗模式**: 点击工具栏图标或按 `Ctrl+Shift+S` 快捷键
+- **新标签页**: 在弹窗右上角点击"新标签页打开"按钮
+- **功能**: 搜索收藏夹、历史记录、下载文件
+
+#### 📁 文件浏览器模式
+
+- **访问方式**: 在地址栏输入 `chrome-extension://[扩展ID]/file-browser.html`
+- **功能**: 本地文件管理、Markdown编辑、多标签页操作
+- **要求**: 需要浏览器支持 File System Access API（Chrome 86+）
+
+#### ⚙️ 设置页面
+
+- **访问方式**: 在扩展管理页面点击"选项"或在弹窗中点击设置按钮
+- **功能**: 自定义快捷键、主题设置、搜索配置等
 
 ## ⚙️ 高级配置
 
@@ -298,17 +430,26 @@ pnpm zip
 
 为了提供完整功能，扩展需要以下权限：
 
-| 权限             | 用途                   | 必要性      |
-| ---------------- | ---------------------- | ----------- |
-| `bookmarks`      | 读取和创建书签         | ⭐ 核心功能 |
-| `history`        | 读取浏览历史           | ⭐ 核心功能 |
-| `downloads`      | 读取下载记录           | ⭐ 核心功能 |
-| `downloads.open` | 打开下载文件           | 🔧 增强体验 |
-| `storage`        | 保存用户设置和搜索历史 | ⭐ 设置同步 |
-| `tabs`           | 打开新标签页           | 🔧 增强体验 |
-| `commands`       | 全局快捷键             | 🔧 快速访问 |
-| `activeTab`      | 当前页面操作           | 🔧 链接打开 |
-| `search`         | 网络搜索集成           | 🔧 搜索增强 |
+| 权限             | 用途                   | 必要性      | 功能模块 |
+| ---------------- | ---------------------- | ----------- | -------- |
+| `bookmarks`      | 读取和创建书签         | ⭐ 核心功能 | 智能搜索 |
+| `history`        | 读取浏览历史           | ⭐ 核心功能 | 智能搜索 |
+| `downloads`      | 读取下载记录           | ⭐ 核心功能 | 智能搜索 |
+| `downloads.open` | 打开下载文件           | 🔧 增强体验 | 智能搜索 |
+| `storage`        | 保存用户设置和搜索历史 | ⭐ 设置同步 | 全局功能 |
+| `tabs`           | 打开新标签页           | 🔧 增强体验 | 全局功能 |
+| `commands`       | 全局快捷键             | 🔧 快速访问 | 全局功能 |
+| `activeTab`      | 当前页面操作           | 🔧 链接打开 | 智能搜索 |
+| `search`         | 网络搜索集成           | 🔧 搜索增强 | 智能搜索 |
+
+### 📁 文件系统权限
+
+文件浏览器功能使用现代 **File System Access API**，具有以下特点：
+
+- **用户授权**: 需要用户主动选择文件夹，浏览器会记住授权
+- **安全限制**: 只能访问用户明确授权的目录
+- **无需额外权限**: 不需要在 manifest 中声明文件系统权限
+- **浏览器支持**: 需要 Chrome 86+ 或其他支持该 API 的现代浏览器
 
 ## 🤝 参与贡献
 
@@ -334,13 +475,29 @@ pnpm zip
 
 ### 📋 开发规范
 
-- 使用 TypeScript 编写类型安全的代码
-- 遵循 Vue 3 Composition API 最佳实践
-- 使用 UnoCSS 原子化 CSS，禁止自定义 CSS
-- 使用 Element Plus 组件库，保持界面一致性
-- 编写清晰的注释和文档
+- **TypeScript**: 使用严格的类型检查，编写类型安全的代码
+- **Vue 3**: 遵循 Composition API 最佳实践，使用组合式函数
+- **UnoCSS**: 使用原子化 CSS，禁止自定义 CSS 样式
+- **Element Plus**: 使用组件库保持界面一致性
+- **Iconify**: 统一使用 Iconify 图标系统，避免混用图标库
+- **Tiptap**: 编辑器扩展开发遵循 Tiptap 架构模式
+- **文件系统**: 使用 File System Access API 进行文件操作
+- **代码质量**: 编写清晰的注释和文档，遵循项目代码风格
 
 ## 📄 版本历史
+
+### v2.0.0 (2024-12) - 多功能工具集重大更新
+
+- 🚀 **架构重构**: 从单一搜索工具升级为多功能浏览器工具集
+- 📁 **文件浏览器**: 全新的本地文件管理功能，基于 File System Access API
+- ✍️ **Markdown编辑器**: 集成 Tiptap 富文本编辑器，支持所见即所得编辑
+- 📊 **图表支持**: 内置 Mermaid 图表渲染，支持流程图、时序图等
+- 📑 **多标签页**: 支持同时编辑多个文件，拖拽排序功能
+- 🖼️ **导出功能**: 支持导出为高质量图片，使用 html2canvas
+- 🌳 **文件树导航**: 可折叠的文件目录结构，支持文件操作
+- 📋 **目录生成**: 自动生成文档大纲，支持快速导航
+- 🎨 **设计系统升级**: 全面使用 UnoCSS 和 Iconify 图标系统
+- 🔧 **组件化重构**: 模块化组件设计，提升代码可维护性
 
 ### v1.3.0 (2024-12) - 交互优化版本
 
@@ -385,7 +542,9 @@ pnpm zip
 
 - **开发者**: lizeyu
 - **邮箱**: [632795136@qq.com](mailto:632795136@qq.com)
-- **GitHub**: [your-github-profile](https://github.com/your-username)
+- **项目地址**: [GitHub Repository](https://github.com/your-username/all_in_one_search)
+- **问题反馈**: [Issues](https://github.com/your-username/all_in_one_search/issues)
+- **功能建议**: [Discussions](https://github.com/your-username/all_in_one_search/discussions)
 
 ## 📜 开源协议
 
