@@ -9,14 +9,14 @@
 			<div class="border-b border-slate-100 dark:border-slate-600">
 				<!-- 左侧：Tiptap编辑按钮组（响应式换行布局） -->
 				<div class="w-full">
-					<div class="flex flex-wrap items-center gap-2 px-4 py-2">
+					<div class="flex flex-wrap items-center gap-3 px-4 py-3">
 						<!-- 基础文本格式化工具组 -->
 						<div class="flex items-center gap-1">
 							<el-button
-								size="small"
+								size="default"
 								@click="editor?.chain().focus().toggleBold().run()"
 								title="粗体"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
+								class="!rounded-md !shadow-sm transition-all duration-200 !w-9 !h-9 !p-0"
 								:class="{
 									'!bg-gradient-to-r !from-blue-600 !to-purple-600 !border-none !text-white !shadow-md':
 										editor?.isActive('bold'),
@@ -24,13 +24,13 @@
 										!editor?.isActive('bold'),
 								}"
 							>
-								<Icon icon="material-symbols:format-bold" class="text-base" />
+								<Icon icon="material-symbols:format-bold" class="text-lg" />
 							</el-button>
 							<el-button
-								size="small"
+								size="default"
 								@click="editor?.chain().focus().toggleItalic().run()"
 								title="斜体"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
+								class="!rounded-md !shadow-sm transition-all duration-200 !w-9 !h-9 !p-0"
 								:class="{
 									'!bg-gradient-to-r !from-blue-600 !to-purple-600 !border-none !text-white !shadow-md':
 										editor?.isActive('italic'),
@@ -38,25 +38,25 @@
 										!editor?.isActive('italic'),
 								}"
 							>
-								<Icon icon="material-symbols:format-italic" class="text-base" />
+								<Icon icon="material-symbols:format-italic" class="text-lg" />
 							</el-button>
 							<el-button
-								size="small"
+								size="default"
 								:type="editor?.isActive('strike') ? 'primary' : 'default'"
 								@click="editor?.chain().focus().toggleStrike().run()"
 								title="删除线"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
+								class="!rounded-md !shadow-sm transition-all duration-200 !w-9 !h-9 !p-0"
 							>
 								<Icon
 									icon="material-symbols:format-strikethrough"
-									class="text-base"
+									class="text-lg"
 								/>
 							</el-button>
 							<el-button
-								size="small"
+								size="default"
 								@click="editor?.chain().focus().toggleUnderline().run()"
 								title="下划线"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
+								class="!rounded-md !shadow-sm transition-all duration-200 !w-9 !h-9 !p-0"
 								:class="{
 									'!bg-gradient-to-r !from-blue-600 !to-purple-600 !border-none !text-white !shadow-md':
 										editor?.isActive('underline'),
@@ -66,33 +66,32 @@
 							>
 								<Icon
 									icon="material-symbols:format-underlined"
-									class="text-base"
+									class="text-lg"
 								/>
 							</el-button>
 							<el-button
-								size="small"
+								size="default"
 								:type="editor?.isActive('code') ? 'primary' : 'default'"
 								@click="editor?.chain().focus().toggleCode().run()"
 								title="行内代码"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
+								class="!rounded-md !shadow-sm transition-all duration-200 !w-9 !h-9 !p-0"
 							>
-								<Icon icon="material-symbols:code" class="text-base" />
+								<Icon icon="material-symbols:code" class="text-lg" />
 							</el-button>
 						</div>
 
 						<!-- 分隔线 -->
-						<div class="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+						<div class="w-px h-6 bg-slate-300 dark:bg-slate-600"></div>
 
 						<!-- 标题下拉菜单 -->
 						<el-dropdown trigger="click">
 							<el-button
-								size="small"
-								class="!rounded-lg !shadow-sm transition-all duration-200 flex items-center gap-1"
+								size="default"
+								class="!rounded-md !shadow-sm transition-all duration-200 !w-12 !h-9 !p-0"
 								title="标题样式"
 							>
 								<div class="flex items-center gap-1">
-									<Icon icon="material-symbols:title" class="text-base" />
-									<span>{{ currentHeadingText }}</span>
+									<Icon icon="material-symbols:title" class="text-lg" />
 									<Icon
 										icon="material-symbols:keyboard-arrow-down"
 										class="text-sm"
@@ -137,106 +136,85 @@
 						</el-dropdown>
 
 						<!-- 分隔线 -->
-						<div class="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+						<div class="w-px h-6 bg-slate-300 dark:bg-slate-600"></div>
 
 						<!-- 列表工具组 -->
 						<div class="flex items-center gap-1">
 							<el-button
-								size="small"
+								size="default"
 								:type="editor?.isActive('bulletList') ? 'primary' : 'default'"
 								@click="editor?.chain().focus().toggleBulletList().run()"
 								title="无序列表"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
+								class="!rounded-md !shadow-sm transition-all duration-200 !w-9 !h-9 !p-0"
 							>
-								<div class="flex items-center gap-1">
-									<Icon
-										icon="material-symbols:format-list-bulleted"
-										class="text-base"
-									/>
-									<span class="hidden sm:inline">无序列表</span>
-								</div>
+								<Icon
+									icon="material-symbols:format-list-bulleted"
+									class="text-lg"
+								/>
 							</el-button>
 							<el-button
-								size="small"
+								size="default"
 								:type="editor?.isActive('orderedList') ? 'primary' : 'default'"
 								@click="editor?.chain().focus().toggleOrderedList().run()"
 								title="有序列表"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
+								class="!rounded-md !shadow-sm transition-all duration-200 !w-9 !h-9 !p-0"
 							>
-								<div class="flex items-center gap-1">
-									<Icon
-										icon="material-symbols:format-list-numbered"
-										class="text-base"
-									/>
-									<span class="hidden sm:inline">有序列表</span>
-								</div>
+								<Icon
+									icon="material-symbols:format-list-numbered"
+									class="text-lg"
+								/>
 							</el-button>
 							<el-button
-								size="small"
+								size="default"
 								:type="editor?.isActive('taskList') ? 'primary' : 'default'"
 								@click="editor?.chain().focus().toggleTaskList().run()"
 								title="任务列表"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
+								class="!rounded-md !shadow-sm transition-all duration-200 !w-9 !h-9 !p-0"
 							>
-								<div class="flex items-center gap-1">
-									<Icon icon="material-symbols:checklist" class="text-base" />
-									<span class="hidden sm:inline">任务列表</span>
-								</div>
+								<Icon icon="material-symbols:checklist" class="text-lg" />
 							</el-button>
 						</div>
 
 						<!-- 分隔线 -->
-						<div class="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+						<div class="w-px h-6 bg-slate-300 dark:bg-slate-600"></div>
 
 						<!-- 引用和代码块工具组 -->
 						<div class="flex items-center gap-1">
 							<el-button
-								size="small"
+								size="default"
 								:type="editor?.isActive('blockquote') ? 'primary' : 'default'"
 								@click="editor?.chain().focus().toggleBlockquote().run()"
 								title="引用"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
+								class="!rounded-md !shadow-sm transition-all duration-200 !w-9 !h-9 !p-0"
 							>
-								<div class="flex items-center gap-1">
-									<Icon
-										icon="material-symbols:format-quote"
-										class="text-base"
-									/>
-									<span class="hidden sm:inline">引用</span>
-								</div>
+								<Icon icon="material-symbols:format-quote" class="text-lg" />
 							</el-button>
 							<el-button
-								size="small"
+								size="default"
 								:type="editor?.isActive('codeBlock') ? 'primary' : 'default'"
 								@click="editor?.chain().focus().toggleCodeBlock().run()"
 								title="代码块"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
+								class="!rounded-md !shadow-sm transition-all duration-200 !w-9 !h-9 !p-0"
 							>
-								<div class="flex items-center gap-1">
-									<Icon icon="material-symbols:code-blocks" class="text-base" />
-									<span class="hidden sm:inline">代码块</span>
-								</div>
+								<Icon icon="material-symbols:code-blocks" class="text-lg" />
 							</el-button>
 							<el-button
-								size="small"
+								size="default"
 								@click="insertDetails"
 								title="插入折叠区域"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
+								class="!rounded-md !shadow-sm transition-all duration-200 !w-9 !h-9 !p-0"
 							>
-								<div class="flex items-center gap-1">
-									<Icon icon="material-symbols:expand-more" class="text-base" />
-									<span class="hidden sm:inline">折叠区域</span>
-								</div>
+								<Icon icon="material-symbols:expand-more" class="text-lg" />
 							</el-button>
 						</div>
 
 						<!-- 分隔线 -->
-						<div class="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+						<div class="w-px h-6 bg-slate-300 dark:bg-slate-600"></div>
 
-						<!-- 表格编辑工具组 -->
+						<!-- 插入工具组 -->
 						<div class="flex items-center gap-1">
 							<el-button
-								size="small"
+								size="default"
 								@click="
 									editor
 										?.chain()
@@ -245,193 +223,173 @@
 										.run()
 								"
 								title="插入表格"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
+								class="!rounded-md !shadow-sm transition-all duration-200 !w-9 !h-9 !p-0"
 							>
-								<div class="flex items-center gap-1">
-									<Icon icon="material-symbols:table" class="text-base" />
-									<span class="hidden sm:inline">表格</span>
-								</div>
+								<Icon icon="material-symbols:table" class="text-lg" />
+							</el-button>
+							<el-button
+								size="default"
+								@click="insertMermaidChart"
+								title="插入Mermaid"
+								class="!rounded-md !shadow-sm transition-all duration-200 !w-9 !h-9 !p-0"
+							>
+								<Icon icon="material-symbols:insert-chart" class="text-lg" />
+							</el-button>
+							<el-button
+								size="default"
+								@click="editor?.chain().focus().setHorizontalRule().run()"
+								title="分割线"
+								class="!rounded-md !shadow-sm transition-all duration-200 !w-9 !h-9 !p-0"
+							>
+								<Icon icon="material-symbols:horizontal-rule" class="text-lg" />
 							</el-button>
 						</div>
 
 						<!-- 分隔线 -->
-						<div class="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1"></div>
-
-						<!-- 其他编辑工具组 -->
+						<div class="w-px h-6 bg-slate-300 dark:bg-slate-600"></div>
+						<!-- 撤销重做工具组 -->
 						<div class="flex items-center gap-1">
 							<el-button
-								size="small"
-								@click="insertMermaidChart"
-								title="插入Mermaid"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
+								size="default"
+								@click="editor?.chain().focus().undo().run()"
+								:disabled="!editor?.can().undo()"
+								title="撤销"
+								class="!rounded-md !shadow-sm transition-all duration-200 !w-9 !h-9 !p-0"
 							>
-								<div class="flex items-center gap-1">
-									<Icon
-										icon="material-symbols:insert-chart"
-										class="text-base"
-									/>
-									<span class="hidden sm:inline">Mermaid</span>
-								</div>
+								<Icon icon="material-symbols:undo" class="text-lg" />
 							</el-button>
 							<el-button
-								size="small"
-								@click="editor?.chain().focus().setHorizontalRule().run()"
-								title="分割线"
-								class="!rounded-lg !shadow-sm transition-all duration-200"
+								size="default"
+								@click="editor?.chain().focus().redo().run()"
+								:disabled="!editor?.can().redo()"
+								title="重做"
+								class="!rounded-md !shadow-sm transition-all duration-200 !w-9 !h-9 !p-0"
 							>
-								<div class="flex items-center gap-1">
-									<Icon
-										icon="material-symbols:horizontal-rule"
-										class="text-base"
-									/>
-									<span class="hidden sm:inline">分割线</span>
-								</div>
+								<Icon icon="material-symbols:redo" class="text-lg" />
 							</el-button>
-							<div class="flex items-center gap-1">
-								<el-button
-									size="small"
-									@click="exportMarkdown"
-									title="导出Markdown"
-									class="!rounded-lg !shadow-sm transition-all duration-200"
-								>
-									<div class="flex items-center gap-1">
-										<Icon
-											icon="material-symbols:description"
-											class="text-base"
-										/>
-										<span class="hidden sm:inline">MD</span>
-									</div>
-								</el-button>
-								<el-button
-									size="small"
-									@click="exportImage"
-									title="导出为图片"
-									class="!rounded-lg !shadow-sm transition-all duration-200"
-								>
-									<div class="flex items-center gap-1">
-										<Icon icon="material-symbols:image" class="text-base" />
-										<span class="hidden sm:inline">图片</span>
-									</div>
-								</el-button>
-								<el-button
-									size="small"
-									@click="editor?.chain().focus().undo().run()"
-									:disabled="!editor?.can().undo()"
-									title="撤销"
-									class="!rounded-lg !shadow-sm transition-all duration-200 !px-2"
-								>
-									<Icon icon="material-symbols:undo" class="text-base" />
-								</el-button>
-								<el-button
-									size="small"
-									@click="editor?.chain().focus().redo().run()"
-									:disabled="!editor?.can().redo()"
-									title="重做"
-									class="!rounded-lg !shadow-sm transition-all duration-200 !px-2"
-								>
-									<Icon icon="material-symbols:redo" class="text-base" />
-								</el-button>
-							</div>
+						</div>
 
-							<!-- 分隔线 -->
-							<div class="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+						<!-- 分隔线 -->
+						<div class="w-px h-6 bg-slate-300 dark:bg-slate-600"></div>
 
-							<!-- 文件操作组 -->
-							<div class="flex items-center gap-1">
-								<el-button
-									v-if="fileHandle && !isVirtual"
-									@click="reloadFile"
-									:disabled="isLoading"
-									title="重新加载"
-									size="small"
-									class="!rounded-lg !shadow-sm transition-all duration-200 !px-2"
-								>
-									<Icon
-										icon="material-symbols:refresh"
-										class="text-base"
-										:class="{ 'animate-spin': isLoading }"
-									/>
-								</el-button>
-								<el-button
-									v-if="fileHandle && !isVirtual && isModified"
-									@click="saveFile"
-									:disabled="isSaving"
-									title="保存文件"
-									size="small"
-									class="!rounded-lg !shadow-sm transition-all duration-200 !px-2 !bg-green-600 hover:!bg-green-700 !text-white !border-green-600"
-								>
-									<Icon icon="material-symbols:save" class="text-base" />
-								</el-button>
-								<el-button
-									v-if="isVirtual && isModified"
-									@click="saveAsFile"
-									:disabled="isSaving"
-									title="另存为文件"
-									size="small"
-									class="!rounded-lg !shadow-sm transition-all duration-200 !px-2 !bg-blue-600 hover:!bg-blue-700 !text-white !border-blue-600"
-								>
-									<Icon icon="material-symbols:save-as" class="text-base" />
-								</el-button>
-							</div>
+						<!-- 导出工具组 -->
+						<div class="flex items-center gap-1">
+							<el-button
+								size="default"
+								@click="exportMarkdown"
+								title="导出Markdown"
+								class="!rounded-md !shadow-sm transition-all duration-200 !w-9 !h-9 !p-0"
+							>
+								<Icon icon="material-symbols:description" class="text-lg" />
+							</el-button>
+							<el-button
+								size="default"
+								@click="exportImage"
+								title="导出为图片"
+								class="!rounded-md !shadow-sm transition-all duration-200 !w-9 !h-9 !p-0"
+							>
+								<Icon icon="material-symbols:image" class="text-lg" />
+							</el-button>
+						</div>
 
-							<!-- 分隔线 -->
-							<div class="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+						<!-- 分隔线 -->
+						<div class="w-px h-6 bg-slate-300 dark:bg-slate-600"></div>
 
-							<!-- 模式切换组 -->
-							<div class="flex items-center gap-1">
-								<el-button
-									@click="toggleEditorMode('wysiwyg')"
-									:class="
-										editorMode === 'wysiwyg'
-											? '!bg-blue-600 !text-white !border-blue-600'
-											: ''
-									"
-									size="small"
-									title="富文本"
-									class="!rounded-lg !shadow-sm transition-all duration-200 !px-2"
-								>
-									<Icon icon="material-symbols:edit" class="text-base" />
-								</el-button>
-								<el-button
-									@click="toggleEditorMode('markdown')"
-									:class="
-										editorMode === 'markdown'
-											? '!bg-blue-600 !text-white !border-blue-600'
-											: ''
-									"
-									size="small"
-									title="源码"
-									class="!rounded-lg !shadow-sm transition-all duration-200 !px-2"
-								>
-									<Icon icon="material-symbols:code" class="text-base" />
-								</el-button>
-							</div>
+						<!-- 文件操作组 -->
+						<div class="flex items-center gap-1">
+							<el-button
+								v-if="fileHandle && !isVirtual"
+								@click="reloadFile"
+								:disabled="isLoading"
+								title="重新加载"
+								size="default"
+								class="!rounded-md !shadow-sm transition-all duration-200 !w-9 !h-9 !p-0"
+							>
+								<Icon
+									icon="material-symbols:refresh"
+									class="text-lg"
+									:class="{ 'animate-spin': isLoading }"
+								/>
+							</el-button>
+							<el-button
+								v-if="fileHandle && !isVirtual && isModified"
+								@click="saveFile"
+								:disabled="isSaving"
+								title="保存文件"
+								size="default"
+								class="!rounded-md !shadow-sm transition-all duration-200 !w-9 !h-9 !p-0 !bg-green-600 hover:!bg-green-700 !text-white !border-green-600"
+							>
+								<Icon icon="material-symbols:save" class="text-lg" />
+							</el-button>
+							<el-button
+								v-if="isVirtual && isModified"
+								@click="saveAsFile"
+								:disabled="isSaving"
+								title="另存为文件"
+								size="default"
+								class="!rounded-md !shadow-sm transition-all duration-200 !w-9 !h-9 !p-0 !bg-blue-600 hover:!bg-blue-700 !text-white !border-blue-600"
+							>
+								<Icon icon="material-symbols:save-as" class="text-lg" />
+							</el-button>
+						</div>
 
-							<!-- 分隔线 -->
-							<div class="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+						<!-- 分隔线 -->
+						<div class="w-px h-6 bg-slate-300 dark:bg-slate-600"></div>
 
-							<!-- 功能切换组 -->
-							<div class="flex items-center gap-1">
-								<el-button
-									@click="showSearchDialog = true"
-									size="small"
-									title="查找/替换 (Ctrl+F)"
-									class="!rounded-lg !shadow-sm transition-all duration-200 !px-2"
-								>
-									<Icon icon="material-symbols:search" class="text-base" />
-								</el-button>
-								<el-button
-									@click="showToc = !showToc"
-									size="small"
-									:class="
-										showToc ? '!bg-blue-600 !text-white !border-blue-600' : ''
-									"
-									title="显示/隐藏大纲目录"
-									class="!rounded-lg !shadow-sm transition-all duration-200 !px-2"
-								>
-									<Icon icon="material-symbols:toc" class="text-base" />
-								</el-button>
-							</div>
+						<!-- 模式切换组 -->
+						<div class="flex items-center gap-1">
+							<el-button
+								@click="toggleEditorMode('wysiwyg')"
+								:class="
+									editorMode === 'wysiwyg'
+										? '!bg-blue-600 !text-white !border-blue-600'
+										: ''
+								"
+								size="default"
+								title="富文本"
+								class="!rounded-md !shadow-sm transition-all duration-200 !w-9 !h-9 !p-0"
+							>
+								<Icon icon="material-symbols:edit" class="text-lg" />
+							</el-button>
+							<el-button
+								@click="toggleEditorMode('markdown')"
+								:class="
+									editorMode === 'markdown'
+										? '!bg-blue-600 !text-white !border-blue-600'
+										: ''
+								"
+								size="default"
+								title="源码"
+								class="!rounded-md !shadow-sm transition-all duration-200 !w-9 !h-9 !p-0"
+							>
+								<Icon icon="material-symbols:code" class="text-lg" />
+							</el-button>
+						</div>
+
+						<!-- 分隔线 -->
+						<div class="w-px h-6 bg-slate-300 dark:bg-slate-600"></div>
+
+						<!-- 功能切换组 -->
+						<div class="flex items-center gap-1">
+							<el-button
+								@click="showSearchDialog = true"
+								size="default"
+								title="查找/替换 (Ctrl+F)"
+								class="!rounded-md !shadow-sm transition-all duration-200 !w-9 !h-9 !p-0"
+							>
+								<Icon icon="material-symbols:search" class="text-lg" />
+							</el-button>
+							<el-button
+								@click="showToc = !showToc"
+								size="default"
+								:class="
+									showToc ? '!bg-blue-600 !text-white !border-blue-600' : ''
+								"
+								title="显示/隐藏大纲目录"
+								class="!rounded-md !shadow-sm transition-all duration-200 !w-9 !h-9 !p-0"
+							>
+								<Icon icon="material-symbols:toc" class="text-lg" />
+							</el-button>
 						</div>
 					</div>
 				</div>
@@ -806,36 +764,6 @@ const fileName = computed(() => {
 	return props.fileNode?.label || props.fileHandle?.name || "";
 });
 
-// 当前标题状态的动态文本
-const currentHeadingText = computed(() => {
-	if (!editor.value) {
-		return "标题";
-	}
-
-	// 检查是否在段落中（正文）
-	if (editor.value.isActive("paragraph")) {
-		return "正文";
-	}
-
-	// 检查各级标题
-	for (let level = 1; level <= 6; level++) {
-		if (editor.value.isActive("heading", { level })) {
-			const levelNames = [
-				"一级标题",
-				"二级标题",
-				"三级标题",
-				"四级标题",
-				"五级标题",
-				"六级标题",
-			];
-			return levelNames[level - 1];
-		}
-	}
-
-	// 默认返回"标题"
-	return "标题";
-});
-
 // 初始化Tiptap编辑器实例
 const editor = useEditor({
 	extensions: [
@@ -891,7 +819,7 @@ const editor = useEditor({
 
 		checkModified();
 	},
-	onSelectionUpdate: ({ editor }) => {
+	onSelectionUpdate: () => {
 		// 当光标位置改变时，计算属性会自动重新计算
 		// 这里不需要额外的逻辑，Vue的响应式系统会处理
 	},
@@ -1228,25 +1156,9 @@ const insertMermaidChart = () => {
 
 	const defaultMermaidCode =
 		"graph TD\n    A[开始] --> B[处理]\n    B --> C[结束]";
-
-	try {
-		// 优先调用 insertMermaid 指令方法
+	if (editor.value.commands.setMermaid) {
 		// @ts-ignore
-		if (editor.value.commands.insertMermaid) {
-			// @ts-ignore
-			editor.value.commands.insertMermaid(defaultMermaidCode);
-			console.log("使用insertMermaid命令插入Mermaid图表");
-		} else {
-			// 备用方案：使用:::mermaid语法插入
-			const mermaidBlock = `:::mermaid\n${defaultMermaidCode}\n:::`;
-			editor.value.chain().focus().insertContent(mermaidBlock).run();
-			console.log("使用:::mermaid语法插入Mermaid图表");
-		}
-	} catch (error) {
-		console.error("插入Mermaid图表失败:", error);
-		// 最后的备用方案：插入代码块
-		const fallbackBlock = `\`\`\`mermaid\n${defaultMermaidCode}\n\`\`\``;
-		editor.value?.chain().focus().insertContent(fallbackBlock).run();
+		editor.value.commands.setMermaid(defaultMermaidCode);
 	}
 };
 
@@ -1274,21 +1186,52 @@ const insertDetails = () => {
 // 工具栏方法实现
 
 const exportMarkdown = () => {
-	if (!editor.value) return;
-	if (editor.value.storage.markdown && editor.value.storage.markdown.get) {
-		const md = editor.value.storage.markdown.get();
-		const blob = new Blob([md], { type: "text/markdown" });
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement("a");
-		a.href = url;
-		a.download = "document.md";
-		document.body.appendChild(a);
-		a.click();
-		document.body.removeChild(a);
-		URL.revokeObjectURL(url);
-	} else {
-		ElMessage.warning("当前内容不支持Markdown导出");
+	if (!editor.value) {
+		ElMessage.error("编辑器未初始化");
+		return;
 	}
+
+	let content = "";
+
+	// 尝试多种方式获取内容
+	if (editorMode.value === "markdown") {
+		// 如果当前是markdown模式，直接使用markdownContent
+		content = markdownContent.value;
+	} else if (
+		editor.value.storage.markdown &&
+		editor.value.storage.markdown.get
+	) {
+		// 尝试从markdown storage获取
+		content = editor.value.storage.markdown.get();
+	} else {
+		// 备用方案：使用当前的markdownContent或从编辑器获取HTML
+		content = markdownContent.value || editor.value.getHTML();
+	}
+
+	if (!content || content.trim() === "") {
+		ElMessage.warning("没有内容可以导出");
+		return;
+	}
+
+	console.log("导出Markdown内容:", {
+		mode: editorMode.value,
+		contentLength: content.length,
+		hasMarkdownStorage: !!(
+			editor.value.storage.markdown && editor.value.storage.markdown.get
+		),
+	});
+
+	const blob = new Blob([content], { type: "text/markdown" });
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement("a");
+	a.href = url;
+	a.download = `${fileName.value || "document"}.md`;
+	document.body.appendChild(a);
+	a.click();
+	document.body.removeChild(a);
+	URL.revokeObjectURL(url);
+
+	ElMessage.success("Markdown文件导出成功");
 };
 
 // 导出为图片（支持长图导出）
