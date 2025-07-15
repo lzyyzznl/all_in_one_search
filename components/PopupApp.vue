@@ -61,14 +61,6 @@
 
 					<el-button
 						size="large"
-						:icon="Folder"
-						circle
-						@click="openFileBrowser"
-						title="打开文件浏览器"
-						class="bg-white/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-500 transition-all duration-200 backdrop-blur-sm"
-					/>
-					<el-button
-						size="large"
 						:icon="Setting"
 						circle
 						@click="openSettings"
@@ -634,7 +626,6 @@ import {
 	Collection,
 	DocumentCopy,
 	Download,
-	Folder,
 	FolderOpened,
 	MagicStick,
 	Mouse,
@@ -1972,13 +1963,6 @@ onUnmounted(() => {
 const openSettings = () => {
 	chrome.tabs.create({
 		url: chrome.runtime.getURL("settings.html"),
-	});
-};
-
-// 打开文件浏览器
-const openFileBrowser = () => {
-	chrome.tabs.create({
-		url: chrome.runtime.getURL("file-browser.html"),
 	});
 };
 

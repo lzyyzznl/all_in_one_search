@@ -15,7 +15,7 @@ export default defineConfig({
 	manifest: {
 		name: "浏览器收藏夹历史记录搜索器",
 		description: "快速模糊搜索浏览器收藏夹和历史记录，按域名分组显示结果",
-		version: "1.0.0",
+		version: "2.0.0",
 
 		// 权限配置
 		permissions: [

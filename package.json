@@ -1,7 +1,7 @@
 {
-	"name": "all_in_one_search",
-	"version": "2.0.0",
-	"description": "浏览器插件 - 收藏夹和历史记录模糊查询",
+	"name": "browser_search",
+	"version": "2.1.0",
+	"description": "浏览器插件 - 收藏夹和历史记录模糊搜索器",
 	"main": "index.js",
 	"scripts": {
 		"dev": "wxt -b chrome",
@@ -22,22 +22,8 @@
 	"dependencies": {
 		"@element-plus/icons-vue": "^2.3.1",
 		"@iconify/vue": "^5.0.0",
-		"@sereneinserenade/tiptap-search-and-replace": "^0.1.1",
-		"@syfxlin/tiptap-starter-kit": "^1.1.2",
-		"@tiptap/core": "^2.24.2",
-		"@tiptap/extension-bubble-menu": "^2.25.0",
-		"@tiptap/extension-character-count": "^2.25.0",
-		"@tiptap/extension-focus": "^2.25.0",
-		"@tiptap/extension-table-of-contents": "^2.25.0",
-		"@tiptap/extension-text-align": "^2.25.0",
-		"@tiptap/extension-typography": "^2.25.0",
-		"@tiptap/vue-3": "^2.24.2",
 		"element-plus": "^2.9.11",
-		"html2canvas": "^1.4.1",
-		"prettier": "^3.6.2",
-		"tiptap-extension-line-height": "^1.0.0",
-		"vue": "3.5.17",
-		"vuedraggable": "^4.1.0"
+		"vue": "3.5.17"
 	},
 	"devDependencies": {
 		"@types/chrome": "^0.0.326",
