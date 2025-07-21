@@ -3,7 +3,7 @@ export type Theme = "light" | "dark" | "auto";
 const THEME_STORAGE_KEY = "app-theme";
 
 export class ThemeManager {
-	private static theme: Theme = "auto";
+	private static theme: Theme = "light";
 
 	/**
 	 * 初始化主题
