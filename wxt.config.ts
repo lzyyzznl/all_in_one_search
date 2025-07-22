@@ -13,9 +13,10 @@ export default defineConfig({
 
 	// 插件基本信息
 	manifest: {
-		name: "浏览器收藏夹历史记录搜索器",
-		description: "快速模糊搜索浏览器收藏夹和历史记录，按域名分组显示结果",
-		version: "2.0.0",
+		name: "All-in-One Browser Search",
+		description:
+			"⚡ 超快速浏览器数据搜索工具！集成收藏夹、历史记录、下载文件三合一搜索，支持Tab补全、域名分组、搜索历史，现代化UI设计，提升您的工作效率。",
+		version: "1.0.0",
 
 		// 权限配置
 		permissions: [
@@ -23,11 +24,9 @@ export default defineConfig({
 			"history",
 			"downloads",
 			"downloads.open",
-			"activeTab",
 			"storage",
 			"tabs",
 			"commands",
-			"search",
 		],
 
 		// 快捷键配置
@@ -37,13 +36,13 @@ export default defineConfig({
 					default: APP_CONSTANTS.SHORTCUTS.DEFAULT_KEY,
 					mac: APP_CONSTANTS.SHORTCUTS.MAC_KEY,
 				},
-				description: "默认打开收藏夹历史记录搜索器",
+				description: "打开All-in-One Browser Search",
 			},
 		},
 
 		// 操作按钮配置
 		action: {
-			default_title: "搜索收藏夹和历史记录",
+			default_title: "All-in-One Browser Search",
 			default_popup: "popup.html",
 		},
 
@@ -54,14 +53,6 @@ export default defineConfig({
 			48: "icon/48.png",
 			128: "icon/128.png",
 		},
-
-		// 新增 web_accessible_resources 配置
-		web_accessible_resources: [
-			{
-				resources: ["searchEngineIcon/*.png"],
-				matches: ["<all_urls>"],
-			},
-		],
 	},
 
 	// 开发配置
