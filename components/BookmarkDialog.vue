@@ -29,10 +29,12 @@
 					:data="bookmarkFoldersTree"
 					:props="{ label: 'title', value: 'id', children: 'children' }"
 					filterable
+					:filter-node-method="filterBookmarkNode"
 					placeholder="请选择文件夹"
 					style="width: 100%"
 					check-strictly
 					clearable
+					:teleported="false"
 					:loading="foldersLoading"
 					popper-class="bookmark-dialog-tree-select"
 					:popper-options="{
@@ -197,4 +199,13 @@ const handleSave = async () => {
 onMounted(() => {
 	loadBookmarkFolders();
 });
+
+/**
+ * 书签文件夹树选择的过滤函数（忽略大小写的模糊匹配）
+ */
+function filterBookmarkNode(value: string, data: any): boolean {
+	if (!value) return true;
+	const label = (data?.title ?? "").toString();
+	return label.toLowerCase().includes(value.toLowerCase());
+}
 </script>

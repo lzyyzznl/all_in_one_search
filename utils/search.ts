@@ -77,32 +77,10 @@ export function fuzzyMatch(text: string, query: string): boolean {
 	}
 
 	// 2. 分词匹配 - 支持多个关键词用空格分隔
-	const queryWords = queryLower.split(/\s+/).filter(word => word.length > 0);
+	const queryWords = queryLower.split(/\s+/).filter((word) => word.length > 0);
 	if (queryWords.length > 1) {
 		// 所有关键词都要在文本中找到
-		return queryWords.every(word => textLower.includes(word));
-	}
-
-	// 3. 字符顺序匹配（不需要连续）
-	let queryIndex = 0;
-	for (let i = 0; i < textLower.length && queryIndex < queryLower.length; i++) {
-		if (textLower[i] === queryLower[queryIndex]) {
-			queryIndex++;
-		}
-	}
-
-	// 4. 如果字符顺序匹配成功
-	if (queryIndex === queryLower.length) {
-		return true;
-	}
-
-	// 5. 拼音/缩写匹配（针对中英文混合）
-	// 例如: "github" 可以匹配 "GitHub"
-	const words = textLower.split(/\s+|[_\-\.]/);
-	for (const word of words) {
-		if (word.startsWith(queryLower)) {
-			return true;
-		}
+		return queryWords.every((word) => textLower.includes(word));
 	}
 
 	return false;
@@ -334,6 +312,16 @@ export async function searchBookmarksAndHistory(
 		bookmarks = await getAllBookmarks();
 		// 时间筛选书签
 		bookmarks = filterItemsByTime(bookmarks, options.timeFilter);
+
+		// 按关键词对书签进行预过滤（仅标题与URL参与匹配）
+		if (options.query && options.query.trim()) {
+			bookmarks = bookmarks.filter(
+				(item) =>
+					fuzzyMatch(item.title, options.query) ||
+					fuzzyMatch(item.url, options.query) ||
+					fuzzyMatch(item.domain, options.query)
+			);
+		}
 	}
 
 	// 获取历史记录
@@ -357,10 +345,10 @@ export async function searchBookmarksAndHistory(
 	// URL去重：如果书签和历史记录有相同URL，只保留书签
 	let allItems: SearchResultItem[] = [];
 
-	// 先添加书签
+	// 先添加匹配后的书签
 	allItems = allItems.concat(bookmarks);
 
-	// 创建书签URL集合用于去重
+	// 创建书签URL集合用于去重（以已匹配的书签为准）
 	const bookmarkUrls = new Set(bookmarks.map((item) => item.url));
 
 	// 过滤历史记录，排除已有书签的URL
