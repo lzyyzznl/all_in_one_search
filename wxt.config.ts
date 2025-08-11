@@ -13,11 +13,10 @@ export default defineConfig({
 
 	// 插件基本信息
 	manifest: {
-		name: "All-in-One Browser Search",
+		name: "收藏夹、历史记录、下载记录、搜索引擎超强四合一",
 		description:
 			"⚡ 超快速浏览器数据搜索工具！集成收藏夹、历史记录、下载文件三合一搜索，支持Tab补全、域名分组、搜索历史，现代化UI设计，提升您的工作效率。",
-		version: "1.0.0",
-
+		version: "1.0.1",
 		// 权限配置
 		permissions: [
 			"bookmarks",
@@ -25,7 +24,6 @@ export default defineConfig({
 			"downloads",
 			"downloads.open",
 			"storage",
-			"tabs",
 			"commands",
 		],
 
