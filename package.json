@@ -1,6 +1,6 @@
 {
 	"name": "browser_search",
-	"version": "2.1.0",
+	"version": "1.0.2",
 	"description": "浏览器插件 - 收藏夹和历史记录模糊搜索器",
 	"main": "index.js",
 	"scripts": {

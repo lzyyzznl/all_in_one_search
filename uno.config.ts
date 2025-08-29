@@ -1,12 +1,12 @@
 import {
 	defineConfig,
-	presetUno,
+	presetWind3,
 	presetAttributify,
 	presetIcons,
 } from "unocss";
 
 export default defineConfig({
-	presets: [presetUno(), presetAttributify(), presetIcons()],
+	presets: [presetWind3(), presetAttributify(), presetIcons()],
 	theme: {
 		colors: {
 			// 明亮主题颜色
