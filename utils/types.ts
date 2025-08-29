@@ -115,8 +115,10 @@ export interface RecommendedGroup {
 
 // 搜索引擎配置接口
 export interface SearchEngine {
+	id: string;
 	name: string;
 	baseUrl: string;
+	queryParam: string;
 	icon?: string;
 	color?: string;
 	description?: string;
@@ -139,15 +141,6 @@ export interface AppState {
 	selectedItem: string | null;
 	searchHistory: SearchHistoryItem[];
 	defaultSearchEngine?: SearchEngine;
-}
-
-// 搜索引擎类型
-export interface SearchEngine {
-	name: string;
-	baseUrl: string;
-	icon?: string;
-	color?: string;
-	description?: string;
 }
 
 // 搜索结果类型

@@ -1381,6 +1381,9 @@ const handleTabCompletion = () => {
 		shadowCompletion.value = "";
 		// 更新新的阴影补全
 		shadowCompletion.value = calculateShadowCompletion(searchQuery.value);
+
+		// 触发搜索行为
+		handleSearchInput();
 	}
 };
 
@@ -1862,7 +1865,22 @@ const loadDefaultSearchEngine = async () => {
 				}
 			}
 		}
-		// 3. 没有设置或找不到，兜底用浏览器默认
+
+		// 3. 没有设置或找不到，尝试使用Google作为默认搜索引擎
+		const allEnginesResp = await chrome.runtime.sendMessage({
+			action: "get-all-search-engines",
+		});
+		if (allEnginesResp?.success && Array.isArray(allEnginesResp.engines)) {
+			const googleEngine = allEnginesResp.engines.find(
+				(e: any) => e.id === "google"
+			);
+			if (googleEngine) {
+				defaultSearchEngine.value = googleEngine;
+				return;
+			}
+		}
+
+		// 4. 兜底用浏览器默认
 		const response = await chrome.runtime.sendMessage({
 			action: "get-default-search-engine",
 		});

@@ -202,168 +202,20 @@
 							<el-option label="访问频率" value="frequency" />
 						</el-select>
 					</el-form-item>
-				</el-form>
-			</el-card>
 
-			<!-- 键盘导航设置 -->
-			<el-card class="shadow-sm">
-				<template #header>
-					<div class="flex items-center gap-2">
-						<el-icon class="text-blue-600 dark:text-blue-400"
-							><Tools
-						/></el-icon>
-						<h2 class="text-lg font-semibold">键盘导航设置</h2>
-					</div>
-				</template>
-
-				<p class="text-slate-500 dark:text-slate-400 mb-4">
-					自定义搜索结果中的键盘导航快捷键
-				</p>
-
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-					<el-card class="text-center p-4">
-						<div class="mb-3">
-							<el-icon class="text-blue-600 dark:text-blue-400 text-xl mb-2"
-								><ArrowUp
-							/></el-icon>
-							<div class="text-sm font-medium">向上选择</div>
-						</div>
-						<el-select
-							v-model="navigationSettings.up"
-							@change="saveNavigationSettings"
-							class="w-full"
-						>
-							<el-option label="↑ (方向键上)" value="ArrowUp" />
-							<el-option label="K" value="KeyK" />
-							<el-option label="W" value="KeyW" />
-						</el-select>
-					</el-card>
-
-					<el-card class="text-center p-4">
-						<div class="mb-3">
-							<el-icon class="text-blue-600 dark:text-blue-400 text-xl mb-2"
-								><ArrowDown
-							/></el-icon>
-							<div class="text-sm font-medium">向下选择</div>
-						</div>
-						<el-select
-							v-model="navigationSettings.down"
-							@change="saveNavigationSettings"
-							class="w-full"
-						>
-							<el-option label="↓ (方向键下)" value="ArrowDown" />
-							<el-option label="J" value="KeyJ" />
-							<el-option label="S" value="KeyS" />
-						</el-select>
-					</el-card>
-
-					<el-card class="text-center p-4">
-						<div class="mb-3">
-							<el-icon class="text-blue-600 dark:text-blue-400 text-xl mb-2"
-								><Check
-							/></el-icon>
-							<div class="text-sm font-medium">打开选中项</div>
-						</div>
-						<el-select
-							v-model="navigationSettings.open"
-							@change="saveNavigationSettings"
-							class="w-full"
-						>
-							<el-option label="Enter (回车键)" value="Enter" />
-							<el-option label="Space (空格键)" value="Space" />
-							<el-option label="O" value="KeyO" />
-						</el-select>
-					</el-card>
-
-					<el-card class="text-center p-4">
-						<div class="mb-3">
-							<el-icon class="text-blue-600 dark:text-blue-400 text-xl mb-2"
-								><Close
-							/></el-icon>
-							<div class="text-sm font-medium">关闭窗口</div>
-						</div>
-						<el-select
-							v-model="navigationSettings.close"
-							@change="saveNavigationSettings"
-							class="w-full"
-						>
-							<el-option label="Esc (退出键)" value="Escape" />
-							<el-option label="Q" value="KeyQ" />
-						</el-select>
-					</el-card>
-
-					<el-card class="text-center p-4">
-						<div class="mb-3">
-							<el-icon class="text-blue-600 dark:text-blue-400 text-xl mb-2"
-								><DocumentCopy
-							/></el-icon>
-							<div class="text-sm font-medium">复制选中项</div>
-						</div>
-						<el-select
-							v-model="navigationSettings.copy"
-							@change="saveNavigationSettings"
-							class="w-full"
-						>
-							<el-option label="C" value="KeyC" />
-						</el-select>
-					</el-card>
-
-					<el-card class="text-center p-4">
-						<div class="mb-3">
-							<el-icon class="text-blue-600 dark:text-blue-400 text-xl mb-2"
-								><Star
-							/></el-icon>
-							<div class="text-sm font-medium">收藏选中项</div>
-						</div>
-						<el-select
-							v-model="navigationSettings.bookmark"
-							@change="saveNavigationSettings"
-							class="w-full"
-						>
-							<el-option label="B" value="KeyB" />
-						</el-select>
-					</el-card>
-
-					<el-card class="text-center p-4">
-						<div class="mb-3">
-							<el-icon class="text-blue-600 dark:text-blue-400 text-xl mb-2"
-								><FolderOpened
-							/></el-icon>
-							<div class="text-sm font-medium">显示选中项</div>
-						</div>
-						<el-select
-							v-model="navigationSettings.showFile"
-							@change="saveNavigationSettings"
-							class="w-full"
-						>
-							<el-option label="F" value="KeyF" />
-						</el-select>
-					</el-card>
-
-					<el-card class="text-center p-4">
-						<div class="mb-3">
-							<el-icon class="text-blue-600 dark:text-blue-400 text-xl mb-2"
-								><BubbleChart
-							/></el-icon>
-							<div class="text-sm font-medium">历史气泡数量</div>
-						</div>
+					<el-form-item label="历史气泡数量" prop="bubbleCount">
 						<el-input-number
-							v-model="navigationSettings.bubbleCount"
-							@change="saveNavigationSettings"
+							v-model="searchSettings.bubbleCount"
+							@change="saveSearchSettings"
 							:min="1"
 							:max="10"
 							class="w-full"
 						/>
-					</el-card>
-				</div>
-
-				<el-alert title="📝 提示：" type="info" :closable="false">
-					<ul class="list-disc list-inside space-y-1 text-sm">
-						<li>这些快捷键只在搜索结果页面中生效</li>
-						<li>修改后即时生效，无需重启扩展</li>
-						<li>建议选择不与浏览器默认快捷键冲突的按键</li>
-					</ul>
-				</el-alert>
+						<div class="text-xs text-slate-400 mt-1">
+							设置搜索框下方显示的历史记录气泡数量
+						</div>
+					</el-form-item>
+				</el-form>
 			</el-card>
 
 			<!-- 关于 -->
@@ -379,7 +231,6 @@
 
 				<div>
 					<el-descriptions :column="1" border>
-						<el-descriptions-item label="版本">1.0.0</el-descriptions-item>
 						<el-descriptions-item label="开发框架"
 							>WXT + Vue 3 + TypeScript + Element Plus</el-descriptions-item
 						>
@@ -412,19 +263,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-	ArrowDown,
-	ArrowUp,
-	Check,
-	Close,
-	InfoFilled,
-	Search,
-	Setting,
-	Tools,
-	DocumentCopy,
-	Star,
-	FolderOpened,
-} from "@element-plus/icons-vue";
+import { InfoFilled, Search, Setting, Tools } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import { onMounted, reactive, ref } from "vue";
 import type { SearchEngine } from "../utils/types";
@@ -450,18 +289,7 @@ const shortcuts = ref([
 const searchSettings = reactive({
 	defaultMaxResults: 100,
 	defaultSortBy: "relevance",
-	preferredSearchEngine: "",
-});
-
-// 键盘导航设置
-const navigationSettings = reactive({
-	up: "ArrowUp",
-	down: "ArrowDown",
-	open: "Enter",
-	close: "Escape",
-	copy: "KeyC",
-	bookmark: "KeyB",
-	showFile: "KeyF",
+	preferredSearchEngine: "google",
 	bubbleCount: 5,
 });
 
@@ -528,18 +356,6 @@ const loadSearchSettings = async () => {
 	}
 };
 
-// 加载键盘导航设置
-const loadNavigationSettings = async () => {
-	try {
-		const result = await chrome.storage.local.get(["navigationSettings"]);
-		if (result.navigationSettings) {
-			Object.assign(navigationSettings, result.navigationSettings);
-		}
-	} catch (error) {
-		console.error("加载键盘导航设置失败:", error);
-	}
-};
-
 // 显示保存成功消息
 const showSaveSuccessMessage = () => {
 	showSaveSuccess.value = true;
@@ -558,19 +374,6 @@ const saveSearchSettings = async () => {
 		showSaveSuccessMessage();
 	} catch (error) {
 		console.error("保存搜索设置失败:", error);
-	}
-};
-
-// 保存键盘导航设置
-const saveNavigationSettings = async () => {
-	try {
-		await chrome.storage.local.set({ navigationSettings: navigationSettings });
-		console.log("键盘导航设置已保存:", navigationSettings);
-
-		// 显示保存成功提示
-		showSaveSuccessMessage();
-	} catch (error) {
-		console.error("保存键盘导航设置失败:", error);
 	}
 };
 
@@ -615,7 +418,6 @@ onMounted(async () => {
 	ThemeManager.init();
 	await loadShortcuts();
 	await loadSearchSettings();
-	await loadNavigationSettings();
 	await loadAvailableEngines();
 	await loadThemeSettings();
 });
